@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Monday Night Football Hub | Live Attendance, Voting, Payments</title>
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -79,7 +76,7 @@
             align-items: center;
             gap: 15px;
         }
-        select, button, input {
+        select, button, input, textarea {
             padding: 10px 16px;
             border-radius: 60px;
             border: 1px solid #e2d6b0;
@@ -92,6 +89,7 @@
             font-weight: 600;
             cursor: pointer;
         }
+        button.danger { background: #d9534f; color: white; }
         .week-grid {
             display: flex;
             flex-direction: column;
@@ -128,9 +126,9 @@
         }
         th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #f0e6cf; }
         th { background: #fef5e3; color: #b2711a; }
-        .vote-status, .attending-status { font-size: 0.8rem; background: #e9e0cf; padding: 4px 12px; border-radius: 60px; }
         .flex-btns { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
         .news-content { background: #fef9ef; padding: 16px; border-radius: 28px; white-space: pre-wrap; }
+        .data-controls { margin-top: 20px; text-align: center; }
         footer { text-align: center; margin-top: 32px; font-size: 0.7rem; color: #4b6f82; }
         @media (max-width: 700px) { .week-row { flex-direction: column; align-items: stretch; } }
     </style>
@@ -142,11 +140,11 @@
         <p>Live attendance • Best & Fairest • Payments • News • Accounts</p>
     </div>
 
-    <!-- Player identity (persistent) -->
+    <!-- Player identity -->
     <div class="player-selector">
         <label><strong>👤 Your name:</strong></label>
         <select id="playerNameSelect"></select>
-        <div id="loginStatus" class="small-text"></div>
+        <div id="loginStatus"></div>
     </div>
 
     <!-- TABS -->
@@ -170,7 +168,7 @@
         </div>
     </div>
 
-    <!-- Voting Panel (Best & Fairest) -->
+    <!-- Voting Panel -->
     <div id="votingPanel" class="panel">
         <div class="card">
             <h2>🗳️ 3-2-1 Votes (Best & Fairest)</h2>
@@ -178,7 +176,7 @@
         </div>
         <div class="card">
             <h2>🏆 Current Leaderboard</h2>
-            <button id="refreshLeaderboardBtn">⟳ Refresh</button>
+            <button id="refreshLeaderboardBtn">⟳ Refresh Leaderboard</button>
             <div id="leaderboardContainer"></div>
         </div>
     </div>
@@ -195,7 +193,7 @@
     <div id="newsPanel" class="panel">
         <div class="card">
             <h2>📢 Latest Announcements</h2>
-            <div id="newsContent" class="news-content">Loading...</div>
+            <div id="newsContent" class="news-content">Welcome to Monday Night Football Hub!</div>
             <div id="adminNewsArea" style="display:none; margin-top: 20px;">
                 <textarea id="newsInput" rows="3" style="width:100%; border-radius:24px;" placeholder="Write new announcement..."></textarea>
                 <button id="postNewsBtn">Post Update</button>
@@ -215,30 +213,18 @@
         </div>
     </div>
 
-    <footer>🔐 Live data via Firebase • All players see same info • Admin can post news & reset data</footer>
+    <!-- Data Management -->
+    <div class="card data-controls">
+        <button onclick="exportData()">📤 Export Data (JSON)</button>
+        <button onclick="document.getElementById('importFile').click()">📥 Import Data</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+        <button class="danger" onclick="clearAllData()">🗑️ Clear All Data</button>
+    </div>
+
+    <footer>💾 Data saved in your browser (localStorage) • Export/Import to backup or share</footer>
 </div>
 
 <script>
-    // ==================== FIREBASE CONFIG (REPLACE WITH YOUR OWN) ====================
-    const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_PROJECT.firebaseapp.com",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_PROJECT.appspot.com",
-        messagingSenderId: "YOUR_SENDER_ID",
-        appId: "YOUR_APP_ID"
-    };
-    // ================================================================================
-
-    if (firebaseConfig.apiKey === "YOUR_API_KEY") {
-        document.body.innerHTML = '<div style="background:#d32f2f; color:white; padding:20px; text-align:center;"><h2>⚠️ Firebase not configured</h2><p>Please replace the <code>firebaseConfig</code> object in the code with your own Firebase project settings.<br>Get it from <a href="https://console.firebase.google.com" style="color:#ffd966;">Firebase Console</a> → Project settings → Your web app.</p></div>';
-        throw new Error("Firebase config missing");
-    }
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    // ---------- CONSTANTS ----------
     const FULL_ROSTER = [
         "James Zoumis", "Stav", "Paul", "Ali Mekawy", "Danny", "Alex Rowe", "Kiarash Piani",
         "enzo rivellese", "Stefan Бранковић", "Dimitri Superstar", "Ivan Soccer", "Leo Soccer",
@@ -248,7 +234,6 @@
         "Chris", "Chris Del Monaco", "Maurice Delmonte", "Peter Desensi", "Tony El Hajj", "Farid", "James"
     ];
 
-    // Generate Monday game weeks (Feb -> second-last Monday Dec)
     function generateGameWeeks() {
         const year = new Date().getFullYear();
         let start = new Date(year, 1, 1);
@@ -269,29 +254,31 @@
         }
         return weeks;
     }
+
     const GAME_WEEKS = generateGameWeeks();
-
     let currentPlayer = "";
-    let isAdmin = false;  // simple admin check (master password)
+    let isAdmin = false;
 
-    // ---------- Helper: ensure Firestore collections exist ----------
-    async function initData() {
-        // Create game weeks if missing
-        for (let week of GAME_WEEKS) {
-            const gameRef = db.collection("games").doc(week.dateStr);
-            const doc = await gameRef.get();
-            if (!doc.exists) {
-                await gameRef.set({ label: week.label, date: week.dateStr });
-            }
-        }
-        // Create players if missing
-        for (let name of FULL_ROSTER) {
-            const playerId = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-            const playerRef = db.collection("players").doc(playerId);
-            const doc = await playerRef.get();
-            if (!doc.exists) {
-                await playerRef.set({ name: name, defaultPin: "123" }); // simple auth not enforced, but we track name
-            }
+    // Data keys
+    const STORAGE_KEYS = {
+        attendance: 'mnf_attendance',
+        votes: 'mnf_votes',
+        payments: 'mnf_payments',
+        news: 'mnf_news'
+    };
+
+    function loadData(key) {
+        const data = localStorage.getItem(key);
+        return data ? JSON.parse(data) : {};
+    }
+
+    function saveData(key, data) {
+        localStorage.setItem(key, JSON.stringify(data));
+    }
+
+    function initDefaultData() {
+        if (!localStorage.getItem(STORAGE_KEYS.news)) {
+            saveData(STORAGE_KEYS.news, { content: "Welcome to Monday Night Football Hub! First game soon." });
         }
     }
 
@@ -299,13 +286,12 @@
     async function loadAttendance() {
         if (!currentPlayer) return;
         const container = document.getElementById("attendanceList");
-        container.innerHTML = "Loading...";
-        const playerId = currentPlayer.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        const attendanceData = loadData(STORAGE_KEYS.attendance);
         let html = "";
         for (let week of GAME_WEEKS) {
-            const doc = await db.collection("attendance").doc(`${playerId}_${week.dateStr}`).get();
-            const status = doc.exists ? doc.data().status : "unknown";
-            const isIn = (status === "in");
+            const key = `${currentPlayer}_${week.dateStr}`;
+            const status = attendanceData[key] || "unknown";
+            const isIn = status === "in";
             html += `
                 <div class="week-row">
                     <div class="week-label">${week.label}</div>
@@ -313,43 +299,54 @@
                         <button class="attending-btn" data-date="${week.dateStr}" data-status="in" style="${isIn ? 'background:#2e7d5e; color:white;' : ''}">✅ In</button>
                         <button class="attending-btn" data-date="${week.dateStr}" data-status="out" style="${!isIn && status !== 'unknown' ? 'background:#d9534f; color:white;' : ''}">❌ Out</button>
                     </div>
-                    <div class="attendance-badge ${isIn ? 'in' : 'out'}">${isIn ? 'Attending' : (status === 'out' ? 'Not attending' : 'Not set')}</div>
+                    <div class="attendance-badge ${isIn ? 'in' : (status === 'out' ? 'out' : '')}">${isIn ? 'Attending' : (status === 'out' ? 'Not attending' : 'Not set')}</div>
                 </div>
             `;
         }
         container.innerHTML = html;
+
         document.querySelectorAll(".attending-btn").forEach(btn => {
-            btn.addEventListener("click", async () => {
+            btn.addEventListener("click", () => {
                 const date = btn.getAttribute("data-date");
                 const status = btn.getAttribute("data-status");
-                const ref = db.collection("attendance").doc(`${playerId}_${date}`);
-                await ref.set({ playerId, gameDate: date, status, playerName: currentPlayer });
+                const key = `${currentPlayer}_${date}`;
+                const data = loadData(STORAGE_KEYS.attendance);
+                data[key] = status;
+                saveData(STORAGE_KEYS.attendance, data);
                 loadAttendance();
                 updateNextGameAttendance();
             });
         });
     }
 
-    async function updateNextGameAttendance() {
+    function updateNextGameAttendance() {
         const today = new Date().toISOString().split('T')[0];
-        let nextGame = GAME_WEEKS.find(w => w.dateStr >= today);
-        if (!nextGame && GAME_WEEKS.length) nextGame = GAME_WEEKS[0];
+        let nextGame = GAME_WEEKS.find(w => w.dateStr >= today) || GAME_WEEKS[0];
         if (!nextGame) return;
-        const snapshot = await db.collection("attendance").where("gameDate", "==", nextGame.dateStr).where("status", "==", "in").get();
+
+        const attendanceData = loadData(STORAGE_KEYS.attendance);
         const attending = [];
-        snapshot.forEach(doc => attending.push(doc.data().playerName));
-        const container = document.getElementById("nextGameAttendance");
-        container.innerHTML = `<strong>${nextGame.label}</strong><br>Attending: ${attending.length > 0 ? attending.join(", ") : "No one yet"}`;
+
+        for (let player of FULL_ROSTER) {
+            const key = `${player}_${nextGame.dateStr}`;
+            if (attendanceData[key] === "in") attending.push(player);
+        }
+
+        document.getElementById("nextGameAttendance").innerHTML = `
+            <strong>${nextGame.label}</strong><br>
+            Attending: ${attending.length > 0 ? attending.join(", ") : "No one yet"}
+        `;
     }
 
-    // ---------- Voting (Best & Fairest) ----------
-    async function loadVotingWeeks() {
+    // ---------- Voting ----------
+    function loadVotingWeeks() {
         if (!currentPlayer) return;
         const container = document.getElementById("votingWeeksList");
+        const votesData = loadData(STORAGE_KEYS.votes);
         let html = "";
         for (let week of GAME_WEEKS) {
-            const voteDoc = await db.collection("votes").doc(`${currentPlayer}_${week.dateStr}`).get();
-            const vote = voteDoc.exists ? voteDoc.data() : null;
+            const key = `${currentPlayer}_${week.dateStr}`;
+            const vote = votesData[key];
             const status = vote ? `✅ 3:${vote.first} | 2:${vote.second} | 1:${vote.third}` : "⭕ Not voted";
             html += `
                 <div class="week-row">
@@ -360,86 +357,98 @@
             `;
         }
         container.innerHTML = html;
+
         document.querySelectorAll(".vote-open-btn").forEach(btn => {
             btn.addEventListener("click", () => openVoteModal(btn.getAttribute("data-date"), btn.getAttribute("data-label")));
         });
     }
 
     function openVoteModal(gameDate, weekLabel) {
-        const existingVotePromise = db.collection("votes").doc(`${currentPlayer}_${gameDate}`).get();
+        const votesData = loadData(STORAGE_KEYS.votes);
+        const key = `${currentPlayer}_${gameDate}`;
+        const existing = votesData[key];
+
         let options = '<option value="">-- Select --</option>';
-        for (let p of FULL_ROSTER) {
+        FULL_ROSTER.forEach(p => {
             if (p !== currentPlayer) options += `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`;
-        }
+        });
+
         const modal = document.createElement("div");
-        modal.style.position = "fixed"; modal.style.top = "0"; modal.style.left = "0";
-        modal.style.width = "100%"; modal.style.height = "100%";
-        modal.style.backgroundColor = "rgba(0,0,0,0.6)";
-        modal.style.display = "flex"; modal.style.alignItems = "center"; modal.style.justifyContent = "center";
-        modal.style.zIndex = "1000";
+        modal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:1000;";
         modal.innerHTML = `
-            <div style="background: white; border-radius: 48px; padding: 28px; max-width: 500px; width: 90%;">
+            <div style="background:white;border-radius:48px;padding:28px;max-width:500px;width:90%;">
                 <h3>${weekLabel}</h3>
                 <label>🏆 3 points</label><select id="vote3">${options}</select>
                 <label>🥈 2 points</label><select id="vote2">${options}</select>
                 <label>🥉 1 point</label><select id="vote1">${options}</select>
-                <div class="flex-btns"><button id="saveVoteBtn">Save</button><button id="cancelVoteBtn">Cancel</button></div>
-                <div id="voteError" style="color:red;"></div>
+                <div class="flex-btns"><button id="saveVoteBtn">Save Vote</button><button id="cancelVoteBtn">Cancel</button></div>
+                <div id="voteError" style="color:red;margin-top:10px;"></div>
             </div>
         `;
         document.body.appendChild(modal);
-        existingVotePromise.then(doc => {
-            if (doc.exists) {
-                const data = doc.data();
-                document.getElementById("vote3").value = data.first;
-                document.getElementById("vote2").value = data.second;
-                document.getElementById("vote1").value = data.third;
-            }
-        });
-        document.getElementById("saveVoteBtn").onclick = async () => {
+
+        if (existing) {
+            document.getElementById("vote3").value = existing.first || "";
+            document.getElementById("vote2").value = existing.second || "";
+            document.getElementById("vote1").value = existing.third || "";
+        }
+
+        document.getElementById("saveVoteBtn").onclick = () => {
             const first = document.getElementById("vote3").value;
             const second = document.getElementById("vote2").value;
             const third = document.getElementById("vote1").value;
-            if (!first || !second || !third) { document.getElementById("voteError").innerText = "Select all three."; return; }
-            if (first === second || first === third || second === third) { document.getElementById("voteError").innerText = "Players must be different."; return; }
-            await db.collection("votes").doc(`${currentPlayer}_${gameDate}`).set({
-                voter: currentPlayer, gameDate, first, second, third, timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
+            if (!first || !second || !third) return document.getElementById("voteError").innerText = "Select all three players.";
+            if (first === second || first === third || second === third) return document.getElementById("voteError").innerText = "Players must be different.";
+
+            const data = loadData(STORAGE_KEYS.votes);
+            data[key] = { first, second, third };
+            saveData(STORAGE_KEYS.votes, data);
+
             document.body.removeChild(modal);
             loadVotingWeeks();
             renderLeaderboard();
         };
+
         document.getElementById("cancelVoteBtn").onclick = () => document.body.removeChild(modal);
     }
 
-    async function renderLeaderboard() {
-        const votesSnap = await db.collection("votes").get();
+    function renderLeaderboard() {
+        const votesData = loadData(STORAGE_KEYS.votes);
         const points = new Map();
         FULL_ROSTER.forEach(name => points.set(name, 0));
-        votesSnap.forEach(doc => {
-            const v = doc.data();
-            points.set(v.first, (points.get(v.first) || 0) + 3);
-            points.set(v.second, (points.get(v.second) || 0) + 2);
-            points.set(v.third, (points.get(v.third) || 0) + 1);
+
+        Object.values(votesData).forEach(v => {
+            if (v.first) points.set(v.first, (points.get(v.first) || 0) + 3);
+            if (v.second) points.set(v.second, (points.get(v.second) || 0) + 2);
+            if (v.third) points.set(v.third, (points.get(v.third) || 0) + 1);
         });
-        let ranking = Array.from(points.entries()).map(([n,p]) => ({ name: n, points: p }));
-        ranking.sort((a,b) => b.points - a.points);
+
+        let ranking = Array.from(points.entries()).map(([name, pts]) => ({ name, points: pts }));
+        ranking.sort((a, b) => b.points - a.points);
+
         const container = document.getElementById("leaderboardContainer");
-        if (ranking.length === 0) { container.innerHTML = "<div class='alert'>No votes yet.</div>"; return; }
+        if (ranking.length === 0) {
+            container.innerHTML = "<p>No votes yet.</p>";
+            return;
+        }
+
         let html = `<table class="leaderboard-table"><thead><tr><th>#</th><th>Player</th><th>Points</th></tr></thead><tbody>`;
-        ranking.forEach((p,i) => { html += `<tr><td>${i+1}</td><td>${escapeHtml(p.name)}</td><td><strong>${p.points}</strong></td></tr>`; });
+        ranking.forEach((p, i) => {
+            html += `<tr><td>${i+1}</td><td>${escapeHtml(p.name)}</td><td><strong>${p.points}</strong></td></tr>`;
+        });
         html += `</tbody></table>`;
         container.innerHTML = html;
     }
 
     // ---------- Payments ----------
-    async function loadPayments() {
+    function loadPayments() {
         if (!currentPlayer) return;
         const container = document.getElementById("paymentsList");
+        const paymentsData = loadData(STORAGE_KEYS.payments);
         let html = "";
         for (let week of GAME_WEEKS) {
-            const doc = await db.collection("payments").doc(`${currentPlayer}_${week.dateStr}`).get();
-            const paid = doc.exists ? doc.data().paid : false;
+            const key = `${currentPlayer}_${week.dateStr}`;
+            const paid = paymentsData[key] || false;
             html += `
                 <div class="week-row">
                     <div class="week-label">${week.label}</div>
@@ -449,13 +458,14 @@
             `;
         }
         container.innerHTML = html;
+
         document.querySelectorAll(".payment-toggle").forEach(btn => {
-            btn.addEventListener("click", async () => {
+            btn.addEventListener("click", () => {
                 const date = btn.getAttribute("data-date");
-                const ref = db.collection("payments").doc(`${currentPlayer}_${date}`);
-                const doc = await ref.get();
-                const currentPaid = doc.exists ? doc.data().paid : false;
-                await ref.set({ playerName: currentPlayer, gameDate: date, paid: !currentPaid });
+                const key = `${currentPlayer}_${date}`;
+                const data = loadData(STORAGE_KEYS.payments);
+                data[key] = !data[key];
+                saveData(STORAGE_KEYS.payments, data);
                 loadPayments();
                 renderAccounts();
             });
@@ -463,75 +473,83 @@
     }
 
     // ---------- News ----------
-    async function loadNews() {
-        const newsRef = db.collection("news").doc("latest");
-        const doc = await newsRef.get();
-        const content = doc.exists ? doc.data().content : "Welcome to Monday Night Football Hub!";
-        document.getElementById("newsContent").innerHTML = content;
+    function loadNews() {
+        const news = loadData(STORAGE_KEYS.news);
+        document.getElementById("newsContent").innerHTML = news.content || "No announcements yet.";
     }
 
     function showAdminNewsArea() {
         if (isAdmin) document.getElementById("adminNewsArea").style.display = "block";
     }
-    document.getElementById("postNewsBtn")?.addEventListener("click", async () => {
+
+    document.getElementById("postNewsBtn").addEventListener("click", () => {
         if (!isAdmin) return;
-        const newContent = document.getElementById("newsInput").value;
-        if (newContent.trim()) {
-            await db.collection("news").doc("latest").set({ content: newContent, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        const newContent = document.getElementById("newsInput").value.trim();
+        if (newContent) {
+            saveData(STORAGE_KEYS.news, { content: newContent });
             loadNews();
             document.getElementById("newsInput").value = "";
         }
     });
 
-    // ---------- Accounts (Financial) ----------
-    async function renderAccounts() {
-        const paymentsSnap = await db.collection("payments").get();
-        const playerPayments = new Map(); // player -> count of paid weeks
-        FULL_ROSTER.forEach(name => playerPayments.set(name, 0));
-        paymentsSnap.forEach(doc => {
-            const data = doc.data();
-            if (data.paid) {
-                playerPayments.set(data.playerName, (playerPayments.get(data.playerName) || 0) + 1);
-            }
-        });
+    // ---------- Accounts ----------
+    function renderAccounts() {
+        const paymentsData = loadData(STORAGE_KEYS.payments);
         const totalWeeks = GAME_WEEKS.length;
-        const feePerWeek = 10; // example $10 per game
+        const feePerWeek = 10;
         let totalCollected = 0;
         let rows = "";
-        for (let [name, paidWeeks] of playerPayments.entries()) {
-            const owed = totalWeeks * feePerWeek;
+
+        FULL_ROSTER.forEach(name => {
+            let paidWeeks = 0;
+            GAME_WEEKS.forEach(week => {
+                const key = `${name}_${week.dateStr}`;
+                if (paymentsData[key]) paidWeeks++;
+            });
             const paidAmount = paidWeeks * feePerWeek;
+            const owed = totalWeeks * feePerWeek;
             totalCollected += paidAmount;
             rows += `<tr><td>${escapeHtml(name)}</td><td>${paidWeeks}/${totalWeeks}</td><td>$${paidAmount}</td><td>$${owed - paidAmount}</td></tr>`;
-        }
-        document.getElementById("accountsSummary").innerHTML = `<div class="alert">💰 Total collected: $${totalCollected} out of $${totalWeeks * FULL_ROSTER.length * feePerWeek}</div>`;
-        document.getElementById("accountsTable").innerHTML = `<table class="accounts-table"><thead><tr><th>Player</th><th>Weeks paid</th><th>Paid ($)</th><th>Outstanding ($)</th></tr></thead><tbody>${rows}</tbody></table>`;
+        });
+
+        document.getElementById("accountsSummary").innerHTML = `<strong>Total collected: $${totalCollected} out of $${totalWeeks * FULL_ROSTER.length * feePerWeek}</strong>`;
+        document.getElementById("accountsTable").innerHTML = `
+            <table class="accounts-table">
+                <thead><tr><th>Player</th><th>Weeks paid</th><th>Paid ($)</th><th>Outstanding ($)</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        `;
     }
 
-    // ---------- Admin login ----------
+    // ---------- Admin ----------
     function enableAdminMode() {
         const pwd = prompt("Enter admin master PIN:");
         if (pwd === "admin123") {
             isAdmin = true;
             showAdminNewsArea();
-            alert("Admin mode enabled. You can post news.");
-        } else { alert("Wrong PIN"); }
+            alert("✅ Admin mode enabled. You can now post news.");
+        } else {
+            alert("Wrong PIN");
+        }
     }
 
-    // ---------- Player dropdown ----------
+    // ---------- Player Dropdown ----------
     function populatePlayerDropdown() {
         const select = document.getElementById("playerNameSelect");
         select.innerHTML = '<option value="">-- Select your name --</option>';
-        FULL_ROSTER.forEach(name => { select.innerHTML += `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`; });
-        select.addEventListener("change", async () => {
+        FULL_ROSTER.forEach(name => {
+            select.innerHTML += `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
+        });
+
+        select.addEventListener("change", () => {
             currentPlayer = select.value;
             if (currentPlayer) {
-                document.getElementById("loginStatus").innerHTML = `✅ Logged in as ${currentPlayer}`;
-                await loadAttendance();
-                await loadVotingWeeks();
-                await loadPayments();
-                await renderLeaderboard();
-                await renderAccounts();
+                document.getElementById("loginStatus").innerHTML = `✅ Logged in as <strong>${currentPlayer}</strong>`;
+                loadAttendance();
+                loadVotingWeeks();
+                loadPayments();
+                renderLeaderboard();
+                renderAccounts();
                 updateNextGameAttendance();
             } else {
                 document.getElementById("loginStatus").innerHTML = "";
@@ -541,35 +559,85 @@
 
     // Tab switching
     function initTabs() {
-        const btns = document.querySelectorAll(".tab-btn");
-        btns.forEach(btn => {
+        document.querySelectorAll(".tab-btn").forEach(btn => {
             btn.addEventListener("click", () => {
-                const tab = btn.getAttribute("data-tab");
                 document.querySelectorAll(".panel").forEach(p => p.classList.remove("active-panel"));
-                document.getElementById(`${tab}Panel`).classList.add("active-panel");
-                btns.forEach(b => b.classList.remove("active"));
+                document.getElementById(btn.getAttribute("data-tab") + "Panel").classList.add("active-panel");
+                document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
                 btn.classList.add("active");
-                if (tab === "accounts") renderAccounts();
-                if (tab === "voting") renderLeaderboard();
-                if (tab === "attendance") updateNextGameAttendance();
+
+                if (btn.getAttribute("data-tab") === "accounts") renderAccounts();
+                if (btn.getAttribute("data-tab") === "voting") renderLeaderboard();
+                if (btn.getAttribute("data-tab") === "attendance") updateNextGameAttendance();
             });
         });
     }
 
-    // Additional refresh buttons
-    document.getElementById("refreshLeaderboardBtn")?.addEventListener("click", renderLeaderboard);
-    // Admin news button already attached
+    // Data Export / Import
+    function exportData() {
+        const data = {
+            attendance: loadData(STORAGE_KEYS.attendance),
+            votes: loadData(STORAGE_KEYS.votes),
+            payments: loadData(STORAGE_KEYS.payments),
+            news: loadData(STORAGE_KEYS.news),
+            exportedAt: new Date().toISOString()
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `mnf_data_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
 
-    function escapeHtml(str) { return String(str).replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
+    function importData(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            try {
+                const imported = JSON.parse(ev.target.result);
+                if (imported.attendance) saveData(STORAGE_KEYS.attendance, imported.attendance);
+                if (imported.votes) saveData(STORAGE_KEYS.votes, imported.votes);
+                if (imported.payments) saveData(STORAGE_KEYS.payments, imported.payments);
+                if (imported.news) saveData(STORAGE_KEYS.news, imported.news);
+                alert("✅ Data imported successfully!");
+                location.reload();
+            } catch (err) {
+                alert("Failed to import data. Invalid file.");
+            }
+        };
+        reader.readAsText(file);
+    }
 
-    // Boot
+    function clearAllData() {
+        if (confirm("⚠️ This will delete ALL attendance, votes, payments and news. Are you sure?")) {
+            localStorage.removeItem(STORAGE_KEYS.attendance);
+            localStorage.removeItem(STORAGE_KEYS.votes);
+            localStorage.removeItem(STORAGE_KEYS.payments);
+            localStorage.removeItem(STORAGE_KEYS.news);
+            alert("All data cleared.");
+            location.reload();
+        }
+    }
+
+    function escapeHtml(str) {
+        return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    // Boot the app
     (async () => {
-        await initData();
+        initDefaultData();
         populatePlayerDropdown();
         initTabs();
         loadNews();
-        // Allow admin mode via double-click on header
+
+        // Admin via double-click on header
         document.querySelector(".header").addEventListener("dblclick", enableAdminMode);
+
+        // Refresh button
+        document.getElementById("refreshLeaderboardBtn").addEventListener("click", renderLeaderboard);
     })();
 </script>
 </body>
