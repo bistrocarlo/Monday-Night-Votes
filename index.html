@@ -2,34 +2,28 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Monday Night Soccer - Best & Fairest</title>
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monday Soccer - Best & Fairest (Google Sheets)</title>
     <style>
-        * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
+        * { box-sizing: border-box; font-family: system-ui, sans-serif; }
         body { background: #0a2f1f; margin: 0; padding: 20px; color: #e9f5e6; }
         .container { max-width: 1300px; margin: 0 auto; }
-        .header h1 { font-size: 2rem; background: linear-gradient(135deg, #f9d423, #fdaa33); -webkit-background-clip: text; background-clip: text; color: transparent; text-align: center; }
-        .tabs { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-bottom: 30px; }
+        .header h1 { text-align: center; background: linear-gradient(135deg, #f9d423, #fdaa33); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .tabs { display: flex; gap: 12px; justify-content: center; margin-bottom: 30px; flex-wrap: wrap; }
         .tab-btn { background: #1f543b; border: none; padding: 12px 24px; border-radius: 40px; cursor: pointer; color: white; font-weight: bold; }
         .tab-btn.active { background: #f5a623; color: #1e3a2f; }
-        .panel { display: none; background: #1e3a2f; border-radius: 32px; padding: 24px; border: 1px solid #3b7858; }
+        .panel { display: none; background: #1e3a2f; border-radius: 32px; padding: 24px; }
         .panel.active-panel { display: block; }
         .card { background: #2a4b3a; border-radius: 24px; padding: 20px; margin-bottom: 20px; }
-        select, input, button { padding: 12px 16px; border-radius: 60px; border: none; font-size: 1rem; margin: 6px 0; background: #f0f7f2; }
-        button { background: #f5a623; color: #1e3a2f; font-weight: bold; cursor: pointer; }
-        button:hover { background: #ffbc4a; }
+        select, input, button { padding: 12px 16px; border-radius: 60px; border: none; font-size: 1rem; margin: 6px 0; }
+        button { background: #f5a623; font-weight: bold; cursor: pointer; }
         .vote-row { display: flex; flex-wrap: wrap; gap: 15px; background: #2a5e45; padding: 16px; border-radius: 28px; margin: 20px 0; }
         .vote-select { flex: 2; min-width: 180px; }
-        .leaderboard-table, .admin-table { width: 100%; border-collapse: collapse; background: #eef3e9; color: #1a2e24; border-radius: 20px; overflow: hidden; }
+        .leaderboard-table { width: 100%; border-collapse: collapse; background: #eef3e9; color: #1a2e24; border-radius: 20px; overflow: hidden; }
         th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #c0ddb0; }
         th { background: #d6e8cd; }
         .alert { background: #facc15; color: #2d2b1f; padding: 12px; border-radius: 40px; margin: 12px 0; }
-        .small-text { font-size: 0.8rem; opacity: 0.8; }
         footer { text-align: center; margin-top: 40px; font-size: 0.8rem; }
-        @media (max-width: 700px) { .vote-row { flex-direction: column; } }
     </style>
 </head>
 <body>
@@ -41,12 +35,11 @@
         <button class="tab-btn" data-tab="adminTab">🔧 Admin</button>
     </div>
 
-    <!-- VOTE PANEL -->
     <div id="votePanel" class="panel active-panel">
         <div class="card">
             <h2>🔐 Login with your PIN</h2>
             <select id="playerSelect"></select>
-            <input type="password" id="pinInput" placeholder="Your secret PIN">
+            <input type="password" id="pinInput" placeholder="Your PIN">
             <button id="loginBtn">Login</button>
             <div id="loginStatus"></div>
         </div>
@@ -56,171 +49,96 @@
                 <div class="card">
                     <h4 id="selectedGameLabel"></h4>
                     <div class="vote-row">
-                        <div class="vote-select"><label>🏆 3 pts (Best & Fairest)</label><select id="firstPlaceSelect"></select></div>
-                        <div class="vote-select"><label>🥈 2 pts (Runner-up)</label><select id="secondPlaceSelect"></select></div>
-                        <div class="vote-select"><label>🥉 1 pt (Most Consistent)</label><select id="thirdPlaceSelect"></select></div>
+                        <div class="vote-select"><label>🏆 3 pts</label><select id="firstPlaceSelect"></select></div>
+                        <div class="vote-select"><label>🥈 2 pts</label><select id="secondPlaceSelect"></select></div>
+                        <div class="vote-select"><label>🥉 1 pt</label><select id="thirdPlaceSelect"></select></div>
                     </div>
-                    <button id="submitVoteBtn">✅ Submit Secret Vote</button>
+                    <button id="submitVoteBtn">✅ Submit Vote</button>
                     <div id="voteMessage"></div>
-                    <p class="small-text">* No self-votes. One vote per game week.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- LEADERBOARD PANEL -->
     <div id="leaderPanel" class="panel">
         <div class="card">
             <h2>📊 Overall Standings</h2>
-            <button id="refreshLeaderboard" style="background:#3b7858;">⟳ Refresh</button>
+            <button id="refreshLeaderboard">⟳ Refresh</button>
             <div id="leaderboardContainer">Loading...</div>
         </div>
     </div>
 
-    <!-- ADMIN PANEL -->
     <div id="adminPanel" class="panel">
         <div class="card">
             <h2>🔐 Admin Access</h2>
-            <input type="password" id="adminMasterPin" placeholder="Master PIN">
+            <input type="password" id="adminMasterPin" placeholder="Admin PIN">
             <button id="adminLoginBtn">Enter Admin Mode</button>
             <div id="adminAuthMsg"></div>
         </div>
         <div id="adminContent" style="display:none;">
-            <div class="flex-btns">
-                <button id="generateSeasonBtn">📅 Generate Season (Mondays)</button>
-                <button id="resetAllVotesBtn" style="background:#aa2e2e;">⚠️ Reset ALL Votes</button>
-                <button id="resetPlayerPinsBtn">🔑 Reset all PINs to default</button>
-            </div>
-            <h3>👥 Players & PINs</h3>
-            <div id="playersAdminList"></div>
-            <h3>📜 Recent Votes (Audit)</h3>
+            <button id="resetAllVotesBtn" style="background:#aa2e2e;">⚠️ Reset ALL Votes</button>
             <div id="auditLog"></div>
         </div>
     </div>
-    <footer>📡 Shared database via Firebase • All votes are cumulative • Host this file on a live URL</footer>
+    <footer>📡 Data stored in Google Sheets • All votes are shared</footer>
 </div>
 
 <script>
-    // ======================== 🔧 REPLACE WITH YOUR FIREBASE CONFIG ========================
-    const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_PROJECT.firebaseapp.com",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_PROJECT.appspot.com",
-        messagingSenderId: "YOUR_SENDER_ID",
-        appId: "YOUR_APP_ID"
-    };
-    // =====================================================================================
+    // 🔧 REPLACE WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
+    const API_BASE = "YOUR_APPS_SCRIPT_URL";
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    // ----------------------------- 34 PLAYERS (from your screenshots) --------------------
-    const FULL_ROSTER = [
-        "James Zoumis", "Stav", "Paul", "Ali Mekawy", "Danny", "Alex Rowe", "Kiarash Piani",
-        "enzo rivellese", "Stefan Бранковић", "Dimitri Superstar", "Ivan Soccer", "Leo Soccer",
-        "Mario Soccer", "Vasilis Soccer", "George Theodoropoulos", "Joe Trimmers", "Theo Theophanous",
-        "Christos Legend Barber", "Nector Laskaris", "Frank Marcaccio", "Manoli", "Marco Mercuri",
-        "Rocco Mammoliti", "TRADELINK Perri THEOD...", "Ralph Risolli", "David Soccer", "George Babaktos",
-        "Chris", "Chris Del Monaco", "Maurice Delmonte", "Peter Desensi", "Tony El Hajj", "Farid", "James"
-    ];
-
-    function normalizeId(name) { return name.trim().toLowerCase().replace(/[^a-z0-9]/g, '_'); }
-
-    // Seed players if missing
-    async function seedPlayers() {
-        for (let name of FULL_ROSTER) {
-            const id = normalizeId(name);
-            const doc = await db.collection("players").doc(id).get();
-            if (!doc.exists) {
-                let defaultPin = (name.replace(/[^a-zA-Z]/g, '').slice(0,4) + "123").toLowerCase();
-                await db.collection("players").doc(id).set({ name, pin: defaultPin });
-            }
-        }
-    }
-
-    // Generate Mondays: Feb 1 -> second last Monday in Dec
-    function generateMondays() {
-        const year = new Date().getFullYear();
-        let start = new Date(year, 1, 1);
-        while (start.getDay() !== 1) start.setDate(start.getDate() + 1);
-        let dec31 = new Date(year, 11, 31);
-        let lastMonday = new Date(dec31);
-        while (lastMonday.getDay() !== 1) lastMonday.setDate(lastMonday.getDate() - 1);
-        let secondLast = new Date(lastMonday);
-        secondLast.setDate(secondLast.getDate() - 7);
-        let mondays = [];
-        let cur = new Date(start);
-        while (cur <= secondLast) {
-            mondays.push(new Date(cur));
-            cur.setDate(cur.getDate() + 7);
-        }
-        return mondays;
-    }
-
-    async function initSeason() {
-        const mondays = generateMondays();
-        for (let m of mondays) {
-            const gameId = m.toISOString().split('T')[0];
-            const ref = db.collection("games").doc(gameId);
-            const snap = await ref.get();
-            if (!snap.exists) {
-                await ref.set({
-                    date: firebase.firestore.Timestamp.fromDate(m),
-                    weekLabel: `Monday ${m.toLocaleDateString('en-AU', { day:'numeric', month:'short' })}`
-                });
-            }
-        }
-    }
-
-    // ---------- LOGIC ----------
     let currentPlayer = null;
     let selectedGameId = null;
+    let allPlayers = [];
 
-    async function computeLeaderboard() {
-        const votes = await db.collection("votes").get();
-        const points = new Map();
-        FULL_ROSTER.forEach(n => points.set(normalizeId(n), 0));
-        for (let doc of votes.docs) {
-            const v = doc.data();
-            points.set(v.firstPlaceId, (points.get(v.firstPlaceId)||0)+3);
-            points.set(v.secondPlaceId, (points.get(v.secondPlaceId)||0)+2);
-            points.set(v.thirdPlaceId, (points.get(v.thirdPlaceId)||0)+1);
-        }
-        let ranking = [];
-        for (let [pid, pts] of points.entries()) {
-            const pDoc = await db.collection("players").doc(pid).get();
-            ranking.push({ name: pDoc.exists ? pDoc.data().name : pid, points: pts });
-        }
-        ranking.sort((a,b) => b.points - a.points);
-        return ranking;
+    async function fetchJson(url) {
+        const res = await fetch(url);
+        return res.json();
     }
 
-    async function renderLeaderboard() {
+    async function postJson(url, data) {
+        const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+        return res.json();
+    }
+
+    async function loadPlayers() {
+        const data = await fetchJson(`${API_BASE}?action=getPlayers`);
+        allPlayers = data;
+        const select = document.getElementById("playerSelect");
+        select.innerHTML = '<option value="">-- Select your name --</option>';
+        data.forEach(p => {
+            select.innerHTML += `<option value="${p.name}">${escapeHtml(p.name)}</option>`;
+        });
+    }
+
+    async function loadGames() {
+        return await fetchJson(`${API_BASE}?action=getGames`);
+    }
+
+    async function loadLeaderboard() {
+        const ranking = await fetchJson(`${API_BASE}?action=getLeaderboard`);
         const container = document.getElementById("leaderboardContainer");
-        container.innerHTML = "Updating...";
-        try {
-            const ranking = await computeLeaderboard();
-            let html = `<table class="leaderboard-table"><tr><th>#</th><th>Player</th><th>Total Points</th></tr>`;
-            ranking.forEach((p, i) => {
-                html += `<tr><td>${i+1}</td><td>${escapeHtml(p.name)}</td><td><strong>${p.points}</strong></td></tr>`;
-            });
-            html += `</table>`;
-            container.innerHTML = html;
-        } catch(e) { container.innerHTML = `<div class='alert'>Error: ${e.message}</div>`; }
+        let html = `<table class="leaderboard-table"><tr><th>#</th><th>Player</th><th>Points</th></tr>`;
+        ranking.forEach((p, i) => {
+            html += `<tr><td>${i+1}</td><td>${escapeHtml(p.name)}</td><td><strong>${p.points}</strong></td></tr>`;
+        });
+        html += `</table>`;
+        container.innerHTML = html;
     }
 
-    async function renderGameWeeks(playerId) {
-        const games = await db.collection("games").orderBy("date").get();
-        const myVotes = await db.collection("votes").where("voterId", "==", playerId).get();
-        const votedSet = new Set();
-        myVotes.forEach(v => votedSet.add(v.data().gameId));
+    async function renderGameWeeks(voterId) {
+        const games = await loadGames();
+        const userVotes = await fetchJson(`${API_BASE}?action=getUserVotes&voterId=${voterId}`);
+        const votedSet = new Set(userVotes.map(v => v.gameId));
         let html = `<div style="display:flex; flex-wrap:wrap; gap:12px;">`;
-        games.forEach(doc => {
-            const g = doc.data();
-            const voted = votedSet.has(doc.id);
+        games.forEach(g => {
+            const voted = votedSet.has(g.gameId);
             html += `<div style="background:#2a5e45; border-radius:28px; padding:10px 18px; cursor:pointer;" 
-                        onclick="selectGame('${doc.id}', '${g.weekLabel}', ${voted})">
+                        onclick="selectGame('${g.gameId}', '${g.weekLabel}', ${voted})">
                         <strong>${g.weekLabel}</strong> ${voted ? '✅ Voted' : '⭕ Not voted'}
                     </div>`;
         });
@@ -228,17 +146,20 @@
         document.getElementById("gameWeeksList").innerHTML = html;
     }
 
-    window.selectGame = async (gameId, weekLabel, alreadyVoted) => {
-        if (alreadyVoted) { document.getElementById("voteMessage").innerHTML = "<div class='alert'>You already voted for this match.</div>"; document.getElementById("voteFormArea").style.display = "none"; return; }
+    window.selectGame = (gameId, weekLabel, alreadyVoted) => {
+        if (alreadyVoted) {
+            document.getElementById("voteMessage").innerHTML = "<div class='alert'>You already voted for this match.</div>";
+            document.getElementById("voteFormArea").style.display = "none";
+            return;
+        }
         if (!currentPlayer) { alert("Please login first"); return; }
         selectedGameId = gameId;
         document.getElementById("selectedGameLabel").innerHTML = `🗳️ Voting for: ${weekLabel}`;
         document.getElementById("voteFormArea").style.display = "block";
-        const playersSnap = await db.collection("players").get();
         let opts = `<option value="">-- Select --</option>`;
-        playersSnap.forEach(p => {
-            if (p.id !== normalizeId(currentPlayer.name))
-                opts += `<option value="${p.id}">${escapeHtml(p.data().name)}</option>`;
+        allPlayers.forEach(p => {
+            if (p.name !== currentPlayer.name)
+                opts += `<option value="${p.id}">${escapeHtml(p.name)}</option>`;
         });
         document.getElementById("firstPlaceSelect").innerHTML = opts;
         document.getElementById("secondPlaceSelect").innerHTML = opts;
@@ -252,131 +173,67 @@
         const third = document.getElementById("thirdPlaceSelect").value;
         if (!first || !second || !third) { document.getElementById("voteMessage").innerHTML = "<div class='alert'>Select all 3 players</div>"; return; }
         if (first === second || first === third || second === third) { alert("Must be three different players"); return; }
-        const voterId = normalizeId(currentPlayer.name);
-        const existing = await db.collection("votes").where("gameId", "==", selectedGameId).where("voterId", "==", voterId).get();
-        if (!existing.empty) { alert("You already voted for this game!"); return; }
-        await db.collection("votes").add({
+        const exists = await fetchJson(`${API_BASE}?action=checkVoteExists&gameId=${selectedGameId}&voterId=${currentPlayer.id}`);
+        if (exists.exists) { alert("You already voted for this game!"); return; }
+        await postJson(API_BASE, {
+            action: "submitVote",
             gameId: selectedGameId,
-            voterId: voterId,
+            voterId: currentPlayer.id,
             firstPlaceId: first,
             secondPlaceId: second,
-            thirdPlaceId: third,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            thirdPlaceId: third
         });
-        document.getElementById("voteMessage").innerHTML = "<div class='alert' style='background:#2e7d5e'>✅ Vote recorded! Leaderboard updated.</div>";
+        document.getElementById("voteMessage").innerHTML = "<div class='alert' style='background:#2e7d5e'>✅ Vote recorded!</div>";
         document.getElementById("voteFormArea").style.display = "none";
-        await renderGameWeeks(voterId);
-        renderLeaderboard();
+        await renderGameWeeks(currentPlayer.id);
+        loadLeaderboard();
     }
 
     async function login() {
         const name = document.getElementById("playerSelect").value;
         const pin = document.getElementById("pinInput").value;
         if (!name || !pin) { document.getElementById("loginStatus").innerHTML = "Select name and enter PIN"; return; }
-        const id = normalizeId(name);
-        const doc = await db.collection("players").doc(id).get();
-        if (!doc.exists || doc.data().pin !== pin) { document.getElementById("loginStatus").innerHTML = "❌ Invalid name or PIN"; return; }
-        currentPlayer = { id, name: doc.data().name };
-        document.getElementById("loginStatus").innerHTML = `✅ Logged in as ${doc.data().name}`;
+        const player = allPlayers.find(p => p.name === name);
+        if (!player || player.pin !== pin) { document.getElementById("loginStatus").innerHTML = "❌ Invalid name or PIN"; return; }
+        currentPlayer = { id: player.id, name: player.name };
+        document.getElementById("loginStatus").innerHTML = `✅ Logged in as ${player.name}`;
         document.getElementById("votingSection").style.display = "block";
-        await renderGameWeeks(id);
+        await renderGameWeeks(player.id);
     }
 
-    async function populatePlayerDropdown() {
-        const snap = await db.collection("players").get();
-        let html = `<option value="">-- Select your name --</option>`;
-        snap.forEach(d => { html += `<option value="${d.data().name}">${escapeHtml(d.data().name)}</option>`; });
-        document.getElementById("playerSelect").innerHTML = html;
-    }
-
-    // Admin functions
-    let adminAuth = false;
-    async function adminLoadPlayers() {
-        const snap = await db.collection("players").get();
-        let html = `<table class="admin-table"><tr><th>Player</th><th>PIN</th><th>Action</th></tr>`;
-        for (let doc of snap.docs) {
-            html += `<tr><td>${escapeHtml(doc.data().name)}</td><td>${doc.data().pin}</td>
-                    <td><button class="edit-pin" data-id="${doc.id}">✏️ Change PIN</button></td></tr>`;
-        }
-        html += `</table>`;
-        document.getElementById("playersAdminList").innerHTML = html;
-        document.querySelectorAll(".edit-pin").forEach(btn => {
-            btn.addEventListener("click", async () => {
-                let newPin = prompt("New PIN for player:");
-                if (newPin) await db.collection("players").doc(btn.dataset.id).update({ pin: newPin });
-                adminLoadPlayers();
-            });
-        });
-    }
-    async function adminAudit() {
-        const votes = await db.collection("votes").orderBy("timestamp", "desc").limit(50).get();
-        let html = `<ul>`;
-        for (let v of votes.docs) {
-            const data = v.data();
-            const game = await db.collection("games").doc(data.gameId).get();
-            const voter = await db.collection("players").doc(data.voterId).get();
-            const p1 = await db.collection("players").doc(data.firstPlaceId).get();
-            const p2 = await db.collection("players").doc(data.secondPlaceId).get();
-            const p3 = await db.collection("players").doc(data.thirdPlaceId).get();
-            html += `<li>${game.data()?.weekLabel || data.gameId} | Voter: ${voter.data()?.name} | 3:${p1.data()?.name} 2:${p2.data()?.name} 1:${p3.data()?.name}</li>`;
-        }
-        html += `</ul>`;
-        document.getElementById("auditLog").innerHTML = html;
-    }
     async function resetAllVotes() {
-        if (!confirm("⚠️ Delete ALL votes? This resets the leaderboard.")) return;
-        const snap = await db.collection("votes").get();
-        const batch = db.batch();
-        snap.forEach(d => batch.delete(d.ref));
-        await batch.commit();
-        alert("All votes deleted");
-        renderLeaderboard();
-        if (adminAuth) adminAudit();
-    }
-    async function resetPinsToDefault() {
-        for (let name of FULL_ROSTER) {
-            let defaultPin = (name.replace(/[^a-zA-Z]/g, '').slice(0,4) + "123").toLowerCase();
-            await db.collection("players").doc(normalizeId(name)).update({ pin: defaultPin });
-        }
-        alert("All PINs reset");
-        if (adminAuth) adminLoadPlayers();
+        if (!confirm("⚠️ Delete ALL votes? This action cannot be undone.")) return;
+        alert("This feature requires manual sheet clearing. Please open your Google Sheet and clear the 'votes' sheet rows (keep headers).");
     }
 
-    // Event binding & init
+    // Tab switching
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            document.querySelectorAll(".panel").forEach(p => p.classList.remove("active-panel"));
+            document.getElementById(btn.dataset.tab === "voteTab" ? "votePanel" : btn.dataset.tab === "leaderTab" ? "leaderPanel" : "adminPanel").classList.add("active-panel");
+            if (btn.dataset.tab === "leaderTab") loadLeaderboard();
+        };
+    });
+
     document.getElementById("loginBtn").onclick = login;
     document.getElementById("submitVoteBtn").onclick = submitVote;
-    document.getElementById("refreshLeaderboard").onclick = renderLeaderboard;
+    document.getElementById("refreshLeaderboard").onclick = loadLeaderboard;
     document.getElementById("adminLoginBtn").onclick = () => {
         if (document.getElementById("adminMasterPin").value === "admin123") {
-            adminAuth = true;
             document.getElementById("adminContent").style.display = "block";
-            document.getElementById("adminAuthMsg").innerHTML = "<span style='color:#b3ffcf'>✅ Admin mode</span>";
-            adminLoadPlayers(); adminAudit();
-        } else { document.getElementById("adminAuthMsg").innerHTML = "❌ Wrong master PIN"; }
+            document.getElementById("adminAuthMsg").innerHTML = "✅ Admin mode";
+        } else {
+            document.getElementById("adminAuthMsg").innerHTML = "❌ Wrong PIN";
+        }
     };
-    document.getElementById("generateSeasonBtn").onclick = async () => { await initSeason(); alert("Season weeks created."); if(currentPlayer) renderGameWeeks(currentPlayer.id); };
     document.getElementById("resetAllVotesBtn").onclick = resetAllVotes;
-    document.getElementById("resetPlayerPinsBtn").onclick = resetPinsToDefault;
 
-    // Boot
-    (async () => {
-        await seedPlayers();
-        await initSeason();
-        await populatePlayerDropdown();
-        await renderLeaderboard();
-        // Tab switching
-        document.querySelectorAll(".tab-btn").forEach(btn => {
-            btn.onclick = () => {
-                document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-                btn.classList.add("active");
-                document.querySelectorAll(".panel").forEach(p => p.classList.remove("active-panel"));
-                document.getElementById(btn.dataset.tab === "voteTab" ? "votePanel" : btn.dataset.tab === "leaderTab" ? "leaderPanel" : "adminPanel").classList.add("active-panel");
-                if (btn.dataset.tab === "leaderTab") renderLeaderboard();
-                if (btn.dataset.tab === "adminTab" && adminAuth) { adminLoadPlayers(); adminAudit(); }
-            };
-        });
-    })();
-    function escapeHtml(str) { return str.replace(/[&<>]/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[m];}); }
+    function escapeHtml(str) { return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
+
+    loadPlayers();
+    loadLeaderboard();
 </script>
 </body>
 </html>
