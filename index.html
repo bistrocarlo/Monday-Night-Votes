@@ -9,16 +9,16 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: linear-gradient(145deg, #eef5ff 0%, #d9e9ff 100%);
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', system-ui, sans-serif;
             padding: 20px;
             min-height: 100vh;
             color: #1a2c3e;
         }
         .container { max-width: 1400px; margin: 0 auto; }
-        .header { text-align: center; margin-bottom: 24px; }
+        .header { text-align: center; margin-bottom: 24px; cursor: pointer; }
         .header h1 {
             font-family: 'Poppins', sans-serif;
-            font-size: 2rem;
+            font-size: 2.2rem;
             background: linear-gradient(135deg, #2c7da0, #1f5068);
             background-clip: text;
             -webkit-background-clip: text;
@@ -34,7 +34,7 @@
             align-items: center;
             gap: 15px;
         }
-        select, button, input {
+        select, button, input, textarea {
             padding: 10px 16px;
             border-radius: 60px;
             border: 1px solid #e2d6b0;
@@ -47,6 +47,7 @@
             font-weight: 600;
             cursor: pointer;
         }
+        button.danger { background: #d9534f; color: white; }
         .tabs {
             display: flex;
             flex-wrap: wrap;
@@ -63,8 +64,13 @@
             font-weight: 600;
             cursor: pointer;
             color: #1f5068;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         }
-        .tab-btn.active { background: #f5b042; color: white; }
+        .tab-btn.active {
+            background: #f5b042;
+            color: white;
+            box-shadow: 0 4px 12px rgba(245,176,66,0.3);
+        }
         .panel { display: none; }
         .panel.active-panel { display: block; }
         .card {
@@ -73,6 +79,7 @@
             padding: 22px 24px;
             margin-bottom: 24px;
             border: 1px solid #f0e2c0;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.03);
         }
         .card h2, .card h3 {
             font-family: 'Poppins', sans-serif;
@@ -82,7 +89,13 @@
             border-left: 5px solid #f5b042;
             padding-left: 16px;
         }
-        .week-grid { display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto; }
+        .week-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 420px;
+            overflow-y: auto;
+        }
         .week-row {
             background: #fef9ef;
             border-radius: 60px;
@@ -94,7 +107,11 @@
             gap: 12px;
         }
         .week-label { font-weight: 600; min-width: 130px; }
-        .badge { font-size: 0.8rem; padding: 4px 12px; border-radius: 60px; }
+        .badge {
+            font-size: 0.8rem;
+            padding: 4px 12px;
+            border-radius: 60px;
+        }
         .in { background: #d4edda; color: #155724; }
         .out { background: #f8d7da; color: #721c24; }
         .paid { background: #d4edda; color: #155724; }
@@ -109,22 +126,26 @@
         th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #f0e6cf; }
         th { background: #fef5e3; color: #b2711a; }
         .flex-btns { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
-        .news-content { background: #fef9ef; padding: 16px; border-radius: 28px; white-space: pre-wrap; }
-        footer { text-align: center; margin-top: 32px; font-size: 0.7rem; color: #4b6f82; }
-        @media (max-width: 700px) { .week-row { flex-direction: column; align-items: stretch; } }
+        .news-content { background: #fef9ef; padding: 16px; border-radius: 28px; white-space: pre-wrap; min-height: 100px; }
+        .loading { color: #777; font-style: italic; }
+        footer { text-align: center; margin-top: 32px; font-size: 0.75rem; color: #4b6f82; }
+        @media (max-width: 700px) {
+            .week-row { flex-direction: column; align-items: stretch; }
+            .header h1 { font-size: 1.8rem; }
+        }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
         <h1>⚽ Monday Night Football Hub ⚽</h1>
-        <p>Live attendance • Voting • Payments • News • Accounts (via Google Sheets)</p>
+        <p>Live attendance • Best & Fairest • Payments • News • Accounts (Google Sheets)</p>
     </div>
 
     <div class="player-selector">
         <label><strong>👤 Your name:</strong></label>
         <select id="playerNameSelect"></select>
-        <div id="loginStatus"></div>
+        <div id="loginStatus" style="font-weight:500;"></div>
     </div>
 
     <div class="tabs">
@@ -135,31 +156,72 @@
         <button class="tab-btn" data-tab="accounts">📊 Accounts</button>
     </div>
 
+    <!-- Attendance -->
     <div id="attendancePanel" class="panel active-panel">
-        <div class="card"><h2>📅 Mark attendance</h2><div id="attendanceList" class="week-grid">Loading...</div></div>
-        <div class="card"><h3>👥 Next game attendees</h3><div id="nextGameAttendance"></div></div>
+        <div class="card">
+            <h2>📅 Mark your attendance</h2>
+            <div id="attendanceList" class="week-grid">Loading weeks...</div>
+        </div>
+        <div class="card">
+            <h3>👥 Who's coming next game?</h3>
+            <div id="nextGameAttendance" class="loading">Loading...</div>
+        </div>
     </div>
+
+    <!-- Voting -->
     <div id="votingPanel" class="panel">
-        <div class="card"><h2>🗳️ 3-2-1 Votes</h2><div id="votingWeeksList" class="week-grid">Loading...</div></div>
-        <div class="card"><h2>🏆 Leaderboard</h2><button id="refreshLeaderboardBtn">⟳ Refresh</button><div id="leaderboardContainer"></div></div>
+        <div class="card">
+            <h2>🗳️ 3-2-1 Votes (Best & Fairest)</h2>
+            <div id="votingWeeksList" class="week-grid">Loading...</div>
+        </div>
+        <div class="card">
+            <h2>🏆 Current Leaderboard</h2>
+            <button id="refreshLeaderboardBtn">⟳ Refresh Leaderboard</button>
+            <div id="leaderboardContainer"></div>
+        </div>
     </div>
+
+    <!-- Payments -->
     <div id="paymentsPanel" class="panel">
-        <div class="card"><h2>💰 Mark payment</h2><div id="paymentsList" class="week-grid">Loading...</div></div>
+        <div class="card">
+            <h2>💰 Mark payment for each week ($10 match fee)</h2>
+            <div id="paymentsList" class="week-grid">Loading...</div>
+        </div>
     </div>
+
+    <!-- News -->
     <div id="newsPanel" class="panel">
-        <div class="card"><h2>📢 Latest news</h2><div id="newsContent" class="news-content">Loading...</div>
-        <div id="adminNewsArea" style="display:none; margin-top:20px;"><textarea id="newsInput" rows="3" style="width:100%; border-radius:24px;" placeholder="Write announcement..."></textarea><button id="postNewsBtn">Post Update</button></div>
+        <div class="card">
+            <h2>📢 Latest Announcements</h2>
+            <div id="newsContent" class="news-content">Loading news...</div>
+            <div id="adminNewsArea" style="display:none; margin-top:20px;">
+                <textarea id="newsInput" rows="3" style="width:100%; border-radius:24px; padding:12px;" placeholder="Write new announcement..."></textarea>
+                <button id="postNewsBtn" style="margin-top:8px;">Post Update</button>
+            </div>
+        </div>
     </div>
-    </div>
+
+    <!-- Accounts -->
     <div id="accountsPanel" class="panel">
-        <div class="card"><h2>💰 Financial summary</h2><div id="accountsSummary"></div><div id="accountsTable"></div></div>
+        <div class="card">
+            <h2>💰 Financial Summary</h2>
+            <div id="accountsSummary"></div>
+        </div>
+        <div class="card">
+            <h3>📋 Detailed Player Ledger</h3>
+            <div id="accountsTable"></div>
+        </div>
     </div>
-    <footer>📡 Data stored in Google Sheet • Double‑click header to enable admin mode (PIN: admin123)</footer>
+
+    <footer>
+        📡 Live data via Google Sheets • Double-click the header to enable Admin mode (PIN: admin123)
+    </footer>
 </div>
 
 <script>
-    // 🔧 REPLACE WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-    const API_BASE = "YOUR_APPS_SCRIPT_URL";
+    // ==================== CONFIG ====================
+    const API_BASE = "YOUR_APPS_SCRIPT_URL_HERE";   // ←←← REPLACE WITH YOUR WEB APP URL
+    // ===============================================
 
     const FULL_ROSTER = [
         "James Zoumis", "Stav", "Paul", "Ali Mekawy", "Danny", "Alex Rowe", "Kiarash Piani",
@@ -174,11 +236,14 @@
     let isAdmin = false;
     let gameWeeks = [];
 
-    // Helper to call GET API
+    // Helper functions
     async function fetchJSON(action, params = {}) {
         let url = `${API_BASE}?action=${action}`;
-        for (let [k,v] of Object.entries(params)) url += `&${k}=${encodeURIComponent(v)}`;
+        Object.entries(params).forEach(([k, v]) => {
+            url += `&${k}=${encodeURIComponent(v)}`;
+        });
         const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
     }
 
@@ -188,248 +253,321 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
     }
 
+    function escapeHtml(str) {
+        return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    // Load game weeks
     async function loadGameWeeks() {
-        const data = await fetchJSON("getGames");
-        if (data.length === 0) {
-            // generate default Mondays if empty
-            const year = new Date().getFullYear();
-            let start = new Date(year, 1, 1);
-            while (start.getDay() !== 1) start.setDate(start.getDate() + 1);
-            let dec31 = new Date(year, 11, 31);
-            let lastMonday = new Date(dec31);
-            while (lastMonday.getDay() !== 1) lastMonday.setDate(lastMonday.getDate() - 1);
-            let secondLast = new Date(lastMonday);
-            secondLast.setDate(secondLast.getDate() - 7);
-            let weeks = [];
-            let cur = new Date(start);
-            while (cur <= secondLast) {
-                weeks.push({ date: cur.toISOString().split('T')[0], label: `Monday ${cur.toLocaleDateString('en-AU', { day:'numeric', month:'short' })}` });
-                cur.setDate(cur.getDate() + 7);
+        try {
+            const data = await fetchJSON("getGames");
+            gameWeeks = data.length ? data : [];
+            if (gameWeeks.length === 0) {
+                // Fallback generation (should not happen if script works)
+                console.warn("No games returned from sheet");
             }
-            return weeks;
+        } catch (e) {
+            console.error("Failed to load games", e);
+            gameWeeks = [];
         }
-        return data;
     }
 
     // Attendance
     async function loadAttendance() {
         if (!currentPlayer) return;
-        const attendanceMap = await fetchJSON("getAttendance");
         const container = document.getElementById("attendanceList");
-        let html = "";
-        for (let week of gameWeeks) {
-            const key = `${currentPlayer}|${week.date}`;
-            const status = attendanceMap[key] || "unknown";
-            const isIn = status === "in";
-            html += `
-                <div class="week-row">
-                    <div class="week-label">${week.label}</div>
-                    <div>
-                        <button class="attending-in" data-date="${week.date}" style="${isIn ? 'background:#2e7d5e; color:white;' : ''}">✅ In</button>
-                        <button class="attending-out" data-date="${week.date}" style="${!isIn && status !== 'unknown' ? 'background:#d9534f; color:white;' : ''}">❌ Out</button>
+        container.innerHTML = '<div class="loading">Loading attendance...</div>';
+        try {
+            const attendanceMap = await fetchJSON("getAttendance");
+            let html = "";
+            for (let week of gameWeeks) {
+                const key = `${currentPlayer}|${week.date}`;
+                const status = attendanceMap[key] || "unknown";
+                const isIn = status === "in";
+                html += `
+                    <div class="week-row">
+                        <div class="week-label">${week.label}</div>
+                        <div>
+                            <button class="attending-btn in-btn" data-date="${week.date}" style="${isIn ? 'background:#2e7d5e;color:white;' : ''}">✅ In</button>
+                            <button class="attending-btn out-btn" data-date="${week.date}" style="${!isIn && status !== 'unknown' ? 'background:#d9534f;color:white;' : ''}">❌ Out</button>
+                        </div>
+                        <div class="badge ${isIn ? 'in' : (status === 'out' ? 'out' : '')}">${isIn ? 'Attending' : (status === 'out' ? 'Not attending' : 'Not set')}</div>
                     </div>
-                    <div class="badge ${isIn ? 'in' : 'out'}">${isIn ? 'Attending' : (status === 'out' ? 'Not attending' : 'Not set')}</div>
-                </div>
-            `;
-        }
-        container.innerHTML = html;
-        document.querySelectorAll(".attending-in, .attending-out").forEach(btn => {
-            btn.addEventListener("click", async () => {
-                const date = btn.getAttribute("data-date");
-                const status = btn.classList.contains("attending-in") ? "in" : "out";
-                await postJSON({ action: "setAttendance", playerName: currentPlayer, gameDate: date, status });
-                loadAttendance();
-                updateNextGameAttendance();
+                `;
+            }
+            container.innerHTML = html;
+
+            document.querySelectorAll(".attending-btn").forEach(btn => {
+                btn.addEventListener("click", async () => {
+                    const date = btn.dataset.date;
+                    const status = btn.classList.contains("in-btn") ? "in" : "out";
+                    await postJSON({ action: "setAttendance", playerName: currentPlayer, gameDate: date, status });
+                    loadAttendance();
+                    updateNextGameAttendance();
+                });
             });
-        });
+        } catch (e) {
+            container.innerHTML = `<div style="color:red;">Error loading attendance. Check connection.</div>`;
+        }
     }
 
     async function updateNextGameAttendance() {
+        const container = document.getElementById("nextGameAttendance");
+        if (!gameWeeks.length) return;
         const today = new Date().toISOString().split('T')[0];
-        let nextGame = gameWeeks.find(w => w.date >= today);
-        if (!nextGame && gameWeeks.length) nextGame = gameWeeks[0];
-        if (!nextGame) return;
-        const attendanceMap = await fetchJSON("getAttendance");
-        const attending = [];
-        for (let p of FULL_ROSTER) {
-            const key = `${p}|${nextGame.date}`;
-            if (attendanceMap[key] === "in") attending.push(p);
+        let nextGame = gameWeeks.find(w => w.date >= today) || gameWeeks[0];
+
+        try {
+            const attendanceMap = await fetchJSON("getAttendance");
+            const attending = FULL_ROSTER.filter(p => {
+                const key = `${p}|${nextGame.date}`;
+                return attendanceMap[key] === "in";
+            });
+            container.innerHTML = `<strong>${nextGame.label}</strong><br>Attending: ${attending.length ? attending.join(", ") : "No one yet"}`;
+        } catch (e) {
+            container.innerHTML = "Error loading attendees";
         }
-        document.getElementById("nextGameAttendance").innerHTML = `<strong>${nextGame.label}</strong><br>Attending: ${attending.length ? attending.join(", ") : "No one yet"}`;
     }
 
     // Voting
     async function loadVotingWeeks() {
         if (!currentPlayer) return;
-        const votesMap = await fetchJSON("getVotes");
         const container = document.getElementById("votingWeeksList");
-        let html = "";
-        for (let week of gameWeeks) {
-            const key = `${currentPlayer}|${week.date}`;
-            const vote = votesMap[key];
-            const status = vote ? `✅ 3:${vote.first} | 2:${vote.second} | 1:${vote.third}` : "⭕ Not voted";
-            html += `
-                <div class="week-row">
-                    <div class="week-label">${week.label}</div>
-                    <div class="badge">${status}</div>
-                    <div><button class="vote-open" data-date="${week.date}" data-label="${week.label}">✏️ Vote</button></div>
-                </div>
-            `;
+        container.innerHTML = '<div class="loading">Loading votes...</div>';
+        try {
+            const votesMap = await fetchJSON("getVotes");
+            let html = "";
+            for (let week of gameWeeks) {
+                const key = `${currentPlayer}|${week.date}`;
+                const vote = votesMap[key];
+                const status = vote ? `✅ 3:${vote.first} | 2:${vote.second} | 1:${vote.third}` : "⭕ Not voted";
+                html += `
+                    <div class="week-row">
+                        <div class="week-label">${week.label}</div>
+                        <div class="badge">${status}</div>
+                        <div><button class="vote-open-btn" data-date="${week.date}" data-label="${week.label}">✏️ Vote</button></div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+
+            document.querySelectorAll(".vote-open-btn").forEach(btn => {
+                btn.addEventListener("click", () => openVoteModal(btn.dataset.date, btn.dataset.label));
+            });
+        } catch (e) {
+            container.innerHTML = "Error loading voting data";
         }
-        container.innerHTML = html;
-        document.querySelectorAll(".vote-open").forEach(btn => {
-            btn.addEventListener("click", () => openVoteModal(btn.getAttribute("data-date"), btn.getAttribute("data-label")));
-        });
     }
 
     function openVoteModal(gameDate, weekLabel) {
         let options = '<option value="">-- Select --</option>';
-        for (let p of FULL_ROSTER) {
+        FULL_ROSTER.forEach(p => {
             if (p !== currentPlayer) options += `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`;
-        }
+        });
+
         const modal = document.createElement("div");
-        modal.style.position = "fixed"; modal.style.top = "0"; modal.style.left = "0";
-        modal.style.width = "100%"; modal.style.height = "100%";
-        modal.style.backgroundColor = "rgba(0,0,0,0.6)";
-        modal.style.display = "flex"; modal.style.alignItems = "center"; modal.style.justifyContent = "center";
-        modal.style.zIndex = "1000";
+        modal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;z-index:1000;";
         modal.innerHTML = `
-            <div style="background: white; border-radius: 48px; padding: 28px; max-width: 500px; width: 90%;">
+            <div style="background:white;border-radius:48px;padding:28px;max-width:520px;width:90%;max-height:90vh;overflow:auto;">
                 <h3>${weekLabel}</h3>
-                <label>🏆 3 points</label><select id="vote3">${options}</select>
-                <label>🥈 2 points</label><select id="vote2">${options}</select>
-                <label>🥉 1 point</label><select id="vote1">${options}</select>
-                <div class="flex-btns"><button id="saveVoteBtn">Save</button><button id="cancelVoteBtn">Cancel</button></div>
-                <div id="voteError" style="color:red;"></div>
+                <p style="margin:10px 0 5px;">3 points</p><select id="vote3" style="width:100%;">${options}</select>
+                <p style="margin:10px 0 5px;">2 points</p><select id="vote2" style="width:100%;">${options}</select>
+                <p style="margin:10px 0 5px;">1 point</p><select id="vote1" style="width:100%;">${options}</select>
+                <div class="flex-btns" style="margin-top:20px;">
+                    <button id="saveVoteBtn">Save Vote</button>
+                    <button id="cancelVoteBtn">Cancel</button>
+                </div>
+                <div id="voteError" style="color:red;margin-top:10px;"></div>
             </div>
         `;
         document.body.appendChild(modal);
+
         document.getElementById("saveVoteBtn").onclick = async () => {
             const first = document.getElementById("vote3").value;
             const second = document.getElementById("vote2").value;
             const third = document.getElementById("vote1").value;
-            if (!first || !second || !third) { document.getElementById("voteError").innerText = "Select all three."; return; }
-            if (first === second || first === third || second === third) { document.getElementById("voteError").innerText = "Players must be different."; return; }
-            await postJSON({ action: "setVote", playerName: currentPlayer, gameDate, first, second, third });
-            document.body.removeChild(modal);
-            loadVotingWeeks();
-            renderLeaderboard();
+            if (!first || !second || !third) {
+                document.getElementById("voteError").innerText = "Please select all three players.";
+                return;
+            }
+            if (first === second || first === third || second === third) {
+                document.getElementById("voteError").innerText = "All three players must be different.";
+                return;
+            }
+            try {
+                await postJSON({ action: "setVote", playerName: currentPlayer, gameDate, first, second, third });
+                document.body.removeChild(modal);
+                loadVotingWeeks();
+                renderLeaderboard();
+            } catch (e) {
+                document.getElementById("voteError").innerText = "Failed to save vote.";
+            }
         };
+
         document.getElementById("cancelVoteBtn").onclick = () => document.body.removeChild(modal);
     }
 
     async function renderLeaderboard() {
-        const votesMap = await fetchJSON("getVotes");
-        const points = new Map();
-        FULL_ROSTER.forEach(name => points.set(name, 0));
-        for (let [key, vote] of Object.entries(votesMap)) {
-            points.set(vote.first, (points.get(vote.first) || 0) + 3);
-            points.set(vote.second, (points.get(vote.second) || 0) + 2);
-            points.set(vote.third, (points.get(vote.third) || 0) + 1);
-        }
-        let ranking = Array.from(points.entries()).map(([n,p]) => ({ name: n, points: p }));
-        ranking.sort((a,b) => b.points - a.points);
         const container = document.getElementById("leaderboardContainer");
-        if (ranking.length === 0) { container.innerHTML = "<div class='alert'>No votes yet.</div>"; return; }
-        let html = `<table class="leaderboard-table"><thead><tr><th>#</th><th>Player</th><th>Points</th></tr></thead><tbody>`;
-        ranking.forEach((p,i) => { html += `<tr><td>${i+1}</td><td>${escapeHtml(p.name)}</td><td><strong>${p.points}</strong></td></tr>`; });
-        html += `</tbody></table>`;
-        container.innerHTML = html;
+        container.innerHTML = '<div class="loading">Loading leaderboard...</div>';
+        try {
+            const votesMap = await fetchJSON("getVotes");
+            const points = new Map();
+            FULL_ROSTER.forEach(name => points.set(name, 0));
+
+            Object.values(votesMap).forEach(v => {
+                if (v.first) points.set(v.first, (points.get(v.first) || 0) + 3);
+                if (v.second) points.set(v.second, (points.get(v.second) || 0) + 2);
+                if (v.third) points.set(v.third, (points.get(v.third) || 0) + 1);
+            });
+
+            let ranking = Array.from(points.entries()).map(([name, pts]) => ({name, points: pts}));
+            ranking.sort((a, b) => b.points - a.points);
+
+            if (ranking.length === 0) {
+                container.innerHTML = "<p>No votes recorded yet.</p>";
+                return;
+            }
+
+            let html = `<table class="leaderboard-table"><thead><tr><th>#</th><th>Player</th><th>Points</th></tr></thead><tbody>`;
+            ranking.forEach((p, i) => {
+                html += `<tr><td>${i+1}</td><td>${escapeHtml(p.name)}</td><td><strong>${p.points}</strong></td></tr>`;
+            });
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        } catch (e) {
+            container.innerHTML = "Error loading leaderboard";
+        }
     }
 
     // Payments
     async function loadPayments() {
         if (!currentPlayer) return;
-        const paymentsMap = await fetchJSON("getPayments");
         const container = document.getElementById("paymentsList");
-        let html = "";
-        for (let week of gameWeeks) {
-            const key = `${currentPlayer}|${week.date}`;
-            const paid = paymentsMap[key] === true;
-            html += `
-                <div class="week-row">
-                    <div class="week-label">${week.label}</div>
-                    <div><button class="payment-toggle" data-date="${week.date}" style="background:${paid ? '#2e7d5e' : '#e0a800'};">${paid ? '✅ Paid' : '❌ Unpaid'}</button></div>
-                    <div class="badge ${paid ? 'paid' : 'unpaid'}">${paid ? 'Paid' : 'Not paid'}</div>
-                </div>
-            `;
-        }
-        container.innerHTML = html;
-        document.querySelectorAll(".payment-toggle").forEach(btn => {
-            btn.addEventListener("click", async () => {
-                const date = btn.getAttribute("data-date");
-                const key = `${currentPlayer}|${date}`;
-                const currentPaid = (await fetchJSON("getPayments"))[key] === true;
-                await postJSON({ action: "setPayment", playerName: currentPlayer, gameDate: date, paid: !currentPaid });
-                loadPayments();
-                renderAccounts();
+        container.innerHTML = '<div class="loading">Loading payments...</div>';
+        try {
+            const paymentsMap = await fetchJSON("getPayments");
+            let html = "";
+            for (let week of gameWeeks) {
+                const key = `${currentPlayer}|${week.date}`;
+                const paid = !!paymentsMap[key];
+                html += `
+                    <div class="week-row">
+                        <div class="week-label">${week.label}</div>
+                        <div>
+                            <button class="payment-toggle" data-date="${week.date}" style="background:${paid ? '#2e7d5e' : '#e0a800'}; color:${paid ? 'white' : 'black'}">
+                                ${paid ? '✅ Paid' : '❌ Unpaid'}
+                            </button>
+                        </div>
+                        <div class="badge ${paid ? 'paid' : 'unpaid'}">${paid ? 'Paid' : 'Not paid'}</div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+
+            document.querySelectorAll(".payment-toggle").forEach(btn => {
+                btn.addEventListener("click", async () => {
+                    const date = btn.dataset.date;
+                    const currentPaid = (await fetchJSON("getPayments"))[`${currentPlayer}|${date}`] === true;
+                    await postJSON({ action: "setPayment", playerName: currentPlayer, gameDate: date, paid: !currentPaid });
+                    loadPayments();
+                    renderAccounts();
+                });
             });
-        });
+        } catch (e) {
+            container.innerHTML = "Error loading payments";
+        }
     }
 
     // News
     async function loadNews() {
-        const data = await fetchJSON("getNews");
-        document.getElementById("newsContent").innerHTML = data.content;
+        try {
+            const data = await fetchJSON("getNews");
+            document.getElementById("newsContent").innerHTML = data.content || "No announcements yet.";
+        } catch (e) {
+            document.getElementById("newsContent").innerHTML = "Error loading news";
+        }
     }
 
     // Accounts
     async function renderAccounts() {
-        const paymentsMap = await fetchJSON("getPayments");
-        const playerPaid = new Map();
-        FULL_ROSTER.forEach(name => playerPaid.set(name, 0));
-        for (let [key, paid] of Object.entries(paymentsMap)) {
-            if (paid) {
-                const playerName = key.split("|")[0];
-                playerPaid.set(playerName, (playerPaid.get(playerName) || 0) + 1);
-            }
+        const summaryEl = document.getElementById("accountsSummary");
+        const tableEl = document.getElementById("accountsTable");
+        summaryEl.innerHTML = '<div class="loading">Loading accounts...</div>';
+        tableEl.innerHTML = "";
+        try {
+            const paymentsMap = await fetchJSON("getPayments");
+            const totalWeeks = gameWeeks.length;
+            const fee = 10;
+            let totalCollected = 0;
+            let rows = "";
+
+            FULL_ROSTER.forEach(name => {
+                let paidWeeks = 0;
+                gameWeeks.forEach(week => {
+                    if (paymentsMap[`${name}|${week.date}`]) paidWeeks++;
+                });
+                const paidAmount = paidWeeks * fee;
+                totalCollected += paidAmount;
+                const owed = totalWeeks * fee;
+                rows += `<tr><td>${escapeHtml(name)}</td><td>${paidWeeks}/${totalWeeks}</td><td>$${paidAmount}</td><td>$${owed - paidAmount}</td></tr>`;
+            });
+
+            summaryEl.innerHTML = `<strong>Total collected: $${totalCollected} out of $${totalWeeks * FULL_ROSTER.length * fee}</strong>`;
+            tableEl.innerHTML = `
+                <table class="accounts-table">
+                    <thead><tr><th>Player</th><th>Weeks Paid</th><th>Paid ($)</th><th>Outstanding ($)</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            `;
+        } catch (e) {
+            summaryEl.innerHTML = "Error loading accounts";
         }
-        const totalWeeks = gameWeeks.length;
-        const feePerWeek = 10;
-        let totalCollected = 0;
-        let rows = "";
-        for (let [name, paidWeeks] of playerPaid.entries()) {
-            const paidAmount = paidWeeks * feePerWeek;
-            totalCollected += paidAmount;
-            const owed = totalWeeks * feePerWeek;
-            rows += `<tr><td>${escapeHtml(name)}</td><td>${paidWeeks}/${totalWeeks}</td><td>$${paidAmount}</td><td>$${owed - paidAmount}</td></tr>`;
-        }
-        document.getElementById("accountsSummary").innerHTML = `<div class="alert">💰 Total collected: $${totalCollected} out of $${totalWeeks * FULL_ROSTER.length * feePerWeek}</div>`;
-        document.getElementById("accountsTable").innerHTML = `<table class="accounts-table"><thead><tr><th>Player</th><th>Weeks paid</th><th>Paid ($)</th><th>Outstanding ($)</th></tr></thead><tbody>${rows}</tbody></table>`;
     }
 
-    // Admin news posting
+    // Admin
     function enableAdminMode() {
         const pwd = prompt("Enter admin master PIN:");
         if (pwd === "admin123") {
             isAdmin = true;
             document.getElementById("adminNewsArea").style.display = "block";
-            alert("Admin mode enabled. You can post news.");
-        } else { alert("Wrong PIN"); }
+            alert("✅ Admin mode enabled. You can now post news.");
+        } else {
+            alert("Incorrect PIN");
+        }
     }
-    document.getElementById("postNewsBtn")?.addEventListener("click", async () => {
+
+    document.getElementById("postNewsBtn").addEventListener("click", async () => {
         if (!isAdmin) return;
-        const content = document.getElementById("newsInput").value;
-        if (content.trim()) {
+        const content = document.getElementById("newsInput").value.trim();
+        if (!content) return;
+        try {
             await postJSON({ action: "postNews", content });
             loadNews();
             document.getElementById("newsInput").value = "";
+            alert("News posted successfully");
+        } catch (e) {
+            alert("Failed to post news");
         }
     });
 
-    // Player dropdown
+    // Player selector
     function populatePlayerDropdown() {
         const select = document.getElementById("playerNameSelect");
         select.innerHTML = '<option value="">-- Select your name --</option>';
-        FULL_ROSTER.forEach(name => { select.innerHTML += `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`; });
+        FULL_ROSTER.forEach(name => {
+            select.innerHTML += `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
+        });
+
         select.addEventListener("change", async () => {
             currentPlayer = select.value;
+            const statusEl = document.getElementById("loginStatus");
             if (currentPlayer) {
-                document.getElementById("loginStatus").innerHTML = `✅ Logged in as ${currentPlayer}`;
-                gameWeeks = await loadGameWeeks();
+                statusEl.innerHTML = `✅ Logged in as <strong>${currentPlayer}</strong>`;
                 await loadAttendance();
                 await loadVotingWeeks();
                 await loadPayments();
@@ -437,36 +575,45 @@
                 await renderAccounts();
                 updateNextGameAttendance();
             } else {
-                document.getElementById("loginStatus").innerHTML = "";
+                statusEl.innerHTML = "";
             }
         });
     }
 
-    // Tab switching
+    // Tabs
     function initTabs() {
-        const btns = document.querySelectorAll(".tab-btn");
-        btns.forEach(btn => {
+        document.querySelectorAll(".tab-btn").forEach(btn => {
             btn.addEventListener("click", () => {
-                const tab = btn.getAttribute("data-tab");
                 document.querySelectorAll(".panel").forEach(p => p.classList.remove("active-panel"));
-                document.getElementById(`${tab}Panel`).classList.add("active-panel");
-                btns.forEach(b => b.classList.remove("active"));
+                document.getElementById(btn.dataset.tab + "Panel").classList.add("active-panel");
+
+                document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
                 btn.classList.add("active");
-                if (tab === "accounts") renderAccounts();
-                if (tab === "voting") renderLeaderboard();
-                if (tab === "attendance") updateNextGameAttendance();
+
+                if (btn.dataset.tab === "accounts") renderAccounts();
+                if (btn.dataset.tab === "voting") renderLeaderboard();
+                if (btn.dataset.tab === "attendance") updateNextGameAttendance();
             });
         });
     }
 
-    document.getElementById("refreshLeaderboardBtn")?.addEventListener("click", renderLeaderboard);
-    function escapeHtml(str) { return String(str).replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
-
+    // Boot
     (async () => {
+        if (API_BASE === "YOUR_APPS_SCRIPT_URL_HERE") {
+            alert("Please replace YOUR_APPS_SCRIPT_URL_HERE with your actual Google Apps Script Web App URL");
+            return;
+        }
+
         populatePlayerDropdown();
         initTabs();
+        await loadGameWeeks();
         loadNews();
+
+        // Admin via double-click header
         document.querySelector(".header").addEventListener("dblclick", enableAdminMode);
+
+        // Refresh button
+        document.getElementById("refreshLeaderboardBtn").addEventListener("click", renderLeaderboard);
     })();
 </script>
 </body>
