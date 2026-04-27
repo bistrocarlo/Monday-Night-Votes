@@ -133,7 +133,7 @@
     }
     const GAME_WEEKS = generateGameWeeks();
 
-    // ---------- Populate dropdowns ----------
+    // ---------- Populate dropdowns (names never disappear) ----------
     function populateDropdowns() {
         // Voter dropdown
         const voterSelect = document.getElementById("voterName");
@@ -144,7 +144,7 @@
         const weekSelect = document.getElementById("gameWeek");
         weekSelect.innerHTML = GAME_WEEKS.map(w => `<option value="${w.dateStr}">${w.label} (${w.dateStr})</option>`).join('');
 
-        // Vote dropdowns – show all players except the selected voter (to avoid self-vote)
+        // Vote dropdowns – show all players except the selected voter (to avoid self‑vote)
         function updateVoteDropdowns() {
             const voter = voterSelect.value;
             let available = FULL_ROSTER;
@@ -227,8 +227,8 @@
             `🥉 *1 point:* ${voteObj.third}\n\n` +
             `Submitted: ${new Date().toLocaleString()}`;
         
-        // ---------- CHANGE THIS NUMBER TO YOUR WHATSAPP NUMBER ----------
-        const adminPhone = "61403827887";   // example: Australia 0403 827 887 -> 61403827887
+        // 🔧 CHANGE THIS NUMBER TO YOUR WHATSAPP NUMBER (country code, no +, no spaces)
+        const adminPhone = "61403827887";
         const waUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`;
         window.open(waUrl, '_blank');
     }
