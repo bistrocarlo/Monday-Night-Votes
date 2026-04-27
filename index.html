@@ -6,7 +6,7 @@
     <title>Monday Night Soccer – Full Hub</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -16,9 +16,29 @@
             color: #1e1e1e;
         }
         .container { max-width: 1400px; margin: 0 auto; }
-        .header { text-align: center; margin-bottom: 28px; }
-        .header h1 { font-size: 2.2rem; font-weight: 800; color: #cc0000; }
-        .header p { color: #4a4a4a; margin-top: 6px; }
+        .header {
+            text-align: center;
+            margin-bottom: 28px;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            padding: 20px;
+            border-radius: 60px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .header h1 {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 3.5rem;
+            letter-spacing: 3px;
+            background: linear-gradient(135deg, #f9d423, #cc0000);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .header p {
+            color: #ddd;
+            font-size: 1rem;
+            margin-top: 8px;
+        }
         .tabs {
             display: flex;
             gap: 12px;
@@ -194,24 +214,48 @@
             font-weight: 800;
         }
         footer { text-align: center; margin-top: 40px; font-size: 0.7rem; color: #6c757d; }
-        .leaderboard-table, .payment-table, .attendance-table, .topscorer-table {
+        .leaderboard-table, .payment-table, .attendance-table, .topscorer-table, .chat-table {
             width: 100%;
             border-collapse: collapse;
             background: white;
             border-radius: 24px;
             overflow: hidden;
         }
-        .leaderboard-table th, .leaderboard-table td, .payment-table th, .payment-table td, .attendance-table th, .attendance-table td, .topscorer-table th, .topscorer-table td {
+        .leaderboard-table th, .leaderboard-table td, .payment-table th, .payment-table td, .attendance-table th, .attendance-table td, .topscorer-table th, .topscorer-table td, .chat-table th, .chat-table td {
             padding: 12px 8px;
             text-align: left;
             border-bottom: 1px solid #f0f0f0;
         }
-        .leaderboard-table th, .payment-table th, .attendance-table th, .topscorer-table th { background: #fafafa; color: #cc0000; }
+        .leaderboard-table th, .payment-table th, .attendance-table th, .topscorer-table th, .chat-table th { background: #fafafa; color: #cc0000; }
         .flex-btns { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
         .attending-in { background: #2e7d5e; color: white; border: none; }
         .attending-out { background: #cc0000; color: white; border: none; }
         .rules-content { background: #fef9e6; border-radius: 28px; padding: 20px; line-height: 1.6; }
         .count-grid { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; }
+        .chat-messages {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            background: #f5f5f5;
+            border-radius: 24px;
+            padding: 16px;
+        }
+        .chat-message {
+            background: white;
+            border-radius: 20px;
+            padding: 8px 16px;
+            margin-bottom: 8px;
+            border-left: 4px solid #cc0000;
+        }
+        .chat-name {
+            font-weight: bold;
+            color: #cc0000;
+        }
+        .chat-time {
+            font-size: 0.7rem;
+            color: #888;
+            margin-left: 10px;
+        }
         @media (max-width: 700px) { .teams-row { flex-direction: column; } .pitch::before { display: none; } }
     </style>
 </head>
@@ -219,10 +263,11 @@
 <div class="container">
     <div class="header">
         <h1>⚽ MONDAY NIGHT SOCCER ⚽</h1>
-        <p>Attendance • Add guests • Orange vs Yellow • Match results • Goal scorers • Top scorer • Past games • Funny rules</p>
+        <p>Attendance • Add guests • Orange vs Yellow • Match results • Goal scorers • Top scorer • Past games • Live chat</p>
     </div>
     <div class="tabs">
         <button class="tab-btn active" data-tab="attendance">📋 ATTENDANCE</button>
+        <button class="tab-btn" data-tab="chat">💬 LIVE CHAT</button>
         <button class="tab-btn" data-tab="pastgames">📆 PAST GAMES</button>
         <button class="tab-btn" data-tab="topscorer">⚽ TOP SCORER</button>
         <button class="tab-btn" data-tab="rules">📜 RULES</button>
@@ -258,6 +303,19 @@
                 </div>
                 <div class="match-result" id="matchResultDisplay"></div>
             </div>
+        </div>
+    </div>
+
+    <!-- LIVE CHAT PANEL -->
+    <div id="chatPanel" class="panel">
+        <div class="card">
+            <h2>💬 LIVE COMMENT SECTION</h2>
+            <div id="chatMessages" class="chat-messages">Loading messages...</div>
+            <label>👤 YOUR NAME</label>
+            <select id="chatNameSelect"></select>
+            <label>💬 YOUR MESSAGE</label>
+            <textarea id="chatMessageInput" rows="2" placeholder="Write your comment..."></textarea>
+            <button id="sendChatBtn">📨 POST COMMENT</button>
         </div>
     </div>
 
@@ -300,7 +358,7 @@
         <div class="card">
             <h2>🔐 ADMIN ACCESS</h2>
             <div id="adminLoginArea">
-                <input type="password" id="adminPassword" placeholder="Enter password">
+                <input type="password" id="adminPassword" placeholder="Admin password">
                 <button id="adminLoginBtn">Login</button>
                 <div id="adminLoginError" class="alert" style="display:none;">Wrong password</div>
             </div>
@@ -375,6 +433,7 @@
     const resultsRef = db.collection("config").doc("matchResults");
     const paymentsRef = db.collection("payments");
     const attendanceRef = db.collection("attendance");
+    const messagesRef = db.collection("messages");
 
     async function loadData() {
         const playersDoc = await playersRef.get();
@@ -406,6 +465,7 @@
         renderPitchAndMatch();
         renderPastGames();
         renderTopScorer();
+        renderChatNameSelect();
         if (isAdminLoggedIn) {
             renderPlayersList();
             renderAdminWeekSelect();
@@ -417,7 +477,43 @@
         }
     }
 
-    // ----- Attendance: player select and week select -----
+    // ----- Chat -----
+    function renderChatNameSelect() {
+        const select = document.getElementById("chatNameSelect");
+        select.innerHTML = '<option value="">-- Select your name --</option>' + players.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+    }
+    async function sendChatMessage() {
+        const name = document.getElementById("chatNameSelect").value;
+        const message = document.getElementById("chatMessageInput").value.trim();
+        if (!name || !message) {
+            alert("Select your name and enter a message.");
+            return;
+        }
+        await messagesRef.add({
+            name: name,
+            message: message,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        document.getElementById("chatMessageInput").value = "";
+    }
+    function listenChatMessages() {
+        messagesRef.orderBy("timestamp", "desc").limit(50).onSnapshot(snapshot => {
+            const container = document.getElementById("chatMessages");
+            let html = "";
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const time = data.timestamp ? data.timestamp.toDate().toLocaleTimeString() : "";
+                html += `<div class="chat-message">
+                            <span class="chat-name">${escapeHtml(data.name)}</span>
+                            <span class="chat-time">${time}</span>
+                            <div>${escapeHtml(data.message)}</div>
+                         </div>`;
+            });
+            container.innerHTML = html || "No messages yet. Be the first!";
+        });
+    }
+
+    // ----- Attendance: player select and week select (unchanged) -----
     async function renderAttendancePlayerSelect() {
         const weekSelect = document.getElementById("attendanceWeekSelect");
         const week = weekSelect.value;
@@ -490,8 +586,6 @@
         document.getElementById("attendanceMessage").style.display = "block";
         setTimeout(() => document.getElementById("attendanceMessage").style.display = "none", 3000);
     }
-
-    // New attendance counts (per week, number attending)
     async function renderAttendanceCounts() {
         const container = document.getElementById("attendanceCounts");
         const allWeeksWithAttendance = [...new Set(attendance.map(a => a.gameDate))].sort();
@@ -513,7 +607,6 @@
                 </div>
             `;
         }
-        // Also total attending across all weeks
         const totalAttending = attendance.filter(a => a.status === 'in').length;
         html += `<div class="count-box" style="background:#cc0000;">
                     <div>TOTAL</div>
@@ -597,11 +690,11 @@
         sorted.forEach((p, idx) => {
             html += `<tr><td>${idx+1}</td><td>${escapeHtml(p.name)}</td><td>${p.total}</td></tr>`;
         });
-        html += `</tbody><table>`;
+        html += `</tbody></table>`;
         container.innerHTML = html;
     }
 
-    // ----- Admin functions (players, teams, results, payments) -----
+    // ----- Admin functions (players, teams, results, payments) - shortened for brevity (same as before) -----
     function renderPlayersList() {
         const container = document.getElementById("playersList");
         container.innerHTML = players.map(p => `<div class="goal-row"><span>${escapeHtml(p)}</span><button class="delPlayerBtn" data-name="${escapeHtml(p)}" style="background:#990000;">Delete</button></div>`).join('');
@@ -708,15 +801,9 @@
     async function adminMarkPayment() {
         const player = document.getElementById("adminPaymentPlayer").value;
         const gameDate = document.getElementById("adminPaymentWeek").value;
-        if (!player || !gameDate) {
-            alert("Select both player and week");
-            return;
-        }
+        if (!player || !gameDate) { alert("Select both player and week"); return; }
         const existing = payments.find(p => p.player === player && p.gameDate === gameDate);
-        if (existing) {
-            alert("Already marked paid for this week");
-            return;
-        }
+        if (existing) { alert("Already marked paid for this week"); return; }
         await savePayment({ player, gameDate, paid: true, timestamp: new Date().toISOString() });
         payments.push({ player, gameDate, paid: true });
         renderPaymentLedgerAdmin();
@@ -764,9 +851,12 @@
         renderPitchAndMatch();
         renderPastGames();
         renderTopScorer();
+        renderChatNameSelect();
+        listenChatMessages();
         document.getElementById("attendingBtn").addEventListener("click", () => setAttendance("in"));
         document.getElementById("notAttendingBtn").addEventListener("click", () => setAttendance("out"));
         document.getElementById("addGuestBtn").addEventListener("click", addGuest);
+        document.getElementById("sendChatBtn").addEventListener("click", sendChatMessage);
         document.getElementById("adminLoginBtn").addEventListener("click", adminLogin);
         document.getElementById("addPlayerBtn").addEventListener("click", addNewPlayer);
         document.getElementById("resetPlayersBtn").addEventListener("click", resetToDefaultPlayers);
