@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Monday Night Soccer</title>
+    <title>Monday Night Soccer | Hub</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -14,37 +14,37 @@
         .header { text-align: center; margin-bottom: 32px; }
         .header h1 { font-size: 2.4rem; font-weight: 800; color: #cc0000; }
         .header p { color: #4a4a4a; margin-top: 6px; }
-        .tabs { display: flex; gap: 16px; justify-content: center; margin-bottom: 32px; flex-wrap: wrap; }
-        .tab-btn { background: white; border: 2px solid #cc0000; padding: 12px 32px; border-radius: 60px; font-weight: 700; font-size: 1rem; cursor: pointer; color: #cc0000; }
+        .tabs { display: flex; gap: 12px; justify-content: center; margin-bottom: 32px; flex-wrap: wrap; }
+        .tab-btn { background: white; border: 2px solid #cc0000; padding: 10px 24px; border-radius: 60px; font-weight: 700; cursor: pointer; color: #cc0000; }
         .tab-btn.active { background: #cc0000; color: white; }
         .panel { display: none; animation: fade 0.2s; }
         .panel.active-panel { display: block; }
         @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-        .card { background: white; border-radius: 32px; padding: 28px; margin-bottom: 32px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); border: 1px solid #e0e0e0; }
+        .card { background: white; border-radius: 32px; padding: 24px; margin-bottom: 28px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); border: 1px solid #e0e0e0; }
         .card h2, .card h3 { font-weight: 700; margin-bottom: 20px; color: #cc0000; border-left: 6px solid #cc0000; padding-left: 18px; }
-        label { font-weight: 600; color: #2c2c2c; display: block; margin-top: 18px; margin-bottom: 8px; }
-        select, input, button, textarea { padding: 12px 18px; border-radius: 60px; border: 1px solid #ddd; font-size: 0.95rem; background: #ffffff; color: #1e1e1e; width: 100%; margin: 6px 0; }
+        label { font-weight: 600; color: #2c2c2c; display: block; margin-top: 16px; margin-bottom: 8px; }
+        select, input, button, textarea { padding: 10px 16px; border-radius: 60px; border: 1px solid #ddd; font-size: 0.9rem; background: white; color: #1e1e1e; width: 100%; margin: 6px 0; }
         button { background: #cc0000; border: none; font-weight: 700; cursor: pointer; width: auto; color: white; }
         button:hover { background: #990000; }
-        .pitch { background: linear-gradient(145deg, #2e7d32, #1b5e20); border-radius: 40px; border: 4px solid white; padding: 20px; position: relative; box-shadow: 0 0 0 3px #cc0000; margin-bottom: 16px; }
+        .pitch { background: linear-gradient(145deg, #2e7d32, #1b5e20); border-radius: 40px; border: 4px solid white; padding: 16px; position: relative; box-shadow: 0 0 0 3px #cc0000; margin-bottom: 16px; }
         .pitch::before { content: ""; position: absolute; top: 0; left: 50%; width: 3px; height: 100%; background: white; transform: translateX(-50%); opacity: 0.8; }
-        .pitch::after { content: ""; position: absolute; top: 50%; left: 50%; width: 80px; height: 80px; border: 2px solid white; border-radius: 50%; transform: translate(-50%, -50%); opacity: 0.8; }
-        .teams-row { display: flex; flex-wrap: wrap; gap: 24px; position: relative; z-index: 2; }
-        .team-box { flex: 1; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); border-radius: 28px; padding: 20px; color: white; }
-        .team-title { font-size: 1.6rem; font-weight: 800; text-align: center; margin-bottom: 16px; }
+        .pitch::after { content: ""; position: absolute; top: 50%; left: 50%; width: 70px; height: 70px; border: 2px solid white; border-radius: 50%; transform: translate(-50%, -50%); opacity: 0.8; }
+        .teams-row { display: flex; flex-wrap: wrap; gap: 20px; position: relative; z-index: 2; }
+        .team-box { flex: 1; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); border-radius: 28px; padding: 16px; color: white; }
+        .team-title { font-size: 1.4rem; font-weight: 800; text-align: center; margin-bottom: 12px; }
         .yellow-title { color: #ffea00; }
         .orange-title { color: #ff9800; }
-        .player-list { display: flex; flex-direction: column; gap: 8px; max-height: 350px; overflow-y: auto; }
-        .player-badge { background: rgba(0,0,0,0.7); border-radius: 60px; padding: 8px 12px; text-align: center; border: 1px solid rgba(255,255,255,0.3); }
-        .match-result { margin-top: 20px; text-align: center; background: rgba(0,0,0,0.7); border-radius: 60px; padding: 10px; color: white; font-weight: 600; }
-        .vote-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 16px; }
-        .vote-row > div { flex: 1; min-width: 140px; }
-        .alert { background: #ffe6e6; border-left: 5px solid #cc0000; padding: 12px 18px; border-radius: 60px; margin: 12px 0; color: #990000; }
-        .goal-row { background: #f9f9f9; border-radius: 60px; padding: 10px 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-        footer { text-align: center; margin-top: 48px; font-size: 0.75rem; color: #6c757d; }
-        .leaderboard-table { width: 100%; border-collapse: collapse; background: white; border-radius: 24px; overflow: hidden; }
-        .leaderboard-table th, .leaderboard-table td { padding: 14px 12px; text-align: left; border-bottom: 1px solid #f0f0f0; }
-        .leaderboard-table th { background: #fafafa; color: #cc0000; }
+        .player-list { display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow-y: auto; }
+        .player-badge { background: rgba(0,0,0,0.7); border-radius: 60px; padding: 6px 10px; text-align: center; border: 1px solid rgba(255,255,255,0.3); font-size: 0.8rem; }
+        .match-result { margin-top: 16px; text-align: center; background: rgba(0,0,0,0.7); border-radius: 60px; padding: 8px; color: white; font-weight: 600; }
+        .vote-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+        .vote-row > div { flex: 1; min-width: 130px; }
+        .alert { background: #ffe6e6; border-left: 5px solid #cc0000; padding: 10px 16px; border-radius: 60px; margin: 10px 0; color: #990000; }
+        .goal-row, .payment-row { background: #f9f9f9; border-radius: 60px; padding: 8px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        footer { text-align: center; margin-top: 40px; font-size: 0.7rem; color: #6c757d; }
+        .leaderboard-table, .payment-table { width: 100%; border-collapse: collapse; background: white; border-radius: 24px; overflow: hidden; }
+        .leaderboard-table th, .leaderboard-table td, .payment-table th, .payment-table td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+        .leaderboard-table th, .payment-table th { background: #fafafa; color: #cc0000; }
         .flex-btns { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
         @media (max-width: 700px) { .teams-row { flex-direction: column; } .pitch::before { display: none; } }
     </style>
@@ -53,10 +53,11 @@
 <div class="container">
     <div class="header">
         <h1>⚽ MONDAY NIGHT SOCCER ⚽</h1>
-        <p>Orange vs Yellow • 3-2-1 Voting • Live results</p>
+        <p>Orange vs Yellow • 3-2-1 Voting • Match results • $5 payments</p>
     </div>
     <div class="tabs">
         <button class="tab-btn active" data-tab="player">👕 PLAYER VIEW</button>
+        <button class="tab-btn" data-tab="payment">💰 PAYMENTS</button>
         <button class="tab-btn" data-tab="admin">👑 ADMIN</button>
     </div>
 
@@ -87,6 +88,24 @@
         </div>
     </div>
 
+    <!-- PAYMENTS PANEL -->
+    <div id="paymentPanel" class="panel">
+        <div class="card">
+            <h2>💰 PAY YOUR $5 MATCH FEE</h2>
+            <p>Select your name and the game week, then click "I PAID $5" to record your payment.</p>
+            <label>👤 YOUR NAME</label>
+            <select id="paymentPlayerSelect"></select>
+            <label>📅 GAME WEEK</label>
+            <select id="paymentWeekSelect"></select>
+            <button id="markPaidBtn">✅ I PAID $5</button>
+            <div id="paymentMessage" class="alert" style="display:none;"></div>
+        </div>
+        <div class="card">
+            <h3>📋 PAYMENT LEDGER (Admin only – full view)</h3>
+            <div id="paymentLedger"></div>
+        </div>
+    </div>
+
     <!-- ADMIN PANEL -->
     <div id="adminPanel" class="panel">
         <div class="card">
@@ -107,7 +126,7 @@
             </div>
         </div>
     </div>
-    <footer>⚡ Live sync via Firebase • Admin password: admin123</footer>
+    <footer>⚡ Live sync via Firebase • Admin password: admin123 • $5 payments tracked</footer>
 </div>
 
 <script>
@@ -150,11 +169,14 @@
     }
     const GAME_WEEKS = generateGameWeeks();
 
-    let players = [], teamAssignments = {}, matchResults = {}, votes = [], isAdminLoggedIn = false;
+    let players = [], teamAssignments = {}, matchResults = {}, votes = [], payments = []; // payments: { player, gameDate, paid: true }
+    let isAdminLoggedIn = false;
+
     const playersRef = db.collection("config").doc("players");
     const teamsRef = db.collection("config").doc("teamAssignments");
     const resultsRef = db.collection("config").doc("matchResults");
     const votesRef = db.collection("votes");
+    const paymentsRef = db.collection("payments");
 
     async function loadData() {
         const playersDoc = await playersRef.get();
@@ -167,19 +189,24 @@
         if (resultsDoc.exists) matchResults = resultsDoc.data();
         else matchResults = {};
         const votesSnap = await votesRef.get();
-        votes = [];
-        votesSnap.forEach(doc => votes.push(doc.data()));
+        votes = []; votesSnap.forEach(doc => votes.push(doc.data()));
+        const paymentsSnap = await paymentsRef.get();
+        payments = []; paymentsSnap.forEach(doc => payments.push(doc.data()));
     }
     async function savePlayers() { await playersRef.set({ list: players }); }
     async function saveTeams() { await teamsRef.set(teamAssignments); }
     async function saveResults() { await resultsRef.set(matchResults); }
     async function saveVote(voteObj) { await votesRef.doc(`${voteObj.voter}_${voteObj.gameDate}`).set(voteObj); }
+    async function savePayment(paymentObj) { await paymentsRef.doc(`${paymentObj.player}_${paymentObj.gameDate}`).set(paymentObj); }
 
     async function refreshAll() {
         await loadData();
         renderPlayerSelectors();
         renderPitchAndMatch();
         renderVoterDropdowns();
+        renderPaymentPlayerSelect();
+        renderPaymentWeekSelect();
+        renderPaymentLedger();
         if (isAdminLoggedIn) {
             renderPlayersList();
             renderAdminWeekSelect();
@@ -189,6 +216,7 @@
         }
     }
 
+    // ----- PLAYER VIEW -----
     function renderPlayerSelectors() {
         const select = document.getElementById("playerWeekSelect");
         select.innerHTML = GAME_WEEKS.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
@@ -210,11 +238,11 @@
         document.getElementById("matchResultDisplay").innerHTML = `<strong>FINAL SCORE:</strong> 🟡 ${match.yellowScore} - ${match.orangeScore} 🟠 &nbsp;|&nbsp; ⚽ Goals: ${goalsText || "none"}`;
     }
 
-    // Dynamic vote dropdowns
+    // Fixed dynamic vote dropdowns (using disabled options, no blanking)
     function renderVoterDropdowns() {
         const voterSelect = document.getElementById("voterNameSelect");
         voterSelect.innerHTML = '<option value="">-- Select your name --</option>' + players.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
-        function updateAll() {
+        function populateVoteSelects() {
             const voter = voterSelect.value;
             if (!voter) {
                 document.getElementById("vote3").innerHTML = '<option value="">-- Select voter first --</option>';
@@ -222,24 +250,35 @@
                 document.getElementById("vote1").innerHTML = '<option value="">-- Select voter first --</option>';
                 return;
             }
-            const used = new Set();
-            const f = document.getElementById("vote3").value, s = document.getElementById("vote2").value, t = document.getElementById("vote1").value;
-            if (f) used.add(f); if (s) used.add(s); if (t) used.add(t);
-            const available = players.filter(p => p !== voter && !used.has(p));
-            const opt = '<option value="">-- Select --</option>' + available.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
-            const oldF = document.getElementById("vote3").value, oldS = document.getElementById("vote2").value, oldT = document.getElementById("vote1").value;
-            document.getElementById("vote3").innerHTML = opt;
-            document.getElementById("vote2").innerHTML = opt;
-            document.getElementById("vote1").innerHTML = opt;
-            if (available.includes(oldF)) document.getElementById("vote3").value = oldF;
-            if (available.includes(oldS)) document.getElementById("vote2").value = oldS;
-            if (available.includes(oldT)) document.getElementById("vote1").value = oldT;
+            const allOther = players.filter(p => p !== voter);
+            // Helper to build options with disabled based on selected values in other selects
+            const selected3 = document.getElementById("vote3").value;
+            const selected2 = document.getElementById("vote2").value;
+            const selected1 = document.getElementById("vote1").value;
+            const buildOpts = (excludeSet) => {
+                return '<option value="">-- Select --</option>' + allOther.map(p => {
+                    const disabled = excludeSet.has(p) ? ' disabled' : '';
+                    return `<option value="${escapeHtml(p)}"${disabled}>${escapeHtml(p)}</option>`;
+                }).join('');
+            };
+            // Update vote3: exclude players already chosen in vote2 and vote1
+            document.getElementById("vote3").innerHTML = buildOpts(new Set([selected2, selected1].filter(v => v)));
+            // Update vote2: exclude players chosen in vote3 and vote1
+            document.getElementById("vote2").innerHTML = buildOpts(new Set([selected3, selected1].filter(v => v)));
+            // Update vote1: exclude players chosen in vote3 and vote2
+            document.getElementById("vote1").innerHTML = buildOpts(new Set([selected3, selected2].filter(v => v)));
         }
-        voterSelect.addEventListener("change", updateAll);
-        document.getElementById("vote3").addEventListener("change", updateAll);
-        document.getElementById("vote2").addEventListener("change", updateAll);
-        document.getElementById("vote1").addEventListener("change", updateAll);
-        updateAll();
+        voterSelect.addEventListener("change", () => {
+            // reset vote dropdowns when voter changes
+            document.getElementById("vote3").innerHTML = '';
+            document.getElementById("vote2").innerHTML = '';
+            document.getElementById("vote1").innerHTML = '';
+            populateVoteSelects();
+        });
+        document.getElementById("vote3").addEventListener("change", populateVoteSelects);
+        document.getElementById("vote2").addEventListener("change", populateVoteSelects);
+        document.getElementById("vote1").addEventListener("change", populateVoteSelects);
+        populateVoteSelects();
     }
 
     async function sendVote() {
@@ -253,7 +292,7 @@
             msgDiv.innerHTML = "Please fill all fields"; msgDiv.style.display = "block"; setTimeout(() => msgDiv.style.display = "none", 3000); return;
         }
         if (first === second || first === third || second === third) {
-            msgDiv.innerHTML = "Cannot give the same player multiple awards"; msgDiv.style.display = "block"; setTimeout(() => msgDiv.style.display = "none", 3000); return;
+            msgDiv.innerHTML = "Cannot give same player multiple awards"; msgDiv.style.display = "block"; setTimeout(() => msgDiv.style.display = "none", 3000); return;
         }
         if (first === voter || second === voter || third === voter) {
             msgDiv.innerHTML = "Cannot vote for yourself"; msgDiv.style.display = "block"; setTimeout(() => msgDiv.style.display = "none", 3000); return;
@@ -272,7 +311,49 @@
         msgDiv.innerHTML = "Vote sent! PDF + WhatsApp opened."; msgDiv.style.display = "block"; setTimeout(() => msgDiv.style.display = "none", 4000);
     }
 
-    // ---------- ADMIN UI ----------
+    // ----- PAYMENTS -----
+    function renderPaymentPlayerSelect() {
+        const select = document.getElementById("paymentPlayerSelect");
+        select.innerHTML = '<option value="">-- Select your name --</option>' + players.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+    }
+    function renderPaymentWeekSelect() {
+        const select = document.getElementById("paymentWeekSelect");
+        select.innerHTML = GAME_WEEKS.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
+    }
+    async function markPayment() {
+        const player = document.getElementById("paymentPlayerSelect").value;
+        const gameDate = document.getElementById("paymentWeekSelect").value;
+        const msgDiv = document.getElementById("paymentMessage");
+        if (!player || !gameDate) {
+            msgDiv.innerHTML = "Select your name and a game week"; msgDiv.style.display = "block"; setTimeout(() => msgDiv.style.display = "none", 3000); return;
+        }
+        const existing = payments.find(p => p.player === player && p.gameDate === gameDate);
+        if (existing) {
+            msgDiv.innerHTML = "You have already marked paid for this week"; msgDiv.style.display = "block"; setTimeout(() => msgDiv.style.display = "none", 3000); return;
+        }
+        await savePayment({ player, gameDate, paid: true, timestamp: new Date().toISOString() });
+        payments.push({ player, gameDate, paid: true });
+        msgDiv.innerHTML = "✅ Payment recorded! $5 thank you."; msgDiv.style.display = "block"; setTimeout(() => msgDiv.style.display = "none", 3000);
+        renderPaymentLedger();
+    }
+    async function renderPaymentLedger() {
+        const container = document.getElementById("paymentLedger");
+        // group by gameDate
+        const weeks = [...new Set(payments.map(p => p.gameDate))].sort();
+        let html = `<table class="payment-table"><thead><tr><th>Game Week</th><th>Player</th><th>Paid</th></tr></thead><tbody>`;
+        for (let week of weeks) {
+            const weekLabel = GAME_WEEKS.find(w => w.dateStr === week)?.label || week;
+            const paidPlayers = payments.filter(p => p.gameDate === week).map(p => p.player).sort();
+            html += `<tr><td>${escapeHtml(weekLabel)}</td><td colspan="2">${paidPlayers.map(p => escapeHtml(p)).join(', ') || 'none'}</td></tr>`;
+        }
+        html += `</tbody></table>`;
+        // also total amount collected per week
+        const totalCollected = payments.length * 5;
+        html += `<div class="alert" style="margin-top:12px;">💰 Total collected across all weeks: $${totalCollected}</div>`;
+        container.innerHTML = html;
+    }
+
+    // ----- ADMIN UI (same as before, plus payments visible) -----
     function renderPlayersList() {
         const container = document.getElementById("playersList");
         container.innerHTML = players.map(p => `<div class="goal-row"><span>${escapeHtml(p)}</span><button class="delPlayerBtn" data-name="${escapeHtml(p)}" style="background:#990000;">Delete</button></div>`).join('');
@@ -338,16 +419,6 @@
         await saveResults(); renderPitchAndMatch();
         document.getElementById("adminMessage").innerHTML = "<div class='alert'>Result saved</div>"; setTimeout(() => document.getElementById("adminMessage").innerHTML = "", 2000);
     }
-    async function importVoteFromText() {
-        const text = document.getElementById("pasteVoteArea").value;
-        try {
-            const data = JSON.parse(text);
-            if (!data.voter || !data.gameDate || !data.first || !data.second || !data.third) throw new Error();
-            await saveVote(data); votes.push(data);
-            document.getElementById("adminMessage").innerHTML = `<div class='alert'>Vote added for ${data.voter}</div>`;
-            renderLeaderboard(); document.getElementById("pasteVoteArea").value = "";
-        } catch(e) { document.getElementById("adminMessage").innerHTML = "<div class='alert'>Invalid format</div>"; }
-    }
     async function renderLeaderboard() {
         await loadData();
         const points = new Map(); players.forEach(p => points.set(p, 0));
@@ -361,8 +432,18 @@
         html += `</tbody></table>`;
         container.innerHTML = html;
     }
+    async function importVoteFromText() {
+        const text = document.getElementById("pasteVoteArea").value;
+        try {
+            const data = JSON.parse(text);
+            if (!data.voter || !data.gameDate || !data.first || !data.second || !data.third) throw new Error();
+            await saveVote(data); votes.push(data);
+            document.getElementById("adminMessage").innerHTML = `<div class='alert'>Vote added for ${data.voter}</div>`;
+            renderLeaderboard(); document.getElementById("pasteVoteArea").value = "";
+        } catch(e) { document.getElementById("adminMessage").innerHTML = "<div class='alert'>Invalid format</div>"; }
+    }
     function exportAllData() {
-        const data = { players, teamAssignments, matchResults, votes };
+        const data = { players, teamAssignments, matchResults, votes, payments };
         const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
         const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `soccer_backup_${new Date().toISOString().slice(0,19)}.json`; a.click();
     }
@@ -375,8 +456,10 @@
                 if (data.teamAssignments) teamAssignments = data.teamAssignments;
                 if (data.matchResults) matchResults = data.matchResults;
                 if (data.votes) votes = data.votes;
+                if (data.payments) payments = data.payments;
                 await savePlayers(); await saveTeams(); await saveResults();
                 for (let v of votes) await saveVote(v);
+                for (let p of payments) await savePayment(p);
                 refreshAll();
             } catch(err) { alert("Invalid backup"); }
         };
@@ -398,12 +481,16 @@
         renderPlayerSelectors();
         renderPitchAndMatch();
         renderVoterDropdowns();
+        renderPaymentPlayerSelect();
+        renderPaymentWeekSelect();
+        renderPaymentLedger();
         document.getElementById("adminLoginBtn").addEventListener("click", adminLogin);
         document.getElementById("addPlayerBtn").addEventListener("click", addNewPlayer);
         document.getElementById("resetPlayersBtn").addEventListener("click", resetToDefaultPlayers);
         document.getElementById("saveTeamsBtn").addEventListener("click", async () => { await saveTeams(); renderPitchAndMatch(); });
         document.getElementById("saveResultBtn").addEventListener("click", saveMatchResult);
         document.getElementById("sendVoteBtn").addEventListener("click", sendVote);
+        document.getElementById("markPaidBtn").addEventListener("click", markPayment);
         document.getElementById("addVoteBtn").addEventListener("click", importVoteFromText);
         document.getElementById("refreshLeaderboardBtn").addEventListener("click", renderLeaderboard);
         document.getElementById("exportAllBtn").addEventListener("click", exportAllData);
@@ -419,6 +506,7 @@
                 btn.classList.add("active");
                 if (tab === "admin" && isAdminLoggedIn) refreshAll();
                 if (tab === "player") renderPitchAndMatch();
+                if (tab === "payment") renderPaymentLedger();
             });
         });
     });
