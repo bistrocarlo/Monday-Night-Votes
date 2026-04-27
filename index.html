@@ -329,7 +329,7 @@
         renderLoginScreen();
     }
 
-    // ---------- Login Screen (player dropdown + admin password hidden) ----------
+    // ---------- Login Screen (player dropdown + hidden admin password) ----------
     async function renderLoginScreen() {
         const container = document.getElementById("appContainer");
         container.innerHTML = `
@@ -393,7 +393,9 @@
             { id: "topscorer", label: "⚽ TOP SCORER", showFor: "all" },
             { id: "rules", label: "📜 RULES", showFor: "all" }
         ];
-        if (isAdminLoggedIn) tabs.push({ id: "admin", label: "👑 ADMIN", showFor: "admin" });
+        if (isAdminLoggedIn) {
+            tabs.push({ id: "admin", label: "👑 ADMIN", showFor: "admin" });
+        }
         const tabsContainer = document.getElementById("tabs");
         tabsContainer.innerHTML = tabs.map(t => `<button class="tab-btn" data-tab="${t.id}">${t.label}</button>`).join('');
         const panelContainer = document.getElementById("panelContainer");
@@ -615,7 +617,7 @@
         }
         let html = `<div class="card"><h2>⚽ TOP GOAL SCORERS (RUNNING SHEET)</h2><table class="topscorer-table"><thead><tr><th>#</th><th>Player</th><th>Total Goals</th></tr></thead><tbody>`;
         sorted.forEach((p, idx) => {
-            html += `<tr><td>${idx+1}</td>}<strong>${escapeHtml(p.name)}</strong></td><td style="color:#cc0000;">${p.total}</td></tr>`;
+            html += `<tr><td>${idx+1}</td><td><strong>${escapeHtml(p.name)}</strong></td><td style="color:#cc0000;">${p.total}</td></tr>`;
         });
         html += `</tbody></table></div>`;
         container.innerHTML = html;
@@ -684,7 +686,7 @@
         const container = document.getElementById("playersList");
         let html = `<table class="payment-table"><thead><tr><th>Player</th><th>Action</th></tr></thead><tbody>`;
         for (let p of FULL_PLAYER_LIST) {
-            html += `<tr>}<td>${escapeHtml(p)}</td><td><button class="del-player-btn" data-player="${escapeHtml(p)}" style="background:#990000;">Delete</button></td></tr>`;
+            html += `<tr><td>${escapeHtml(p)}</td><td><button class="del-player-btn" data-player="${escapeHtml(p)}" style="background:#990000;">Delete</button></td></tr>`;
         }
         html += `</tbody></table>`;
         container.innerHTML = html;
@@ -797,7 +799,7 @@
             const amount = paidPlayers.length * 5;
             html += `<tr><td>${escapeHtml(weekLabel)}</td><td>${paidPlayers.join(', ') || 'none'}</td><td>$${amount}</td></tr>`;
         }
-        html += `</tbody><td><div class="alert">💰 Total collected: $${payments.length * 5}</div>`;
+        html += `</tbody></td><div class="alert">💰 Total collected: $${payments.length * 5}</div>`;
         container.innerHTML = html;
     }
     async function adminMarkPayment() {
