@@ -36,6 +36,7 @@
             letter-spacing: -0.5px;
             color: #1e1e1e;
         }
+        .header h1 span { color: #cc0000; }
         .user-info {
             background: #f0f0f0;
             border-radius: 60px;
@@ -114,6 +115,9 @@
             border-radius: 48px;
             padding: 32px;
             text-align: center;
+        }
+        .btn-secondary {
+            background: #2c3e50;
         }
         .pitch {
             background: linear-gradient(145deg, #2e7d32, #1b5e20);
@@ -275,7 +279,9 @@
     </style>
 </head>
 <body>
-<div class="container" id="appContainer"></div>
+<div class="container" id="appContainer">
+    <!-- Dynamic content will be injected here -->
+</div>
 
 <script>
     // ========== FIREBASE CONFIG ==========
@@ -291,14 +297,15 @@
     const db = firebase.firestore();
 
     // ---------- Global state ----------
-    let currentUser = null;
+    let currentUser = null;      // { name, role, uid }
     let players = [];
     let teamAssignments = {};
     let matchResults = {};
     let payments = [];
     let attendance = [];
-    let isAdminLoggedIn = false;
+    let isAdminLoggedIn = false;   // derived from role
 
+    // References
     const usersRef = db.collection("users");
     const playersRef = db.collection("config").doc("players");
     const teamsRef = db.collection("config").doc("teamAssignments");
@@ -307,12 +314,14 @@
     const attendanceRef = db.collection("attendance");
     const messagesRef = db.collection("messages");
 
-    // ---------- Utility: AEST and week visibility ----------
+    // ---------- Utility functions ----------
     function getCurrentAESTDateTime() {
         const now = new Date();
         const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-        return new Date(utc + (10 * 3600000));
+        const aest = new Date(utc + (10 * 3600000));
+        return aest;
     }
+
     function generateAllGameWeeks() {
         const year = new Date().getFullYear();
         let start = new Date(year, 1, 1);
@@ -334,6 +343,7 @@
         return weeks;
     }
     const ALL_GAME_WEEKS = generateAllGameWeeks();
+
     function isWeekVisible(gameDateStr) {
         const gameDateTime = new Date(gameDateStr + "T00:00:00+10:00");
         const now = getCurrentAESTDateTime();
@@ -344,13 +354,15 @@
         threshold.setHours(21, 30, 0, 0);
         return now >= threshold;
     }
-    function getVisibleWeeks() { return ALL_GAME_WEEKS.filter(w => isWeekVisible(w.dateStr)); }
+
+    function getVisibleWeeks() {
+        return ALL_GAME_WEEKS.filter(w => isWeekVisible(w.dateStr));
+    }
     function getPastWeeks() {
         const now = getCurrentAESTDateTime();
         return ALL_GAME_WEEKS.filter(w => new Date(w.dateStr + "T00:00:00+10:00") < now);
     }
 
-    // ---------- Data loads ----------
     async function loadData() {
         const playersDoc = await playersRef.get();
         players = playersDoc.exists ? playersDoc.data().list : [...DEFAULT_PLAYERS];
@@ -369,12 +381,16 @@
     async function savePayment(p) { await paymentsRef.doc(`${p.player}_${p.gameDate}`).set(p); }
     async function saveAttendance(a) { await attendanceRef.doc(`${a.player}_${a.gameDate}`).set(a); }
 
-    // ---------- Authentication ----------
-    async function login(selectedName, password) {
-        const snapshot = await usersRef.where("name", "==", selectedName).where("password", "==", password).get();
+    // ---------- User authentication ----------
+    async function login(name, password) {
+        const snapshot = await usersRef.where("name", "==", name).where("password", "==", password).get();
         if (snapshot.empty) return false;
         const doc = snapshot.docs[0];
-        currentUser = { uid: doc.id, name: doc.data().name, role: doc.data().role };
+        currentUser = {
+            uid: doc.id,
+            name: doc.data().name,
+            role: doc.data().role
+        };
         isAdminLoggedIn = (currentUser.role === "admin");
         localStorage.setItem("soccer_user", JSON.stringify(currentUser));
         return true;
@@ -385,70 +401,43 @@
         localStorage.removeItem("soccer_user");
         renderLoginScreen();
     }
-    async function ensureDefaultUsers() {
-        // Ensure admin user exists
+    async function ensureDefaultAdmin() {
         const adminCheck = await usersRef.where("name", "==", "admin").get();
-        if (adminCheck.empty) await usersRef.add({ name: "admin", password: "admin123", role: "admin" });
-        // Ensure all default players have user accounts
+        if (adminCheck.empty) {
+            await usersRef.add({ name: "admin", password: "admin123", role: "admin" });
+        }
+        // Also ensure all DEFAULT_PLAYERS have user accounts (optional: simple default password "player123")
         for (let p of DEFAULT_PLAYERS) {
             const existing = await usersRef.where("name", "==", p).get();
             if (existing.empty) {
-                const defaultPwd = p.toLowerCase().replace(/[^a-z]/g, '') + "123";
-                await usersRef.add({ name: p, password: defaultPwd, role: "player" });
-            }
-        }
-        // Also ensure any extra players (from DB) have user accounts
-        const playersDoc = await playersRef.get();
-        const existingPlayers = playersDoc.exists ? playersDoc.data().list : [];
-        for (let p of existingPlayers) {
-            if (p !== "admin") {
-                const existing = await usersRef.where("name", "==", p).get();
-                if (existing.empty) {
-                    const defaultPwd = p.toLowerCase().replace(/[^a-z]/g, '') + "123";
-                    await usersRef.add({ name: p, password: defaultPwd, role: "player" });
-                }
+                await usersRef.add({ name: p, password: p.toLowerCase().replace(/[^a-z]/g, '') + "123", role: "player" });
             }
         }
     }
 
-    // ---------- Render login screen with dropdown ----------
-    async function renderLoginScreen() {
-        // Fetch all user names for dropdown
-        const usersSnap = await usersRef.get();
-        const userNames = [];
-        usersSnap.forEach(doc => userNames.push(doc.data().name));
-        userNames.sort();
+    // ---------- Render login screen ----------
+    function renderLoginScreen() {
         const container = document.getElementById("appContainer");
         container.innerHTML = `
             <div class="login-card">
                 <h2 style="color:#cc0000;">★ MONDAY NIGHT SOCCER ★</h2>
-                <p style="margin: 16px 0;">Select your name and enter your password</p>
-                <label>👤 SELECT YOUR NAME</label>
-                <select id="loginNameSelect">
-                    <option value="">-- Choose your name --</option>
-                    ${userNames.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('')}
-                </select>
-                <label>🔒 PASSWORD</label>
-                <input type="password" id="loginPassword" placeholder="Your password">
+                <p style="margin: 16px 0;">Please log in with your name and password</p>
+                <input type="text" id="loginName" placeholder="Name" style="margin-bottom: 12px;">
+                <input type="password" id="loginPassword" placeholder="Password">
                 <button id="loginBtn">Login</button>
                 <div id="loginError" class="alert" style="display:none; margin-top:16px;">Invalid name or password</div>
-                <p style="margin-top: 20px; font-size:0.7rem;">Default password = your name (lowercase, no spaces) + "123"<br>e.g., Carlo → carlo123<br>Admin: admin / admin123</p>
+                <p style="margin-top: 20px; font-size:0.7rem;">Players: default password = lowercase name without spaces + "123"<br>(e.g., Carlo → carlo123)</p>
+                <p style="font-size:0.7rem;">Admin: admin / admin123</p>
             </div>
         `;
         document.getElementById("loginBtn").addEventListener("click", async () => {
-            const selectedName = document.getElementById("loginNameSelect").value;
+            const name = document.getElementById("loginName").value.trim();
             const pwd = document.getElementById("loginPassword").value;
-            if (!selectedName) {
-                document.getElementById("loginError").innerText = "Please select your name";
-                document.getElementById("loginError").style.display = "block";
-                return;
-            }
-            const ok = await login(selectedName, pwd);
+            const ok = await login(name, pwd);
             if (ok) {
                 await loadData();
                 renderMainApp();
             } else {
-                document.getElementById("loginError").innerText = "Invalid password for " + selectedName;
                 document.getElementById("loginError").style.display = "block";
             }
         });
@@ -468,7 +457,7 @@
         `;
         document.getElementById("logoutBtn").addEventListener("click", logout);
 
-        // Define tabs
+        // Define tabs based on role
         const tabs = [
             { id: "attendance", label: "📋 ATTENDANCE", showFor: "all" },
             { id: "chat", label: "💬 LIVE CHAT", showFor: "all" },
@@ -476,15 +465,20 @@
             { id: "topscorer", label: "⚽ TOP SCORER", showFor: "all" },
             { id: "rules", label: "📜 RULES", showFor: "all" }
         ];
-        if (isAdminLoggedIn) tabs.push({ id: "admin", label: "👑 ADMIN", showFor: "admin" });
+        if (isAdminLoggedIn) {
+            tabs.push({ id: "admin", label: "👑 ADMIN", showFor: "admin" });
+        }
         const tabsContainer = document.getElementById("tabs");
         tabsContainer.innerHTML = tabs.map(t => `<button class="tab-btn" data-tab="${t.id}">${t.label}</button>`).join('');
         const panelContainer = document.getElementById("panelContainer");
+        // Create panel divs
         panelContainer.innerHTML = tabs.map(t => `<div id="${t.id}Panel" class="panel"></div>`).join('');
+        // Activate first tab
         const firstTab = tabs[0].id;
         document.getElementById(`${firstTab}Panel`).classList.add("active-panel");
         document.querySelector(`.tab-btn[data-tab="${firstTab}"]`).classList.add("active");
 
+        // Load data and render each panel
         (async () => {
             await loadData();
             renderAttendancePanel();
@@ -494,6 +488,7 @@
             renderRulesPanel();
             if (isAdminLoggedIn) renderAdminPanel();
 
+            // Tab switching
             document.querySelectorAll(".tab-btn").forEach(btn => {
                 btn.addEventListener("click", () => {
                     const tabId = btn.getAttribute("data-tab");
@@ -511,9 +506,10 @@
         })();
     }
 
-    // ----- Attendance panel (similar to previous working version, simplified) -----
+    // ----- Attendance panel -----
     async function renderAttendancePanel() {
         const container = document.getElementById("attendancePanel");
+        if (!container) return;
         const visibleWeeks = getVisibleWeeks();
         if (visibleWeeks.length === 0) {
             container.innerHTML = `<div class="card"><div class="alert">No upcoming weeks available yet (releases after 9:30pm Monday).</div></div>`;
@@ -548,11 +544,12 @@
                 </div>
             </div>
         `;
-        document.getElementById("attendanceWeekSelect").addEventListener("change", () => renderAttendingNamesList());
+
+        document.getElementById("attendanceWeekSelect").addEventListener("change", renderAttendingNamesList);
         document.getElementById("attendingBtn").addEventListener("click", () => setAttendance("in"));
         document.getElementById("notAttendingBtn").addEventListener("click", () => setAttendance("out"));
         document.getElementById("addGuestBtn").addEventListener("click", addGuest);
-        document.getElementById("pitchWeekSelect").addEventListener("change", () => renderPitchAndMatch());
+        document.getElementById("pitchWeekSelect").addEventListener("change", renderPitchAndMatch);
         await renderAttendingNamesList();
         await renderPitchAndMatch();
     }
@@ -566,7 +563,7 @@
             container.innerHTML = `
                 <div class="attending-week-card">
                     <div class="attending-week-header">
-                        <span class="attending-week-label">${escapeHtml(gameDate)}</span>
+                        <span class="attending-week-label">${gameDate}</span>
                         <span class="attending-count-badge">${attendees.length} attending</span>
                     </div>
                     <div class="attending-names">
@@ -582,7 +579,7 @@
         const player = currentUser.name;
         const existing = attendance.find(a => a.player === player && a.gameDate === gameDate);
         if (existing && existing.status === status) {
-            showMessage("attendanceMessage", `Already marked as ${status === 'in' ? 'attending' : 'not attending'} for this week.`, "error");
+            showMessage("attendanceMessage", `You are already marked as ${status === 'in' ? 'attending' : 'not attending'} for this week.`, "error");
             return;
         }
         await saveAttendance({ player, gameDate, status, timestamp: new Date().toISOString() });
@@ -622,7 +619,7 @@
         document.getElementById("matchResultDisplay").innerHTML = `<strong>SCORE:</strong> 🟡 ${match.yellowScore} - ${match.orangeScore} 🟠 &nbsp;|&nbsp; ⚽ Goals: ${goalsText || "none"}`;
     }
 
-    // ----- Chat panel (uses logged-in name) -----
+    // ----- Chat panel -----
     function renderChatPanel() {
         const container = document.getElementById("chatPanel");
         container.innerHTML = `
@@ -724,6 +721,7 @@
     // ----- Admin panel (only for admin) -----
     async function renderAdminPanel() {
         const container = document.getElementById("adminPanel");
+        if (!container) return;
         await loadData(); // refresh
         container.innerHTML = `
             <div class="card"><h3>👥 MANAGE PLAYERS & PASSWORDS</h3><div id="playersList"></div>
@@ -744,7 +742,7 @@
         renderAdminPaymentUI();
         document.getElementById("addPlayerBtn").addEventListener("click", addPlayerAdmin);
         document.getElementById("resetPlayersBtn").addEventListener("click", resetPlayersAdmin);
-        document.getElementById("saveTeamsBtn").addEventListener("click", async () => { await saveTeams(); renderPitchAndMatch(); renderPastGamesPanel(); });
+        document.getElementById("saveTeamsBtn").addEventListener("click", async () => { await saveTeams(); refreshAllAdminUI(); });
         document.getElementById("saveResultBtn").addEventListener("click", saveMatchResultAdmin);
         document.getElementById("adminMarkPaidBtn").addEventListener("click", markPaymentAdmin);
         document.getElementById("exportAllBtn").addEventListener("click", exportAllData);
@@ -752,68 +750,6 @@
         document.getElementById("importFileInput").addEventListener("change", e => { if(e.target.files.length) importAllData(e.target.files[0]); e.target.value=""; });
     }
 
-    async function renderPlayersListAdmin() {
-        const container = document.getElementById("playersList");
-        const usersSnap = await usersRef.get();
-        const userMap = new Map();
-        usersSnap.forEach(doc => userMap.set(doc.data().name, { id: doc.id, password: doc.data().password, role: doc.data().role }));
-        let html = `<table class="payment-table"><thead><tr><th>Player</th><th>Password</th><th>Role</th><th>Actions</th></tr></thead><tbody>`;
-        for (let p of players) {
-            const user = userMap.get(p) || { password: "?", role: "player" };
-            html += `<tr>
-                         <td>${escapeHtml(p)}</td>
-                         <td><input type="text" class="edit-pwd" data-player="${escapeHtml(p)}" value="${escapeHtml(user.password)}" style="width:100px;"></td>
-                         <td>${user.role}</td>
-                         <td><button class="save-pwd-btn" data-player="${escapeHtml(p)}">Save</button> <button class="del-player-btn" data-player="${escapeHtml(p)}" style="background:#990000;">Delete</button></td>
-                      </tr>`;
-        }
-        html += `</tbody></table>`;
-        container.innerHTML = html;
-        document.querySelectorAll(".save-pwd-btn").forEach(btn => btn.addEventListener("click", async () => {
-            const player = btn.getAttribute("data-player");
-            const input = btn.closest("tr").querySelector(".edit-pwd");
-            const newPwd = input.value;
-            const userDoc = await usersRef.where("name", "==", player).get();
-            if (!userDoc.empty) await usersRef.doc(userDoc.docs[0].id).update({ password: newPwd });
-            alert(`Password for ${player} updated.`);
-        }));
-        document.querySelectorAll(".del-player-btn").forEach(btn => btn.addEventListener("click", async () => {
-            const player = btn.getAttribute("data-player");
-            if (player === "admin") { alert("Cannot delete admin"); return; }
-            if (confirm(`Delete player ${player}? This will also remove their user account.`)) {
-                players = players.filter(p => p !== player);
-                await savePlayers();
-                const userDoc = await usersRef.where("name", "==", player).get();
-                if (!userDoc.empty) await usersRef.doc(userDoc.docs[0].id).delete();
-                await refreshAllAdminUI();
-            }
-        }));
-    }
-    async function addPlayerAdmin() {
-        const name = document.getElementById("newPlayerName").value.trim();
-        if (!name) return;
-        if (players.includes(name)) { alert("Player already exists"); return; }
-        players.push(name); players.sort(); await savePlayers();
-        const defaultPwd = name.toLowerCase().replace(/[^a-z]/g, '') + "123";
-        await usersRef.add({ name: name, password: defaultPwd, role: "player" });
-        await refreshAllAdminUI();
-        document.getElementById("newPlayerName").value = "";
-    }
-    async function resetPlayersAdmin() {
-        if (confirm("Reset to default player list? This will also reset user accounts (except admin).")) {
-            players = [...DEFAULT_PLAYERS];
-            await savePlayers();
-            const usersSnap = await usersRef.get();
-            for (let doc of usersSnap.docs) {
-                if (doc.data().name !== "admin") await doc.ref.delete();
-            }
-            for (let p of players) {
-                const defaultPwd = p.toLowerCase().replace(/[^a-z]/g, '') + "123";
-                await usersRef.add({ name: p, password: defaultPwd, role: "player" });
-            }
-            await refreshAllAdminUI();
-        }
-    }
     async function refreshAllAdminUI() {
         await loadData();
         renderPlayersListAdmin();
@@ -824,6 +760,72 @@
         renderPastGamesPanel();
         renderTopScorerPanel();
         renderPitchAndMatch();
+    }
+    async function renderPlayersListAdmin() {
+        const container = document.getElementById("playersList");
+        const usersSnap = await usersRef.get();
+        const userMap = new Map();
+        usersSnap.forEach(doc => userMap.set(doc.data().name, { id: doc.id, password: doc.data().password, role: doc.data().role }));
+        let html = `<table class="payment-table"><thead><tr><th>Player</th><th>Password</th><th>Role</th><th>Actions</th></tr></thead><tbody>`;
+        for (let p of players) {
+            const user = userMap.get(p) || { password: "?", role: "player" };
+            html += `<tr>
+                        <td>${escapeHtml(p)}</td>
+                        <td><input type="text" class="edit-pwd" data-player="${escapeHtml(p)}" value="${escapeHtml(user.password)}" style="width:100px;"></td>
+                        <td>${user.role}</td>
+                        <td><button class="save-pwd-btn" data-player="${escapeHtml(p)}">Save</button> <button class="del-player-btn" data-player="${escapeHtml(p)}" style="background:#990000;">Delete</button></td>
+                     </tr>`;
+        }
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+        document.querySelectorAll(".save-pwd-btn").forEach(btn => btn.addEventListener("click", async () => {
+            const player = btn.getAttribute("data-player");
+            const input = btn.closest("tr").querySelector(".edit-pwd");
+            const newPwd = input.value;
+            const userDoc = await usersRef.where("name", "==", player).get();
+            if (!userDoc.empty) {
+                await usersRef.doc(userDoc.docs[0].id).update({ password: newPwd });
+                alert(`Password for ${player} updated.`);
+            }
+        }));
+        document.querySelectorAll(".del-player-btn").forEach(btn => btn.addEventListener("click", async () => {
+            const player = btn.getAttribute("data-player");
+            if (player === "admin") { alert("Cannot delete admin"); return; }
+            if (confirm(`Delete player ${player}? This will also remove their user account.`)) {
+                players = players.filter(p => p !== player);
+                await savePlayers();
+                const userDoc = await usersRef.where("name", "==", player).get();
+                if (!userDoc.empty) await usersRef.doc(userDoc.docs[0].id).delete();
+                refreshAllAdminUI();
+                renderPastGamesPanel();
+                renderTopScorerPanel();
+            }
+        }));
+    }
+    async function addPlayerAdmin() {
+        const name = document.getElementById("newPlayerName").value.trim();
+        if (!name) return;
+        if (players.includes(name)) { alert("Player already exists"); return; }
+        players.push(name); players.sort(); await savePlayers();
+        const defaultPwd = name.toLowerCase().replace(/[^a-z]/g, '') + "123";
+        await usersRef.add({ name: name, password: defaultPwd, role: "player" });
+        refreshAllAdminUI();
+        document.getElementById("newPlayerName").value = "";
+    }
+    async function resetPlayersAdmin() {
+        if (confirm("Reset to default player list? This will also reset user accounts.")) {
+            players = [...DEFAULT_PLAYERS];
+            await savePlayers();
+            // Remove all existing user accounts except admin
+            const usersSnap = await usersRef.get();
+            for (let doc of usersSnap.docs) {
+                if (doc.data().name !== "admin") await doc.ref.delete();
+            }
+            for (let p of players) {
+                await usersRef.add({ name: p, password: p.toLowerCase().replace(/[^a-z]/g, '') + "123", role: "player" });
+            }
+            refreshAllAdminUI();
+        }
     }
     function renderAdminWeekSelect() {
         const select = document.getElementById("adminWeekSelect");
@@ -935,15 +937,17 @@
                 await savePlayers(); await saveTeams(); await saveResults();
                 for (let p of payments) await savePayment(p);
                 for (let a of attendance) await saveAttendance(a);
-                await refreshAllAdminUI();
+                refreshAllAdminUI();
             } catch(err) { alert("Invalid file"); }
         };
         reader.readAsText(file);
     }
+
+    // Helper
     function showMessage(elementId, msg, type) {
         const div = document.getElementById(elementId);
         if (div) {
-            div.innerHTML = `<div class="alert">${msg}</div>`;
+            div.innerHTML = `<div class="alert ${type === 'error' ? 'error' : 'success'}">${msg}</div>`;
             div.style.display = "block";
             setTimeout(() => div.style.display = "none", 3000);
         }
@@ -958,13 +962,14 @@
 
     function escapeHtml(str) { return String(str).replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
 
-    // Start the app
+    // Start app
     (async () => {
-        await ensureDefaultUsers();
+        await ensureDefaultAdmin();
         const storedUser = localStorage.getItem("soccer_user");
         if (storedUser) {
             try {
                 const u = JSON.parse(storedUser);
+                // verify password? skip for simplicity, just re-login
                 const snapshot = await usersRef.where("name", "==", u.name).get();
                 if (!snapshot.empty) {
                     currentUser = { uid: snapshot.docs[0].id, name: snapshot.docs[0].data().name, role: snapshot.docs[0].data().role };
