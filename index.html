@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Monday Night Soccer – Live Attendance Hub</title>
+    <title>Monday Night Soccer – Complete Hub</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -57,9 +57,7 @@
 <div class="container" id="appContainer"></div>
 
 <script>
-    // ------------------------------------------------------------------
-    //  FIREBASE CONFIGURATION (your project)
-    // ------------------------------------------------------------------
+    // ========== FIREBASE CONFIGURATION ==========
     const firebaseConfig = {
         apiKey: "AIzaSyCWlFqDJyENgrUOhiLXCjSEi4Mk_54SA1w",
         authDomain: "monday-night-soccer-hub.firebaseapp.com",
@@ -291,7 +289,6 @@
                 </div>
             </div>
         `;
-        // Populate attendance player dropdown with all names
         const playerSelect = document.getElementById("attendancePlayerSelect");
         playerSelect.innerHTML = '<option value="">-- Select your name --</option>' + FULL_PLAYER_LIST.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
         document.getElementById("attendanceWeekSelect").addEventListener("change", renderAttendanceCounts);
@@ -397,7 +394,7 @@
             return;
         }
         let html = `<div class="card"><h2>⚽ TOP GOAL SCORERS</h2><table class="topscorer-table"><thead><tr><th>#</th><th>Player</th><th>Goals</th></tr></thead><tbody>`;
-        sorted.forEach((p,i) => { html += `<tr><td>${i+1}</td>}<strong>${escapeHtml(p.name)}</strong></td><td style="color:#cc0000;">${p.total}</td></tr>`; });
+        sorted.forEach((p,i) => { html += `<tr><td>${i+1}</td><td><strong>${escapeHtml(p.name)}</strong></td><td style="color:#cc0000;">${p.total}</td></tr>`; });
         html += `</tbody></table></div>`;
         container.innerHTML = html;
     }
@@ -423,7 +420,7 @@
                 <select id="adminWeekSelectResult">${allWeeks}</select><div id="matchResultArea"></div><button id="saveResultBtn">💾 SAVE</button>
             </div>
             <div class="card"><h3>💰 PAYMENTS LEDGER (ADMIN)</h3><div id="paymentLedger"></div>
-                <div style="display:flex; gap:8px;"><select id="adminPaymentPlayer" style="flex:2"><option value="">Player</option></select><select id="adminPaymentWeek" style="flex:2"><option value="">Week</option></select><button id="adminMarkPaidBtn">Mark Paid</button></div>
+                <div class="flex-btns"><select id="adminPaymentPlayer" style="flex:2"><option value="">Player</option></select><select id="adminPaymentWeek" style="flex:2"><option value="">Week</option></select><button id="adminMarkPaidBtn">Mark Paid</button></div>
             </div>
             <div class="card"><h3>📋 FULL ATTENDANCE LOG</h3><div id="adminAttendanceOverview"></div></div>
             <div class="card"><h3>💾 BACKUP / RESTORE</h3><div class="flex-btns"><button id="exportAllBtn">📤 EXPORT</button><button id="importAllBtn">📥 IMPORT</button><input type="file" id="importFileInput" style="display:none;"></div></div>
@@ -444,16 +441,15 @@
     }
     function renderPlayersListAdmin() {
         const container = document.getElementById("playersList");
-        let html = `<table class="payment-table"><thead><table><th>Player</th><th></th></tr></thead><tbody>`;
+        let html = `<table class="payment-table"><thead><tr><th>Player</th><th></th></tr></thead><tbody>`;
         for (let p of FULL_PLAYER_LIST) html += `<tr><td>${escapeHtml(p)}</td><td><button disabled style="background:#990000;">Delete</button></td></tr>`;
         html += `</tbody></table>`;
         container.innerHTML = html;
     }
-    // NEW: Only show players who have marked "attending" for the selected week (including guests)
+    // ONLY show players who have marked "attending" for the selected week (including guests)
     async function renderTeamAssignmentUI() {
         const gameDate = document.getElementById("adminWeekSelect").value;
         if (!gameDate) return;
-        // Get list of attending players for this week
         const attendingPlayers = attendance.filter(a => a.gameDate === gameDate && a.status === 'in').map(a => a.player);
         if (!teamAssignments[gameDate]) teamAssignments[gameDate] = {};
         let html = "";
@@ -481,7 +477,6 @@
         const gameDate = document.getElementById("adminWeekSelectResult").value;
         const match = matchResults[gameDate] || { yellowScore: 0, orangeScore: 0, goals: {} };
         let html = `<div style="display:flex; gap:12px;"><div><label>🟡 Yellow</label><input type="number" id="yellowScore" value="${match.yellowScore}" min="0"></div><div><label>🟠 Orange</label><input type="number" id="orangeScore" value="${match.orangeScore}" min="0"></div></div><h4>⚽ Goals</h4>`;
-        // Only show players who were assigned to a team (i.e., playing)
         const playersInMatch = Object.keys(teamAssignments[gameDate] || {});
         if (playersInMatch.length === 0) html += "<div class='alert'>Assign teams first (only attending players appear).</div>";
         for (let player of playersInMatch) {
