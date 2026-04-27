@@ -384,7 +384,7 @@
 </div>
 
 <script>
-    // Firebase config (use your own)
+    // Firebase config
     const firebaseConfig = {
         apiKey: "AIzaSyCWlFqDJyENgrUOhiLXCjSEi4Mk_54SA1w",
         authDomain: "monday-night-soccer-hub.firebaseapp.com",
@@ -396,12 +396,25 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // AEST date helper
-    function getCurrentAESTDate() {
+    // ---------- AEST datetime with time ----------
+    function getCurrentAESTDateTime() {
         const now = new Date();
         const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
         const aest = new Date(utc + (10 * 3600000));
-        return aest.toISOString().split('T')[0];
+        return aest;
+    }
+
+    // Check if a Monday game week is visible: must be future AND current time > 9:30pm on the Monday 7 days before.
+    function isWeekVisible(gameDateStr) {
+        const gameDateTime = new Date(gameDateStr + "T00:00:00+10:00");
+        const now = getCurrentAESTDateTime();
+        if (gameDateTime < now) return false; // past weeks not shown in attendance list
+        // Compute previous Monday (7 days before)
+        const prevMonday = new Date(gameDateTime);
+        prevMonday.setDate(prevMonday.getDate() - 7);
+        const threshold = new Date(prevMonday);
+        threshold.setHours(21, 30, 0, 0); // 9:30pm AEST
+        return now >= threshold;
     }
 
     function generateAllGameWeeks() {
@@ -416,14 +429,23 @@
         let weeks = [];
         let cur = new Date(start);
         while (cur <= secondLast) {
-            weeks.push({ dateStr: cur.toISOString().split('T')[0], label: `Monday ${cur.toLocaleDateString('en-AU', { day:'numeric', month:'short' })}` });
+            weeks.push({
+                dateStr: cur.toISOString().split('T')[0],
+                label: `Monday ${cur.toLocaleDateString('en-AU', { day:'numeric', month:'short' })}`
+            });
             cur.setDate(cur.getDate() + 7);
         }
         return weeks;
     }
     const ALL_GAME_WEEKS = generateAllGameWeeks();
-    function getFutureWeeks() { const today = getCurrentAESTDate(); return ALL_GAME_WEEKS.filter(w => w.dateStr >= today); }
-    function getPastWeeks() { const today = getCurrentAESTDate(); return ALL_GAME_WEEKS.filter(w => w.dateStr < today); }
+
+    function getVisibleWeeks() {
+        return ALL_GAME_WEEKS.filter(w => isWeekVisible(w.dateStr));
+    }
+    function getPastWeeks() {
+        const now = getCurrentAESTDateTime();
+        return ALL_GAME_WEEKS.filter(w => new Date(w.dateStr + "T00:00:00+10:00") < now);
+    }
 
     let players = [], teamAssignments = {}, matchResults = {}, payments = [], attendance = [];
     let isAdminLoggedIn = false;
@@ -456,7 +478,7 @@
     async function refreshAll() {
         await loadData();
         renderAttendanceSelects();
-        renderAttendingNamesList(); // only future weeks
+        renderAttendingNamesList();
         renderPitchStuff();
         renderPastGames();
         renderTopScorer();
@@ -467,8 +489,8 @@
     // ----- Attendance UI -----
     async function renderAttendanceSelects() {
         const weekSelect = document.getElementById("attendanceWeekSelect");
-        const future = getFutureWeeks();
-        weekSelect.innerHTML = future.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
+        const visible = getVisibleWeeks();
+        weekSelect.innerHTML = visible.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
         weekSelect.addEventListener("change", () => updateAttendancePlayerDropdown());
         await updateAttendancePlayerDropdown();
     }
@@ -516,13 +538,12 @@
         document.getElementById("attendanceMessage").innerHTML = `Guest "${guestName}" added as attending.`;
         setTimeout(() => document.getElementById("attendanceMessage").innerHTML = "", 2000);
     }
-    // Only show future weeks in attending list
     async function renderAttendingNamesList() {
         const container = document.getElementById("attendingNamesList");
-        const futureWeeks = getFutureWeeks();
-        if (futureWeeks.length === 0) { container.innerHTML = "<div class='alert'>No upcoming game weeks.</div>"; return; }
+        const visibleWeeks = getVisibleWeeks();
+        if (visibleWeeks.length === 0) { container.innerHTML = "<div class='alert'>No upcoming weeks available yet (releases after 9:30pm Monday).</div>"; return; }
         let html = "";
-        for (let week of futureWeeks) {
+        for (let week of visibleWeeks) {
             const attendees = attendance.filter(a => a.gameDate === week.dateStr && a.status === 'in').map(a => a.player).sort();
             html += `<div class="attending-week-card">
                         <div class="attending-week-header">
@@ -537,11 +558,11 @@
         container.innerHTML = html;
     }
 
-    // ----- Pitch & Teams -----
+    // ----- Pitch & Teams (only show visible weeks) -----
     function renderPitchStuff() {
         const select = document.getElementById("pitchWeekSelect");
-        const future = getFutureWeeks();
-        select.innerHTML = future.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
+        const visible = getVisibleWeeks();
+        select.innerHTML = visible.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
         select.addEventListener("change", () => renderPitchAndMatch());
         renderPitchAndMatch();
     }
@@ -561,7 +582,7 @@
         document.getElementById("matchResultDisplay").innerHTML = `<strong>SCORE:</strong> 🟡 ${match.yellowScore} - ${match.orangeScore} 🟠 &nbsp;|&nbsp; ⚽ Goals: ${goalsText || "none"}`;
     }
 
-    // ----- Past Games -----
+    // ----- Past Games (unchanged) -----
     async function renderPastGames() {
         const container = document.getElementById("pastGamesList");
         const past = getPastWeeks().reverse();
@@ -578,7 +599,7 @@
         container.innerHTML = html;
     }
 
-    // ----- Top Scorer -----
+    // ----- Top Scorer (unchanged) -----
     async function renderTopScorer() {
         await loadData();
         const goals = new Map();
@@ -595,11 +616,11 @@
         if (sorted.length === 0) { container.innerHTML = "<div class='alert'>No goals yet.</div>"; return; }
         let html = `<table class="topscorer-table"><thead><tr><th>#</th><th>Player</th><th>Goals</th></tr></thead><tbody>`;
         sorted.forEach((p,i) => { html += `<tr><td>${i+1}</td><td>${escapeHtml(p.name)}</td><td>${p.total}</td></tr>`; });
-        html += `</tbody></table>`;
+        html += `</tbody></td>`;
         container.innerHTML = html;
     }
 
-    // ----- Live Chat -----
+    // ----- Live Chat (unchanged) -----
     function renderChatSelect() {
         const select = document.getElementById("chatNameSelect");
         select.innerHTML = '<option value="">-- Select name --</option>' + players.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
@@ -624,7 +645,7 @@
         });
     }
 
-    // ----- Admin UI (simplified) -----
+    // ----- Admin UI (unchanged) -----
     function renderAdminUI() {
         renderPlayersList();
         renderAdminWeekSelect();
@@ -651,8 +672,8 @@
     async function resetDefaultPlayers() { if (confirm("Reset to default list?")) { players = [...DEFAULT_PLAYERS]; await savePlayers(); refreshAll(); } }
     function renderAdminWeekSelect() {
         const select = document.getElementById("adminWeekSelect");
-        const future = getFutureWeeks();
-        select.innerHTML = future.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
+        const visible = getVisibleWeeks();
+        select.innerHTML = visible.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
         select.addEventListener("change", () => { renderTeamAssignmentUI(); renderMatchResultUI(); });
     }
     function renderTeamAssignmentUI() {
@@ -713,15 +734,15 @@
             }
         }
         if (weeks.length === 0) html += `<tr><td colspan="3">No records</td></tr>`;
-        html += `</tbody></table>`;
+        html += `</tbody><tr>`;
         container.innerHTML = html;
     }
     async function renderAdminPaymentSelectors() {
         const pSel = document.getElementById("adminPaymentPlayer");
         const wSel = document.getElementById("adminPaymentWeek");
         pSel.innerHTML = '<option value="">Player</option>' + players.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
-        const future = getFutureWeeks();
-        wSel.innerHTML = '<option value="">Week</option>' + future.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
+        const visible = getVisibleWeeks();
+        wSel.innerHTML = '<option value="">Week</option>' + visible.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
     }
     async function renderPaymentLedgerAdmin() {
         const container = document.getElementById("paymentLedger");
@@ -732,7 +753,7 @@
             const paid = payments.filter(p => p.gameDate === w).map(p => p.player).sort();
             html += `<tr><td>${escapeHtml(label)}</td><td>${paid.join(', ') || 'none'}</td><td>$${paid.length * 5}</td></tr>`;
         }
-        html += `</tbody><td><div class="alert">💰 Total: $${payments.length * 5}</div>`;
+        html += `</tbody><tr><div class="alert">💰 Total: $${payments.length * 5}</div>`;
         container.innerHTML = html;
     }
     async function adminMarkPayment() {
