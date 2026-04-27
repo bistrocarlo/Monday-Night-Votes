@@ -3,30 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Monday Soccer – Best & Fairest + Match Stats</title>
+    <title>Monday Soccer Hub – Teams, Votes, Results</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: #000000;
+            background: #0a2f1f;
+            background-image: radial-gradient(circle at 10% 20%, #1a4a2a, #052010);
             font-family: 'Inter', sans-serif;
-            padding: 20px;
+            padding: 24px 20px;
             color: #ffffff;
+            min-height: 100vh;
         }
         .container { max-width: 1400px; margin: 0 auto; }
         .header {
             text-align: center;
             margin-bottom: 28px;
-            border-bottom: 2px solid #f5b042;
-            padding-bottom: 12px;
         }
         .header h1 {
-            font-size: 2rem;
+            font-size: 2.2rem;
             font-weight: 800;
-            background: linear-gradient(135deg, #ffffff, #f5b042);
+            background: linear-gradient(135deg, #f5e56b, #f5b042);
             background-clip: text;
             -webkit-background-clip: text;
             color: transparent;
+            letter-spacing: -0.5px;
         }
         .tabs {
             display: flex;
@@ -36,216 +37,269 @@
             flex-wrap: wrap;
         }
         .tab-btn {
-            background: #1a1a1a;
+            background: #1e3a2f;
             border: 1px solid #f5b042;
             padding: 10px 24px;
             border-radius: 60px;
             font-weight: 700;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             cursor: pointer;
-            color: white;
+            color: #f5f5f5;
+            transition: all 0.2s;
         }
         .tab-btn.active {
             background: #f5b042;
-            color: black;
+            color: #1e3a2f;
             border-color: #f5b042;
+            box-shadow: 0 0 10px rgba(245,176,66,0.5);
         }
-        .panel { display: none; }
+        .panel { display: none; animation: fade 0.2s; }
         .panel.active-panel { display: block; }
+        @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+        
         .card {
-            background: #111111;
-            border-radius: 28px;
-            padding: 22px;
-            margin-bottom: 24px;
-            border: 1px solid #2a2a2a;
+            background: rgba(0,0,0,0.65);
+            backdrop-filter: blur(4px);
+            border-radius: 32px;
+            padding: 24px;
+            margin-bottom: 28px;
+            border: 1px solid #f5b04266;
         }
         .card h2, .card h3 {
             font-weight: 700;
-            margin-bottom: 16px;
+            margin-bottom: 18px;
             color: #f5b042;
-            border-left: 4px solid #f5b042;
+            border-left: 5px solid #f5b042;
             padding-left: 16px;
         }
         label {
             font-weight: 600;
             color: #ddd;
             display: block;
-            margin-top: 14px;
-            margin-bottom: 6px;
+            margin-top: 16px;
+            margin-bottom: 8px;
         }
         select, input, button, textarea {
-            padding: 10px 14px;
+            padding: 10px 16px;
             border-radius: 60px;
-            border: 1px solid #333;
+            border: 1px solid #3a6b4e;
             font-size: 0.9rem;
-            background: #1e1e1e;
+            background: #1f3328;
             color: white;
             font-family: inherit;
             width: 100%;
         }
         button {
             background: #f5b042;
-            color: black;
+            color: #1e3a2f;
             font-weight: 700;
             border: none;
             cursor: pointer;
             width: auto;
+            transition: 0.1s;
         }
-        .flex-btns { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
-        .team-row, .goal-row {
-            background: #0a0a0a;
-            border-radius: 60px;
-            padding: 12px 16px;
-            margin-bottom: 10px;
+        button:hover { background: #ffcc66; transform: translateY(-1px); }
+        .flex-btns { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 20px; }
+        
+        /* Soccer pitch layout */
+        .pitch {
+            background: #2e7d32;
+            background-image: repeating-linear-gradient(white 0px, white 2px, transparent 2px, transparent 8px);
+            border-radius: 40px;
+            border: 3px solid white;
+            padding: 20px 16px;
+            position: relative;
+            box-shadow: 0 0 0 4px #f5b042, inset 0 0 0 3px #ffd966;
+        }
+        .pitch::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 3px;
+            height: 100%;
+            background: white;
+            transform: translateX(-50%);
+        }
+        .teams-row {
             display: flex;
             flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
+            gap: 20px;
         }
-        .team-yellow { border-left: 5px solid #f5b042; }
-        .team-orange { border-left: 5px solid #f5a623; }
-        .badge {
-            background: #2a2a2a;
+        .team-box {
+            flex: 1;
+            background: rgba(0,0,0,0.5);
+            border-radius: 28px;
+            padding: 16px;
+            backdrop-filter: blur(2px);
+        }
+        .team-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .yellow-title { color: #f5d742; text-shadow: 0 0 4px black; }
+        .orange-title { color: #f5a623; text-shadow: 0 0 4px black; }
+        .player-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .player-badge {
+            background: #0f2b1f;
             border-radius: 60px;
-            padding: 4px 12px;
-            font-size: 0.8rem;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-align: center;
+            border: 1px solid #f5b04266;
         }
-        .leaderboard-table, .stats-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: #0d0d0d;
-            border-radius: 20px;
-            overflow: hidden;
-        }
-        th, td {
-            padding: 12px 8px;
-            text-align: left;
-            border-bottom: 1px solid #2a2a2a;
-        }
-        th { background: #1f1f1f; color: #f5b042; }
         .alert {
-            background: #1a1a1a;
+            background: #1f3328;
             border-left: 5px solid #f5b042;
             padding: 12px 16px;
             border-radius: 60px;
             margin: 12px 0;
         }
-        footer { text-align: center; margin-top: 40px; font-size: 0.7rem; color: #666; }
-        @media (max-width: 700px) { .team-row, .goal-row { flex-direction: column; align-items: stretch; } }
+        .leaderboard-table, .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #0d1f16;
+            border-radius: 24px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 12px 8px;
+            text-align: left;
+            border-bottom: 1px solid #2a5a3a;
+        }
+        th { background: #1e3a2f; color: #f5b042; }
+        .goal-row {
+            background: #1a3326;
+            border-radius: 60px;
+            padding: 8px 16px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        footer { text-align: center; margin-top: 48px; font-size: 0.7rem; color: #aaa; }
+        @media (max-width: 800px) { .teams-row { flex-direction: column; } .pitch::before { display: none; } }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <h1>⚽ MONDAY NIGHT SOCCER ⚽</h1>
-        <p>Best & Fairest • Match results • Goal scorers • Team assignments</p>
+        <h1>⚽ MONDAY NIGHT SOCCER HUB ⚽</h1>
+        <p>Team sheets • Best & fairest voting • Match results • Goal scorers</p>
     </div>
 
     <div class="tabs">
-        <button class="tab-btn active" data-tab="voter">👕 PLAYER – My team & vote</button>
-        <button class="tab-btn" data-tab="admin">👑 ADMIN – Setup & results</button>
+        <button class="tab-btn active" data-tab="player">👕 PLAYER VIEW</button>
+        <button class="tab-btn" data-tab="admin">👑 ADMIN (password protected)</button>
     </div>
 
-    <!-- PLAYER TAB -->
-    <div id="voterPanel" class="panel active-panel">
+    <!-- PLAYER PANEL -->
+    <div id="playerPanel" class="panel active-panel">
         <div class="card">
-            <h2>📋 YOUR TEAM & VOTE</h2>
-            <label>👤 Your name</label>
-            <select id="playerNameSelect"></select>
-            <div id="playerTeamDisplay" class="alert" style="margin-top: 12px;">Select your name to see your team</div>
-            <label>📅 Game week</label>
+            <h2>📅 GAME WEEK</h2>
             <select id="playerWeekSelect"></select>
-            
-            <div class="vote-row" style="margin-top: 20px;">
-                <div><label>🏆 3 pts</label><select id="vote3"></select></div>
-                <div><label>🥈 2 pts</label><select id="vote2"></select></div>
-                <div><label>🥉 1 pt</label><select id="vote1"></select></div>
+            <div id="pitchContainer" class="pitch" style="margin-top: 20px;">
+                <!-- dynamic pitch will be injected -->
             </div>
-            <button id="sendVoteBtn" style="margin-top: 16px;">📤 SEND VOTE (PDF + WhatsApp)</button>
-            <div id="voterMessage"></div>
         </div>
         <div class="card">
-            <h3>⚽ TODAY'S FIXTURE</h3>
-            <div id="fixtureDisplay">Select a game week to see teams and score</div>
+            <h2>🏆 VOTE FOR BEST & FAIREST (3-2-1)</h2>
+            <label>👤 YOUR NAME</label>
+            <select id="voterNameSelect"></select>
+            <div class="vote-row" style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 16px;">
+                <div style="flex:1"><label>🥇 3 points</label><select id="vote3"></select></div>
+                <div style="flex:1"><label>🥈 2 points</label><select id="vote2"></select></div>
+                <div style="flex:1"><label>🥉 1 point</label><select id="vote1"></select></div>
+            </div>
+            <button id="sendVoteBtn" style="margin-top: 20px;">📤 SEND VOTE (PDF + WhatsApp)</button>
+            <div id="voterMessage" class="alert" style="display:none;"></div>
         </div>
     </div>
 
-    <!-- ADMIN TAB -->
+    <!-- ADMIN PANEL (password protected) -->
     <div id="adminPanel" class="panel">
         <div class="card">
-            <h2>👥 MANAGE PLAYERS</h2>
-            <div id="playersList"></div>
-            <div class="flex-btns">
-                <input type="text" id="newPlayerName" placeholder="New player name">
-                <button id="addPlayerBtn">➕ Add</button>
-                <button id="resetPlayersBtn">⟳ Reset to default</button>
+            <h2>🔐 ADMIN ACCESS</h2>
+            <div id="adminLoginArea">
+                <input type="password" id="adminPassword" placeholder="Enter password">
+                <button id="adminLoginBtn">Login</button>
             </div>
-        </div>
-
-        <div class="card">
-            <h2>📅 GAME WEEK & TEAM ASSIGNMENT</h2>
-            <label>Select game week</label>
-            <select id="adminGameWeekSelect"></select>
-            <div id="teamAssignmentArea"></div>
-            <button id="saveTeamsBtn">💾 Save team assignments</button>
-        </div>
-
-        <div class="card">
-            <h2>📊 MATCH RESULTS (Score & Goal scorers)</h2>
-            <div id="matchResultArea"></div>
-            <button id="saveResultBtn">💾 Save match result</button>
-        </div>
-
-        <div class="card">
-            <h2>🏆 BEST & FAIREST LEADERBOARD (votes only)</h2>
-            <button id="refreshLeaderboardBtn">⟳ Refresh</button>
-            <div id="leaderboardContainer"></div>
-        </div>
-
-        <div class="card">
-            <h2>📈 SEASON SUMMARY (team stats)</h2>
-            <div id="seasonStats"></div>
-        </div>
-
-        <div class="card">
-            <h2>📋 IMPORT VOTES FROM PLAYERS</h2>
-            <textarea id="pasteVoteArea" placeholder="Paste JSON vote from WhatsApp..."></textarea>
-            <button id="addVoteBtn">Add vote</button>
-            <div id="adminMessage"></div>
-        </div>
-
-        <div class="card">
-            <h3>💾 BACKUP / RESTORE</h3>
-            <div class="flex-btns">
-                <button id="exportAllBtn">📤 Export all data</button>
-                <button id="importAllBtn">📥 Import backup</button>
-                <input type="file" id="importFileInput" style="display:none;">
+            <div id="adminContent" style="display: none;">
+                <div class="card">
+                    <h3>👥 MANAGE PLAYERS</h3>
+                    <div id="playersList"></div>
+                    <div class="flex-btns">
+                        <input type="text" id="newPlayerName" placeholder="New player name">
+                        <button id="addPlayerBtn">➕ Add</button>
+                        <button id="resetPlayersBtn">⟳ Reset to defaults</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>📅 TEAM ASSIGNMENT (Yellows vs Oranges)</h3>
+                    <select id="adminWeekSelect"></select>
+                    <div id="teamAssignmentArea"></div>
+                    <button id="saveTeamsBtn">💾 Save team assignments</button>
+                </div>
+                <div class="card">
+                    <h3>⚽ MATCH RESULT & GOAL SCORERS</h3>
+                    <div id="matchResultArea"></div>
+                    <button id="saveResultBtn">💾 Save result & goals</button>
+                </div>
+                <div class="card">
+                    <h3>🏆 BEST & FAIREST LEADERBOARD</h3>
+                    <button id="refreshLeaderboardBtn">⟳ Refresh</button>
+                    <div id="leaderboardContainer"></div>
+                </div>
+                <div class="card">
+                    <h3>📥 IMPORT VOTE (from player message)</h3>
+                    <textarea id="pasteVoteArea" rows="2" placeholder="Paste JSON vote from WhatsApp..."></textarea>
+                    <button id="addVoteBtn">Add vote</button>
+                    <div id="adminMessage"></div>
+                </div>
+                <div class="card">
+                    <h3>💾 BACKUP & RESTORE</h3>
+                    <div class="flex-btns">
+                        <button id="exportAllBtn">📤 Export all data</button>
+                        <button id="importAllBtn">📥 Import backup</button>
+                        <input type="file" id="importFileInput" style="display:none;">
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <footer>⚽ Data stays in your browser. Admin assigns teams, records scores, imports votes.</footer>
+    <footer>⚽ Data stays in your browser. Admin password: admin123 | Export to save permanently.</footer>
 </div>
 
 <script>
-    // ---------- DEFAULT PLAYERS (37) ----------
+    // ---------- DEFAULT PLAYERS (extended list) ----------
     const DEFAULT_PLAYERS = [
         "Alex Rowe", "Ali Mekawy", "Carlo", "Chris Del Monaco", "Chris M", "Chris S", "Danny", "David", "Dimitri",
-        "Enzo", "Farid", "Faros", "Frank", "George B", "George T", "Ivan", "James Zoumis", "James", "Joe T",
-        "Joey", "Kia", "Leo", "Manoli", "Marco", "Mario", "Maurice", "Nector", "Paul", "Perri", "Peter",
-        "Ralph", "Rocco", "Stav", "Stevan", "Theo", "Tony EH", "Vasilis"
+        "Enzo", "Farid", "Faros", "Frank", "George B", "George T", "Ivan", "James Zoumis", "James", "Joe T", "Joey",
+        "Kia", "Leo", "Manoli", "Marco", "Mario", "Maurice", "Nector", "Paul", "Perri", "Peter", "Ralph", "Rocco",
+        "Stav", "Stevan", "Theo", "Tony EH", "Vasilis"
     ].sort();
 
-    // ---------- DATA STRUCTURES ----------
+    // ---------- DATA ----------
     let players = [...DEFAULT_PLAYERS];
-    let gameWeeks = []; // populated from generateGameWeeks
-    // teamAssignments: { gameDate: { playerName: "yellow" or "orange" } }
-    let teamAssignments = {};
-    // matchResults: { gameDate: { yellowScore, orangeScore, goals: { playerName: goalsCount } } }
-    let matchResults = {};
-    // votes: array of { voter, gameDate, first, second, third }
-    let votes = [];
+    let gameWeeks = [];
+    let teamAssignments = {};     // { gameDate: { playerName: "yellow" or "orange" } }
+    let matchResults = {};        // { gameDate: { yellowScore, orangeScore, goals: { playerName: goals } } }
+    let votes = [];               // { voter, gameDate, first, second, third }
 
+    let isAdminLoggedIn = false;
+
+    // Generate Monday weeks (Feb -> second-last Monday Dec)
     function generateGameWeeks() {
         const year = new Date().getFullYear();
         let start = new Date(year, 1, 1);
@@ -285,147 +339,73 @@
         const storedVotes = localStorage.getItem("soccer_votes");
         if (storedVotes) votes = JSON.parse(storedVotes);
         gameWeeks = generateGameWeeks();
-    }
-
-    // ---------- PLAYER MANAGEMENT ----------
-    function renderPlayersList() {
-        const container = document.getElementById("playersList");
-        if (!container) return;
-        let html = "";
-        players.forEach(p => {
-            html += `<div class="team-row"><span>${escapeHtml(p)}</span>
-                     <button class="deletePlayerBtn" data-name="${escapeHtml(p)}" style="background:#5a3e1a;">Delete</button></div>`;
+        // Ensure each game week has empty assignments object if not exists
+        gameWeeks.forEach(week => {
+            if (!teamAssignments[week.dateStr]) teamAssignments[week.dateStr] = {};
+            if (!matchResults[week.dateStr]) matchResults[week.dateStr] = { yellowScore: 0, orangeScore: 0, goals: {} };
         });
-        container.innerHTML = html;
-        document.querySelectorAll(".deletePlayerBtn").forEach(btn => {
-            btn.addEventListener("click", () => {
-                const name = btn.getAttribute("data-name");
-                if (confirm(`Delete ${name}?`)) {
-                    players = players.filter(p => p !== name);
-                    // also remove from assignments
-                    for (let date in teamAssignments) delete teamAssignments[date][name];
-                    saveAll();
-                    renderPlayersList();
-                    refreshAllDropdowns();
-                    renderTeamAssignmentUI();
-                }
-            });
-        });
-    }
-
-    function addPlayer(name) {
-        name = name.trim();
-        if (name && !players.includes(name)) {
-            players.push(name);
-            players.sort();
-            saveAll();
-            renderPlayersList();
-            refreshAllDropdowns();
-            renderTeamAssignmentUI();
-        }
-    }
-
-    function resetPlayers() {
-        if (confirm("Reset to default player list? Current assignments will be lost for removed players.")) {
-            players = [...DEFAULT_PLAYERS];
-            saveAll();
-            renderPlayersList();
-            refreshAllDropdowns();
-            renderTeamAssignmentUI();
-        }
-    }
-
-    // ---------- TEAM ASSIGNMENT UI ----------
-    function renderTeamAssignmentUI() {
-        const gameDate = document.getElementById("adminGameWeekSelect").value;
-        const container = document.getElementById("teamAssignmentArea");
-        if (!gameDate) { container.innerHTML = "<div class='alert'>Select a game week</div>"; return; }
-        if (!teamAssignments[gameDate]) teamAssignments[gameDate] = {};
-        let html = `<p><strong>Assign teams for ${gameDate}</strong></p>`;
-        players.forEach(p => {
-            const currentTeam = teamAssignments[gameDate][p] || "";
-            html += `
-                <div class="team-row">
-                    <span>${escapeHtml(p)}</span>
-                    <select class="team-select" data-player="${escapeHtml(p)}">
-                        <option value="">-- Not playing --</option>
-                        <option value="yellow" ${currentTeam === "yellow" ? "selected" : ""}>🟡 Yellow</option>
-                        <option value="orange" ${currentTeam === "orange" ? "selected" : ""}>🟠 Orange</option>
-                    </select>
-                </div>
-            `;
-        });
-        container.innerHTML = html;
-        document.querySelectorAll(".team-select").forEach(sel => {
-            sel.addEventListener("change", (e) => {
-                const player = sel.getAttribute("data-player");
-                const team = sel.value;
-                if (team) teamAssignments[gameDate][player] = team;
-                else delete teamAssignments[gameDate][player];
-                saveAll();
-            });
-        });
-    }
-
-    // ---------- MATCH RESULT UI ----------
-    function renderMatchResultUI() {
-        const gameDate = document.getElementById("adminGameWeekSelect").value;
-        const container = document.getElementById("matchResultArea");
-        if (!gameDate) { container.innerHTML = "<div class='alert'>Select a game week</div>"; return; }
-        if (!matchResults[gameDate]) matchResults[gameDate] = { yellowScore: 0, orangeScore: 0, goals: {} };
-        const match = matchResults[gameDate];
-        let html = `
-            <div class="flex-btns">
-                <div><label>🟡 Yellow score</label><input type="number" id="yellowScore" value="${match.yellowScore}" min="0"></div>
-                <div><label>🟠 Orange score</label><input type="number" id="orangeScore" value="${match.orangeScore}" min="0"></div>
-            </div>
-            <h3>Goal scorers</h3>
-        `;
-        // Only players who played in this match
-        const playersInMatch = Object.keys(teamAssignments[gameDate] || {});
-        if (playersInMatch.length === 0) html += "<div class='alert'>Assign teams first</div>";
-        playersInMatch.forEach(player => {
-            const goals = match.goals[player] || 0;
-            html += `
-                <div class="goal-row">
-                    <span>${escapeHtml(player)}</span>
-                    <select class="goal-select" data-player="${escapeHtml(player)}">
-                        ${[0,1,2,3,4,5].map(n => `<option value="${n}" ${goals===n ? "selected":""}>${n} goal${n!==1?'s':''}</option>`).join('')}
-                    </select>
-                </div>
-            `;
-        });
-        container.innerHTML = html;
-        document.querySelectorAll(".goal-select").forEach(sel => {
-            sel.addEventListener("change", () => {
-                const player = sel.getAttribute("data-player");
-                const goals = parseInt(sel.value);
-                matchResults[gameDate].goals[player] = goals;
-                saveAll();
-            });
-        });
-    }
-
-    function saveMatchResult() {
-        const gameDate = document.getElementById("adminGameWeekSelect").value;
-        if (!gameDate) return;
-        const yellowScore = parseInt(document.getElementById("yellowScore")?.value || 0);
-        const orangeScore = parseInt(document.getElementById("orangeScore")?.value || 0);
-        if (!matchResults[gameDate]) matchResults[gameDate] = { goals: {} };
-        matchResults[gameDate].yellowScore = yellowScore;
-        matchResults[gameDate].orangeScore = orangeScore;
         saveAll();
-        document.getElementById("adminMessage").innerHTML = "<div class='alert'>Match result saved</div>";
-        setTimeout(() => document.getElementById("adminMessage").innerHTML = "", 2000);
-        renderFixtureDisplay();
-        renderSeasonStats();
     }
 
-    // ---------- VOTING (3-2-1) ----------
-    function getAvailablePlayersForVote(voter) {
-        return players.filter(p => p !== voter);
+    // ---------- HELPER: render soccer pitch ----------
+    function renderPitch(gameDate) {
+        const assignments = teamAssignments[gameDate] || {};
+        const yellowPlayers = [], orangePlayers = [];
+        for (let [player, team] of Object.entries(assignments)) {
+            if (team === "yellow") yellowPlayers.push(player);
+            else if (team === "orange") orangePlayers.push(player);
+        }
+        yellowPlayers.sort(); orangePlayers.sort();
+        return `
+            <div class="teams-row">
+                <div class="team-box">
+                    <div class="team-title yellow-title">🟡 YELLOW TEAM</div>
+                    <div class="player-list">
+                        ${yellowPlayers.map(p => `<div class="player-badge">${escapeHtml(p)}</div>`).join('') || "<div class='player-badge'>— no players assigned —</div>"}
+                    </div>
+                </div>
+                <div class="team-box">
+                    <div class="team-title orange-title">🟠 ORANGE TEAM</div>
+                    <div class="player-list">
+                        ${orangePlayers.map(p => `<div class="player-badge">${escapeHtml(p)}</div>`).join('') || "<div class='player-badge'>— no players assigned —</div>"}
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: 16px; text-align: center; background: #000000aa; border-radius: 60px; padding: 8px;">
+                <strong>📊 MATCH RESULT:</strong> 🟡 ${matchResults[gameDate]?.yellowScore ?? 0}  -  ${matchResults[gameDate]?.orangeScore ?? 0} 🟠
+                <br><small>⚽ Goals:</small> ${Object.entries(matchResults[gameDate]?.goals || {}).filter(([_,g]) => g>0).map(([p,g]) => `${escapeHtml(p)} (${g})`).join(", ") || "none yet"}
+            </div>
+        `;
     }
 
+    // Refresh player view (week selection, pitch, vote dropdowns)
+    function refreshPlayerView() {
+        const weekSelect = document.getElementById("playerWeekSelect");
+        weekSelect.innerHTML = gameWeeks.map(w => `<option value="${w.dateStr}">${w.label} (${w.dateStr})</option>`).join('');
+        const selectedWeek = weekSelect.value || gameWeeks[0]?.dateStr;
+        if (selectedWeek) {
+            document.getElementById("pitchContainer").innerHTML = renderPitch(selectedWeek);
+        }
+        // populate voter dropdown
+        const voterSelect = document.getElementById("voterNameSelect");
+        voterSelect.innerHTML = '<option value="">-- Select your name --</option>' + players.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+        // update vote dropdowns based on selected voter
+        function updateVoteDropdowns() {
+            const voter = voterSelect.value;
+            let available = players.filter(p => p !== voter);
+            const options = '<option value="">-- Select --</option>' + available.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+            document.getElementById("vote3").innerHTML = options;
+            document.getElementById("vote2").innerHTML = options;
+            document.getElementById("vote1").innerHTML = options;
+        }
+        voterSelect.addEventListener("change", updateVoteDropdowns);
+        updateVoteDropdowns();
+        weekSelect.addEventListener("change", () => {
+            document.getElementById("pitchContainer").innerHTML = renderPitch(weekSelect.value);
+        });
+    }
+
+    // ---------- VOTING ----------
     function addVote(voter, gameDate, first, second, third) {
         const existing = votes.find(v => v.voter === voter && v.gameDate === gameDate);
         if (existing) return { success: false, msg: `${voter} already voted for ${gameDate}` };
@@ -450,117 +430,43 @@
     function renderLeaderboard() {
         const ranking = computeLeaderboard();
         const container = document.getElementById("leaderboardContainer");
-        if (votes.length === 0) { container.innerHTML = "<div class='alert'>No votes yet</div>"; return; }
+        if (!container) return;
+        if (votes.length === 0) { container.innerHTML = "<div class='alert'>No votes yet.</div>"; return; }
         let html = `<table class="leaderboard-table"><thead><tr><th>#</th><th>Player</th><th>Points</th></tr></thead><tbody>`;
-        ranking.forEach((p,i) => {
-            html += `<tr><td>${i+1}</td><td>${escapeHtml(p.name)}</td><td>${p.points}</td></tr>`;
-        });
+        ranking.forEach((p,i) => { html += `<tr><td>${i+1}</td><td>${escapeHtml(p.name)}</td><td>${p.points}</td></tr>`; });
         html += `</tbody></table>`;
         container.innerHTML = html;
     }
 
-    // ---------- SEASON STATS (team performance) ----------
-    function renderSeasonStats() {
-        let yellowWins = 0, orangeWins = 0, draws = 0;
-        let yellowGoalsFor = 0, yellowGoalsAgainst = 0;
-        let orangeGoalsFor = 0, orangeGoalsAgainst = 0;
-        let topScorers = new Map(); // player -> total goals
-        for (let [date, match] of Object.entries(matchResults)) {
-            if (match.yellowScore !== undefined) {
-                yellowGoalsFor += match.yellowScore;
-                orangeGoalsFor += match.orangeScore;
-                yellowGoalsAgainst += match.orangeScore;
-                orangeGoalsAgainst += match.yellowScore;
-                if (match.yellowScore > match.orangeScore) yellowWins++;
-                else if (match.orangeScore > match.yellowScore) orangeWins++;
-                else draws++;
-            }
-            if (match.goals) {
-                for (let [player, goals] of Object.entries(match.goals)) {
-                    topScorers.set(player, (topScorers.get(player) || 0) + goals);
-                }
-            }
-        }
-        const sortedScorers = Array.from(topScorers.entries()).sort((a,b) => b[1] - a[1]).slice(0,10);
-        let html = `<div class="card"><h3>🏆 Team standings</h3>
-                    <p>🟡 Yellow: ${yellowWins} wins, ${draws} draws, ${orangeWins} losses (GF:${yellowGoalsFor}, GA:${yellowGoalsAgainst})</p>
-                    <p>🟠 Orange: ${orangeWins} wins, ${draws} draws, ${yellowWins} losses (GF:${orangeGoalsFor}, GA:${orangeGoalsAgainst})</p>
-                    <h3>⚽ Top goal scorers (all matches)</h3><ul>`;
-        sortedScorers.forEach(([player, goals]) => { html += `<li>${escapeHtml(player)} – ${goals} goals</li>`; });
-        html += `</ul></div>`;
-        document.getElementById("seasonStats").innerHTML = html;
-    }
-
-    // ---------- PLAYER VIEW ----------
-    function refreshPlayerDropdowns() {
-        const playerSelect = document.getElementById("playerNameSelect");
-        const currentPlayer = playerSelect.value;
-        playerSelect.innerHTML = '<option value="">-- Select your name --</option>' + players.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
-        if (players.includes(currentPlayer)) playerSelect.value = currentPlayer;
-        
-        const weekSelect = document.getElementById("playerWeekSelect");
-        weekSelect.innerHTML = gameWeeks.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
-        if (gameWeeks.length) weekSelect.value = gameWeeks[0].dateStr;
-        
-        function updateVoteDropdowns() {
-            const voter = playerSelect.value;
-            let available = players.filter(p => p !== voter);
-            const options = '<option value="">-- Select --</option>' + available.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
-            document.getElementById("vote3").innerHTML = options;
-            document.getElementById("vote2").innerHTML = options;
-            document.getElementById("vote1").innerHTML = options;
-        }
-        playerSelect.addEventListener("change", updateVoteDropdowns);
-        updateVoteDropdowns();
-        weekSelect.addEventListener("change", () => renderFixtureDisplay());
-        renderFixtureDisplay();
-    }
-
-    function renderFixtureDisplay() {
-        const gameDate = document.getElementById("playerWeekSelect").value;
-        const teams = teamAssignments[gameDate] || {};
-        const playerName = document.getElementById("playerNameSelect").value;
-        const myTeam = teams[playerName];
-        const match = matchResults[gameDate] || {};
-        const yellowScore = match.yellowScore ?? "?";
-        const orangeScore = match.orangeScore ?? "?";
-        let teamHtml = `<div class="alert"><strong>Your team:</strong> ${myTeam ? (myTeam === 'yellow' ? '🟡 Yellow' : '🟠 Orange') : 'Not assigned for this week'}</div>`;
-        let fixtureHtml = `<div><strong>Match:</strong> 🟡 Yellow ${yellowScore} - ${orangeScore} 🟠 Orange</div>`;
-        let goalsHtml = "<div><strong>Goal scorers:</strong><ul>";
-        if (match.goals) {
-            for (let [player, goals] of Object.entries(match.goals)) {
-                if (goals > 0) goalsHtml += `<li>${escapeHtml(player)} – ${goals} goal${goals!==1?'s':''}</li>`;
-            }
-        } else { goalsHtml += "<li>No goals recorded yet</li>"; }
-        goalsHtml += "</ul></div>";
-        document.getElementById("playerTeamDisplay").innerHTML = teamHtml;
-        document.getElementById("fixtureDisplay").innerHTML = fixtureHtml + goalsHtml;
-    }
-
+    // ---------- SEND VOTE (PDF + WhatsApp) ----------
     function sendVote() {
-        const voter = document.getElementById("playerNameSelect").value;
+        const voter = document.getElementById("voterNameSelect").value;
         const gameDate = document.getElementById("playerWeekSelect").value;
         const first = document.getElementById("vote3").value;
         const second = document.getElementById("vote2").value;
         const third = document.getElementById("vote1").value;
+        const msgDiv = document.getElementById("voterMessage");
         if (!voter || !gameDate || !first || !second || !third) {
-            document.getElementById("voterMessage").innerHTML = "<div class='alert error'>Please fill all fields</div>";
+            msgDiv.innerHTML = "<div class='alert error'>Please select all fields</div>";
+            msgDiv.style.display = "block";
             return;
         }
         if (first === second || first === third || second === third) {
-            document.getElementById("voterMessage").innerHTML = "<div class='alert error'>Players must be different</div>";
+            msgDiv.innerHTML = "<div class='alert error'>Players must be different</div>";
+            msgDiv.style.display = "block";
             return;
         }
         if (first === voter || second === voter || third === voter) {
-            document.getElementById("voterMessage").innerHTML = "<div class='alert error'>Cannot vote for yourself</div>";
+            msgDiv.innerHTML = "<div class='alert error'>Cannot vote for yourself</div>";
+            msgDiv.style.display = "block";
             return;
         }
         const voteObj = { voter, gameDate, first, second, third, timestamp: new Date().toISOString() };
         const jsonStr = JSON.stringify(voteObj, null, 2);
-        // Download PDF
+        // PDF generation
         const printWindow = window.open('', '_blank');
         printWindow.document.write(`
-            <html><head><title>Vote Slip - ${voter}</title>
+            <html><head><title>Vote - ${voter}</title>
             <style>body{font-family:Inter;padding:2rem;}</style>
             </head><body>
             <h1>⚽ Monday Soccer Vote</h1>
@@ -575,43 +481,178 @@
         printWindow.document.close();
         printWindow.print();
         // WhatsApp
-        const adminPhone = "YOUR_ADMIN_NUMBER_HERE"; // <-- REPLACE WITH REAL NUMBER
-        const whatsappUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(jsonStr)}`;
-        window.open(whatsappUrl, '_blank');
-        document.getElementById("voterMessage").innerHTML = "<div class='alert success'>Vote sent! PDF downloaded and WhatsApp opened.</div>";
+        const adminPhone = "YOUR_ADMIN_NUMBER_HERE"; // 🔧 REPLACE WITH ADMIN PHONE NUMBER (e.g., 61408164730)
+        const waUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(jsonStr)}`;
+        window.open(waUrl, '_blank');
+        msgDiv.innerHTML = "<div class='alert success'>Vote sent! PDF downloaded and WhatsApp opened.</div>";
+        msgDiv.style.display = "block";
+        setTimeout(() => msgDiv.style.display = "none", 4000);
     }
 
-    // ---------- ADMIN VOTE IMPORT ----------
+    // ---------- ADMIN: team assignment UI ----------
+    function renderTeamAssignmentUI() {
+        const weekSelect = document.getElementById("adminWeekSelect");
+        const gameDate = weekSelect.value;
+        const container = document.getElementById("teamAssignmentArea");
+        if (!gameDate) { container.innerHTML = "<div class='alert'>Select a week</div>"; return; }
+        if (!teamAssignments[gameDate]) teamAssignments[gameDate] = {};
+        let html = `<div class="flex-btns" style="justify-content:space-between;"><strong>Assign players to teams</strong></div>`;
+        players.forEach(p => {
+            const current = teamAssignments[gameDate][p] || "";
+            html += `
+                <div class="goal-row">
+                    <span style="flex:1">${escapeHtml(p)}</span>
+                    <select class="team-assign-select" data-player="${escapeHtml(p)}">
+                        <option value="">-- Not playing --</option>
+                        <option value="yellow" ${current === "yellow" ? "selected" : ""}>🟡 Yellow</option>
+                        <option value="orange" ${current === "orange" ? "selected" : ""}>🟠 Orange</option>
+                    </select>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+        document.querySelectorAll(".team-assign-select").forEach(sel => {
+            sel.addEventListener("change", () => {
+                const player = sel.getAttribute("data-player");
+                const team = sel.value;
+                if (team) teamAssignments[gameDate][player] = team;
+                else delete teamAssignments[gameDate][player];
+                saveAll();
+                refreshPlayerView(); // update pitch view for users
+            });
+        });
+    }
+
+    function renderMatchResultUI() {
+        const weekSelect = document.getElementById("adminWeekSelect");
+        const gameDate = weekSelect.value;
+        const container = document.getElementById("matchResultArea");
+        if (!gameDate) { container.innerHTML = "<div class='alert'>Select week</div>"; return; }
+        const match = matchResults[gameDate] || { yellowScore: 0, orangeScore: 0, goals: {} };
+        let html = `
+            <div class="flex-btns">
+                <div><label>🟡 Yellow score</label><input type="number" id="yellowScore" value="${match.yellowScore}" min="0"></div>
+                <div><label>🟠 Orange score</label><input type="number" id="orangeScore" value="${match.orangeScore}" min="0"></div>
+            </div>
+            <h4>⚽ Goal scorers</h4>
+        `;
+        const playersInMatch = Object.keys(teamAssignments[gameDate] || {});
+        if (playersInMatch.length === 0) html += "<div class='alert'>Assign teams first</div>";
+        playersInMatch.forEach(player => {
+            const goals = (match.goals && match.goals[player]) || 0;
+            html += `
+                <div class="goal-row">
+                    <span style="flex:1">${escapeHtml(player)}</span>
+                    <select class="goal-count" data-player="${escapeHtml(player)}">
+                        ${[0,1,2,3,4,5].map(n => `<option value="${n}" ${goals===n ? "selected":""}>${n} goal${n!==1?'s':''}</option>`).join('')}
+                    </select>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+        document.querySelectorAll(".goal-count").forEach(sel => {
+            sel.addEventListener("change", () => {
+                const player = sel.getAttribute("data-player");
+                const goals = parseInt(sel.value);
+                if (!matchResults[gameDate]) matchResults[gameDate] = { yellowScore: 0, orangeScore: 0, goals: {} };
+                matchResults[gameDate].goals[player] = goals;
+                saveAll();
+                refreshPlayerView();
+            });
+        });
+    }
+
+    function saveMatchResultUI() {
+        const gameDate = document.getElementById("adminWeekSelect").value;
+        if (!gameDate) return;
+        const yellowScore = parseInt(document.getElementById("yellowScore")?.value || 0);
+        const orangeScore = parseInt(document.getElementById("orangeScore")?.value || 0);
+        if (!matchResults[gameDate]) matchResults[gameDate] = { goals: {} };
+        matchResults[gameDate].yellowScore = yellowScore;
+        matchResults[gameDate].orangeScore = orangeScore;
+        saveAll();
+        refreshPlayerView();
+        const msgDiv = document.getElementById("adminMessage");
+        if (msgDiv) { msgDiv.innerHTML = "<div class='alert'>Result saved</div>"; setTimeout(() => msgDiv.innerHTML = "", 2000); }
+    }
+
+    // Import vote from admin textarea
     function importVoteText() {
         const text = document.getElementById("pasteVoteArea").value;
         try {
             const data = JSON.parse(text);
-            if (!data.voter || !data.gameDate || !data.first || !data.second || !data.third) throw new Error("Invalid");
-            const result = addVote(data.voter, data.gameDate, data.first, data.second, data.third);
-            if (result.success) {
-                document.getElementById("adminMessage").innerHTML = `<div class='alert success'>Vote added for ${data.voter}</div>`;
+            if (!data.voter || !data.gameDate || !data.first || !data.second || !data.third) throw new Error();
+            const res = addVote(data.voter, data.gameDate, data.first, data.second, data.third);
+            const msgDiv = document.getElementById("adminMessage");
+            if (res.success) {
+                msgDiv.innerHTML = `<div class='alert'>Vote added for ${data.voter}</div>`;
                 renderLeaderboard();
                 document.getElementById("pasteVoteArea").value = "";
             } else {
-                document.getElementById("adminMessage").innerHTML = `<div class='alert error'>${result.msg}</div>`;
+                msgDiv.innerHTML = `<div class='alert'>${res.msg}</div>`;
             }
         } catch(e) {
-            document.getElementById("adminMessage").innerHTML = "<div class='alert error'>Invalid vote format</div>";
+            document.getElementById("adminMessage").innerHTML = "<div class='alert'>Invalid vote format</div>";
         }
     }
 
-    // ---------- EXPORT/IMPORT ----------
-    function exportAll() {
-        const data = { players, teamAssignments, matchResults, votes, version: "1.0" };
+    // ---------- PLAYER MANAGEMENT ----------
+    function renderPlayersList() {
+        const container = document.getElementById("playersList");
+        if (!container) return;
+        let html = "";
+        players.forEach(p => {
+            html += `<div class="goal-row"><span>${escapeHtml(p)}</span><button class="deletePlayerBtn" data-name="${escapeHtml(p)}" style="background:#5a3e1a;">Delete</button></div>`;
+        });
+        container.innerHTML = html;
+        document.querySelectorAll(".deletePlayerBtn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const name = btn.getAttribute("data-name");
+                if (confirm(`Delete ${name}?`)) {
+                    players = players.filter(p => p !== name);
+                    for (let date in teamAssignments) delete teamAssignments[date][name];
+                    saveAll();
+                    renderPlayersList();
+                    refreshPlayerView();
+                    if (isAdminLoggedIn) { renderTeamAssignmentUI(); renderMatchResultUI(); }
+                }
+            });
+        });
+    }
+
+    function addNewPlayer() {
+        const name = document.getElementById("newPlayerName").value.trim();
+        if (name && !players.includes(name)) {
+            players.push(name);
+            players.sort();
+            saveAll();
+            renderPlayersList();
+            refreshPlayerView();
+            if (isAdminLoggedIn) { renderTeamAssignmentUI(); renderMatchResultUI(); }
+            document.getElementById("newPlayerName").value = "";
+        }
+    }
+    function resetToDefault() {
+        if (confirm("Reset all players to default list? Current assignments will be lost for removed players.")) {
+            players = [...DEFAULT_PLAYERS];
+            saveAll();
+            renderPlayersList();
+            refreshPlayerView();
+            if (isAdminLoggedIn) { renderTeamAssignmentUI(); renderMatchResultUI(); }
+        }
+    }
+
+    // ---------- EXPORT / IMPORT ----------
+    function exportAllData() {
+        const data = { players, teamAssignments, matchResults, votes, version: "2.0" };
         const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
-        const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
-        a.href = url;
+        a.href = URL.createObjectURL(blob);
         a.download = `soccer_backup_${new Date().toISOString().slice(0,19)}.json`;
         a.click();
-        URL.revokeObjectURL(url);
+        URL.revokeObjectURL(blob);
     }
-    function importAll(file) {
+    function importAllData(file) {
         const reader = new FileReader();
         reader.onload = e => {
             try {
@@ -621,35 +662,49 @@
                 if (data.matchResults) matchResults = data.matchResults;
                 if (data.votes) votes = data.votes;
                 saveAll();
-                location.reload(); // refresh everything
+                location.reload();
             } catch(err) { alert("Invalid backup file"); }
         };
         reader.readAsText(file);
     }
 
-    function refreshAllDropdowns() { refreshPlayerDropdowns(); renderTeamAssignmentUI(); renderMatchResultUI(); renderLeaderboard(); renderSeasonStats(); renderPlayersList(); }
+    // ---------- ADMIN LOGIN ----------
+    function checkAdminLogin() {
+        const pwd = document.getElementById("adminPassword").value;
+        if (pwd === "admin123") {
+            isAdminLoggedIn = true;
+            document.getElementById("adminLoginArea").style.display = "none";
+            document.getElementById("adminContent").style.display = "block";
+            // load admin UI
+            renderPlayersList();
+            const weekSelect = document.getElementById("adminWeekSelect");
+            weekSelect.innerHTML = gameWeeks.map(w => `<option value="${w.dateStr}">${w.label} (${w.dateStr})</option>`).join('');
+            weekSelect.addEventListener("change", () => { renderTeamAssignmentUI(); renderMatchResultUI(); });
+            renderTeamAssignmentUI();
+            renderMatchResultUI();
+            renderLeaderboard();
+        } else {
+            alert("Wrong password");
+        }
+    }
 
-    // ---------- INIT & EVENT LISTENERS ----------
+    // ---------- INITIALISE ----------
     document.addEventListener("DOMContentLoaded", () => {
         loadAll();
-        renderPlayersList();
-        refreshPlayerDropdowns();
-        renderTeamAssignmentUI();
-        renderMatchResultUI();
+        refreshPlayerView();
         renderLeaderboard();
-        renderSeasonStats();
-        document.getElementById("adminGameWeekSelect").innerHTML = gameWeeks.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
-        document.getElementById("adminGameWeekSelect").addEventListener("change", () => { renderTeamAssignmentUI(); renderMatchResultUI(); });
-        document.getElementById("saveTeamsBtn").addEventListener("click", () => { saveAll(); renderTeamAssignmentUI(); renderFixtureDisplay(); });
-        document.getElementById("saveResultBtn").addEventListener("click", saveMatchResult);
-        document.getElementById("addPlayerBtn").addEventListener("click", () => addPlayer(document.getElementById("newPlayerName").value));
-        document.getElementById("resetPlayersBtn").addEventListener("click", resetPlayers);
+        // Admin login
+        document.getElementById("adminLoginBtn").addEventListener("click", checkAdminLogin);
+        document.getElementById("addPlayerBtn").addEventListener("click", addNewPlayer);
+        document.getElementById("resetPlayersBtn").addEventListener("click", resetToDefault);
+        document.getElementById("saveTeamsBtn").addEventListener("click", () => { saveAll(); refreshPlayerView(); });
+        document.getElementById("saveResultBtn").addEventListener("click", saveMatchResultUI);
         document.getElementById("sendVoteBtn").addEventListener("click", sendVote);
         document.getElementById("addVoteBtn").addEventListener("click", importVoteText);
         document.getElementById("refreshLeaderboardBtn").addEventListener("click", renderLeaderboard);
-        document.getElementById("exportAllBtn").addEventListener("click", exportAll);
+        document.getElementById("exportAllBtn").addEventListener("click", exportAllData);
         document.getElementById("importAllBtn").addEventListener("click", () => document.getElementById("importFileInput").click());
-        document.getElementById("importFileInput").addEventListener("change", e => { if(e.target.files.length) importAll(e.target.files[0]); e.target.value=""; });
+        document.getElementById("importFileInput").addEventListener("change", e => { if(e.target.files.length) importAllData(e.target.files[0]); e.target.value=""; });
         // Tab switching
         document.querySelectorAll(".tab-btn").forEach(btn => {
             btn.addEventListener("click", () => {
@@ -658,8 +713,11 @@
                 document.getElementById(`${tab}Panel`).classList.add("active-panel");
                 document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
                 btn.classList.add("active");
-                if (tab === "admin") { renderLeaderboard(); renderSeasonStats(); renderTeamAssignmentUI(); renderMatchResultUI(); }
-                if (tab === "voter") { renderFixtureDisplay(); }
+                if (tab === "admin" && !isAdminLoggedIn) {
+                    document.getElementById("adminContent").style.display = "none";
+                    document.getElementById("adminLoginArea").style.display = "block";
+                }
+                if (tab === "player") refreshPlayerView();
             });
         });
     });
