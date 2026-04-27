@@ -3,126 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Monday Soccer – Submit Your 3-2-1 Vote</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Monday Soccer – 3-2-1 Vote</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            background: #f8f9fa;
-            font-family: 'Inter', sans-serif;
+            background: #f0f2f5;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
             padding: 24px;
-            color: #1e1e1e;
         }
-        .container { max-width: 800px; margin: 0 auto; }
-        .header { text-align: center; margin-bottom: 32px; }
-        .header h1 {
-            font-size: 2rem;
-            font-weight: 800;
-            color: #cc0000;
-            letter-spacing: -0.5px;
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
         }
-        .header p { color: #4a4a4a; margin-top: 6px; }
         .card {
             background: white;
             border-radius: 32px;
             padding: 28px;
-            margin-bottom: 28px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.05);
-            border: 1px solid #e0e0e0;
-        }
-        .card h2 {
-            font-weight: 700;
             margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h1 {
             color: #cc0000;
-            border-left: 6px solid #cc0000;
-            padding-left: 18px;
+            font-size: 1.8rem;
+            margin-bottom: 8px;
         }
         label {
             font-weight: 600;
-            color: #2c2c2c;
             display: block;
-            margin-top: 18px;
-            margin-bottom: 8px;
+            margin-top: 16px;
+            margin-bottom: 6px;
         }
         select, button {
-            padding: 12px 18px;
-            border-radius: 60px;
-            border: 1px solid #ddd;
-            font-size: 0.95rem;
-            background: white;
-            color: #1e1e1e;
             width: 100%;
-            margin: 6px 0;
+            padding: 12px;
+            border-radius: 60px;
+            border: 1px solid #ccc;
+            font-size: 1rem;
+            background: white;
         }
         button {
             background: #cc0000;
-            border: none;
-            font-weight: 700;
-            cursor: pointer;
             color: white;
-            transition: 0.15s;
+            font-weight: bold;
+            border: none;
+            margin-top: 24px;
+            cursor: pointer;
         }
-        button:hover { background: #990000; transform: translateY(-1px); }
+        button:hover {
+            background: #990000;
+        }
         .vote-row {
             display: flex;
-            gap: 16px;
+            gap: 12px;
             flex-wrap: wrap;
-            margin-top: 16px;
+            margin-top: 12px;
         }
         .vote-row > div {
             flex: 1;
-            min-width: 130px;
         }
         .alert {
             background: #ffe6e6;
-            border-left: 5px solid #cc0000;
-            padding: 12px 18px;
+            border-left: 4px solid #cc0000;
+            padding: 12px;
             border-radius: 60px;
-            margin: 16px 0;
+            margin-top: 16px;
             color: #990000;
-            font-size: 0.9rem;
         }
         footer {
             text-align: center;
-            margin-top: 40px;
-            font-size: 0.75rem;
+            margin-top: 32px;
+            font-size: 0.8rem;
             color: #6c757d;
-        }
-        @media (max-width: 600px) {
-            .vote-row { flex-direction: column; }
         }
     </style>
 </head>
 <body>
 <div class="container">
-    <div class="header">
-        <h1>⚽ MONDAY NIGHT SOCCER ⚽</h1>
-        <p>3 points • 2 points • 1 point – Secret ballot</p>
-    </div>
     <div class="card">
-        <h2>📝 CREATE YOUR VOTE</h2>
-        <label>👤 YOUR NAME</label>
+        <h1>⚽ Monday Night Soccer</h1>
+        <p>3 points • 2 points • 1 point – Vote and send to admin</p>
+
+        <label>👤 Your name</label>
         <select id="voterName"></select>
-        <label>📅 MONDAY GAME WEEK</label>
+
+        <label>📅 Game week</label>
         <select id="gameWeek"></select>
+
         <div class="vote-row">
-            <div>
-                <label>🏆 3 points (Best & Fairest)</label>
-                <select id="vote3"></select>
-            </div>
-            <div>
-                <label>🥈 2 points (Runner-up)</label>
-                <select id="vote2"></select>
-            </div>
-            <div>
-                <label>🥉 1 point (Most consistent)</label>
-                <select id="vote1"></select>
-            </div>
+            <div><label>🏆 3 points (Best)</label><select id="vote3"></select></div>
+            <div><label>🥈 2 points (Second)</label><select id="vote2"></select></div>
+            <div><label>🥉 1 point (Third)</label><select id="vote1"></select></div>
         </div>
-        <button id="sendVoteBtn">📤 SEND VOTE (PDF + WhatsApp)</button>
+
+        <button id="sendBtn">📤 Generate PDF & Open WhatsApp</button>
         <div id="message" class="alert" style="display: none;"></div>
     </div>
-    <footer>📲 After you click, a PDF will be generated and WhatsApp will open with your vote. Just press send.</footer>
+    <footer>📄 PDF will open – save or print it. WhatsApp will open with the vote text – just send.</footer>
 </div>
 
 <script>
@@ -137,8 +113,8 @@
     // ---------- Generate Monday game weeks (Feb → second-last Monday Dec) ----------
     function generateGameWeeks() {
         const year = new Date().getFullYear();
-        let start = new Date(year, 1, 1);           // Feb 1
-        while (start.getDay() !== 1) start.setDate(start.getDate() + 1); // first Monday in Feb
+        let start = new Date(year, 1, 1);
+        while (start.getDay() !== 1) start.setDate(start.getDate() + 1);
         let dec31 = new Date(year, 11, 31);
         let lastMonday = new Date(dec31);
         while (lastMonday.getDay() !== 1) lastMonday.setDate(lastMonday.getDate() - 1);
@@ -159,25 +135,24 @@
 
     // ---------- Populate dropdowns ----------
     function populateDropdowns() {
+        // Voter dropdown
         const voterSelect = document.getElementById("voterName");
         voterSelect.innerHTML = '<option value="">-- Select your name --</option>' + 
             FULL_ROSTER.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
 
+        // Game week dropdown
         const weekSelect = document.getElementById("gameWeek");
         weekSelect.innerHTML = GAME_WEEKS.map(w => `<option value="${w.dateStr}">${w.label} (${w.dateStr})</option>`).join('');
 
+        // Vote dropdowns – show all players except the selected voter (to avoid self-vote)
         function updateVoteDropdowns() {
             const voter = voterSelect.value;
-            if (!voter) {
-                // Disable vote dropdowns until voter is selected
-                document.getElementById("vote3").innerHTML = '<option value="">-- Select voter first --</option>';
-                document.getElementById("vote2").innerHTML = '<option value="">-- Select voter first --</option>';
-                document.getElementById("vote1").innerHTML = '<option value="">-- Select voter first --</option>';
-                return;
+            let available = FULL_ROSTER;
+            if (voter) {
+                available = FULL_ROSTER.filter(p => p !== voter);
             }
-            const available = FULL_ROSTER.filter(p => p !== voter);
             const options = '<option value="">-- Select --</option>' + available.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
-            // Keep previously selected values if they are still valid
+            // Preserve any existing selections if they are still valid
             const old3 = document.getElementById("vote3").value;
             const old2 = document.getElementById("vote2").value;
             const old1 = document.getElementById("vote1").value;
@@ -188,32 +163,21 @@
             if (available.includes(old2)) document.getElementById("vote2").value = old2;
             if (available.includes(old1)) document.getElementById("vote1").value = old1;
         }
-
         voterSelect.addEventListener("change", updateVoteDropdowns);
-        updateVoteDropdowns();
+        updateVoteDropdowns(); // initial call
     }
 
-    // ---------- Validate and build vote object ----------
-    function getVoteData() {
-        const voter = document.getElementById("voterName").value;
-        const gameDate = document.getElementById("gameWeek").value;
-        const weekLabel = GAME_WEEKS.find(w => w.dateStr === gameDate)?.label || gameDate;
-        const first = document.getElementById("vote3").value;
-        const second = document.getElementById("vote2").value;
-        const third = document.getElementById("vote1").value;
-        return { voter, gameDate, weekLabel, first, second, third };
-    }
-
+    // ---------- Validation ----------
     function validateVote(voter, gameDate, first, second, third) {
         if (!voter) return "Please select your name.";
         if (!gameDate) return "Please select a game week.";
-        if (!first || !second || !third) return "Please select all three players (3,2,1).";
-        if (first === second || first === third || second === third) return "You must choose three different players.";
+        if (!first || !second || !third) return "Please select all three players.";
+        if (first === second || first === third || second === third) return "You cannot give the same player multiple awards.";
         if (first === voter || second === voter || third === voter) return "You cannot vote for yourself.";
         return null;
     }
 
-    // ---------- Generate PDF (vote slip) ----------
+    // ---------- Generate PDF ----------
     function generatePDF(voteObj) {
         const printWindow = window.open('', '_blank');
         if (!printWindow) {
@@ -224,18 +188,17 @@
             <!DOCTYPE html>
             <html>
             <head>
-                <title>Vote Slip - ${escapeHtml(voteObj.voter)}</title>
+                <title>Vote - ${escapeHtml(voteObj.voter)}</title>
                 <style>
-                    body { font-family: 'Inter', Arial, sans-serif; padding: 2rem; background: white; color: #1e1e1e; }
+                    body { font-family: Arial, sans-serif; padding: 2rem; }
                     .vote-card { border: 2px solid #cc0000; border-radius: 32px; padding: 24px; max-width: 500px; margin: 0 auto; }
                     h1 { color: #cc0000; }
                     hr { border-color: #cc0000; }
-                    .footer { margin-top: 30px; font-size: 0.8rem; color: #666; }
                 </style>
             </head>
             <body>
                 <div class="vote-card">
-                    <h1>⚽ Monday Night Soccer</h1>
+                    <h1>⚽ Monday Night Soccer Vote</h1>
                     <p><strong>Voter:</strong> ${escapeHtml(voteObj.voter)}</p>
                     <p><strong>Game Week:</strong> ${escapeHtml(voteObj.weekLabel)} (${voteObj.gameDate})</p>
                     <hr>
@@ -243,7 +206,7 @@
                     <p><strong>🥈 2 points:</strong> ${escapeHtml(voteObj.second)}</p>
                     <p><strong>🥉 1 point:</strong> ${escapeHtml(voteObj.third)}</p>
                     <hr>
-                    <div class="footer">Submitted: ${new Date().toLocaleString()}</div>
+                    <p><em>Submitted: ${new Date().toLocaleString()}</em></p>
                 </div>
             </body>
             </html>
@@ -254,9 +217,8 @@
         return true;
     }
 
-    // ---------- Send vote via WhatsApp ----------
+    // ---------- Send WhatsApp ----------
     function sendWhatsApp(voteObj) {
-        // Create a human‑readable message (admin can also receive JSON, but text is easier)
         const message = `⚽ *MONDAY SOCCER VOTE* ⚽\n\n` +
             `*Voter:* ${voteObj.voter}\n` +
             `*Game Week:* ${voteObj.weekLabel} (${voteObj.gameDate})\n\n` +
@@ -265,16 +227,21 @@
             `🥉 *1 point:* ${voteObj.third}\n\n` +
             `Submitted: ${new Date().toLocaleString()}`;
         
-        // Admin phone number – CHANGE THIS TO YOUR NUMBER (country code, no plus, no spaces)
-        const adminPhone = "61403827887";   // e.g., 61403827887 for Australia
-        const encodedMsg = encodeURIComponent(message);
-        const waUrl = `https://wa.me/${adminPhone}?text=${encodedMsg}`;
+        // ---------- CHANGE THIS NUMBER TO YOUR WHATSAPP NUMBER ----------
+        const adminPhone = "61403827887";   // example: Australia 0403 827 887 -> 61403827887
+        const waUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`;
         window.open(waUrl, '_blank');
     }
 
-    // ---------- Main send function ----------
+    // ---------- Main send handler ----------
     function onSendVote() {
-        const { voter, gameDate, weekLabel, first, second, third } = getVoteData();
+        const voter = document.getElementById("voterName").value;
+        const gameDate = document.getElementById("gameWeek").value;
+        const weekLabel = GAME_WEEKS.find(w => w.dateStr === gameDate)?.label || gameDate;
+        const first = document.getElementById("vote3").value;
+        const second = document.getElementById("vote2").value;
+        const third = document.getElementById("vote1").value;
+
         const error = validateVote(voter, gameDate, first, second, third);
         const msgDiv = document.getElementById("message");
         if (error) {
@@ -283,23 +250,24 @@
             setTimeout(() => { msgDiv.style.display = "none"; }, 4000);
             return;
         }
+
         const voteObj = { voter, gameDate, weekLabel, first, second, third, timestamp: new Date().toISOString() };
-        
-        // Generate PDF (print dialog)
+
+        // Generate PDF (opens print dialog)
         const pdfOk = generatePDF(voteObj);
         if (!pdfOk) return;
-        
-        // Wait a short moment to let PDF dialog appear, then open WhatsApp
+
+        // After PDF, open WhatsApp (small delay)
         setTimeout(() => {
             sendWhatsApp(voteObj);
         }, 500);
-        
+
         msgDiv.innerHTML = "✅ Vote sent! PDF generated and WhatsApp opened.";
         msgDiv.style.display = "block";
         setTimeout(() => { msgDiv.style.display = "none"; }, 5000);
     }
 
-    // ---------- Helper ----------
+    // Helper
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, function(m) {
@@ -310,9 +278,9 @@
         });
     }
 
-    // ---------- Initialise ----------
+    // Initialise
     populateDropdowns();
-    document.getElementById("sendVoteBtn").addEventListener("click", onSendVote);
+    document.getElementById("sendBtn").addEventListener("click", onSendVote);
 </script>
 </body>
 </html>
