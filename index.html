@@ -94,7 +94,7 @@
         }
         button:hover { background: #990000; transform: translateY(-1px); }
         
-        /* ---- REALISTIC SOCCER PITCH ---- */
+        /* Soccer pitch */
         .pitch {
             background: linear-gradient(145deg, #2e7d32, #1b5e20);
             border-radius: 40px;
@@ -126,22 +126,6 @@
             border-radius: 50%;
             transform: translate(-50%, -50%);
             opacity: 0.8;
-        }
-        .penalty-area-left, .penalty-area-right {
-            position: absolute;
-            top: 25%;
-            width: 50px;
-            height: 50%;
-            border: 2px solid white;
-            opacity: 0.7;
-        }
-        .penalty-area-left {
-            left: 0;
-            border-left: none;
-        }
-        .penalty-area-right {
-            right: 0;
-            border-right: none;
         }
         .teams-row {
             display: flex;
@@ -250,8 +234,6 @@
             <h2>📅 GAME WEEK</h2>
             <select id="playerWeekSelect"></select>
             <div class="pitch">
-                <div class="penalty-area-left"></div>
-                <div class="penalty-area-right"></div>
                 <div class="teams-row">
                     <div class="team-box"><div class="team-title yellow-title">🟡 YELLOW TEAM</div>
                     <div class="player-list" id="yellowList"></div></div>
@@ -438,20 +420,60 @@
         document.getElementById("orangeList").innerHTML = orange.map(p => `<div class="player-badge">${escapeHtml(p)}</div>`).join('') || "<div class='player-badge'>—</div>";
         document.getElementById("matchResultDisplay").innerHTML = `<strong>FINAL SCORE:</strong> 🟡 ${match.yellowScore} - ${match.orangeScore} 🟠 &nbsp;|&nbsp; ⚽ Goals: ${goalsText || "none"}`;
     }
+
+    // Dynamic vote dropdowns (exclude self and already selected players)
     function renderVoterDropdowns() {
-        const select = document.getElementById("voterNameSelect");
-        select.innerHTML = '<option value="">-- Select your name --</option>' + players.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
-        function updateVoteOpts() {
-            const voter = select.value;
-            let available = players.filter(p => p !== voter);
-            const opts = '<option value="">-- Select --</option>' + available.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
-            document.getElementById("vote3").innerHTML = opts;
-            document.getElementById("vote2").innerHTML = opts;
-            document.getElementById("vote1").innerHTML = opts;
+        const voterSelect = document.getElementById("voterNameSelect");
+        const currentVoter = voterSelect.value;
+        voterSelect.innerHTML = '<option value="">-- Select your name --</option>' + players.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+        if (players.includes(currentVoter)) voterSelect.value = currentVoter;
+
+        function updateAllVoteDropdowns() {
+            const voter = voterSelect.value;
+            if (!voter) {
+                // disable all vote dropdowns if no voter selected
+                document.getElementById("vote3").innerHTML = '<option value="">-- Select voter first --</option>';
+                document.getElementById("vote2").innerHTML = '<option value="">-- Select voter first --</option>';
+                document.getElementById("vote1").innerHTML = '<option value="">-- Select voter first --</option>';
+                return;
+            }
+            const usedPlayers = new Set();
+            const firstVal = document.getElementById("vote3").value;
+            const secondVal = document.getElementById("vote2").value;
+            const thirdVal = document.getElementById("vote1").value;
+            if (firstVal) usedPlayers.add(firstVal);
+            if (secondVal) usedPlayers.add(secondVal);
+            if (thirdVal) usedPlayers.add(thirdVal);
+            // Build available players: all except voter and already used in other selects
+            const available = players.filter(p => p !== voter && !usedPlayers.has(p));
+            const options = '<option value="">-- Select --</option>' + available.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+            // Update only the select that we are not currently changing? We'll update all, but keep current values if still valid.
+            const oldFirst = document.getElementById("vote3").value;
+            const oldSecond = document.getElementById("vote2").value;
+            const oldThird = document.getElementById("vote1").value;
+            document.getElementById("vote3").innerHTML = options;
+            document.getElementById("vote2").innerHTML = options;
+            document.getElementById("vote1").innerHTML = options;
+            // Restore values if they are still valid (not removed)
+            if (available.includes(oldFirst)) document.getElementById("vote3").value = oldFirst;
+            if (available.includes(oldSecond)) document.getElementById("vote2").value = oldSecond;
+            if (available.includes(oldThird)) document.getElementById("vote1").value = oldThird;
         }
-        select.addEventListener("change", updateVoteOpts);
-        updateVoteOpts();
+
+        function handleChange(selectId) {
+            return () => {
+                updateAllVoteDropdowns();
+            };
+        }
+        voterSelect.addEventListener("change", () => {
+            updateAllVoteDropdowns();
+        });
+        document.getElementById("vote3").addEventListener("change", handleChange("vote3"));
+        document.getElementById("vote2").addEventListener("change", handleChange("vote2"));
+        document.getElementById("vote1").addEventListener("change", handleChange("vote1"));
+        updateAllVoteDropdowns();
     }
+
     async function sendVote() {
         const voter = document.getElementById("voterNameSelect").value;
         const gameDate = document.getElementById("playerWeekSelect").value;
@@ -466,13 +488,13 @@
             return;
         }
         if (first === second || first === third || second === third) {
-            msgDiv.innerHTML = "Players must be different";
+            msgDiv.innerHTML = "You cannot give the same player multiple awards";
             msgDiv.style.display = "block";
             setTimeout(() => msgDiv.style.display = "none", 3000);
             return;
         }
         if (first === voter || second === voter || third === voter) {
-            msgDiv.innerHTML = "Cannot vote for yourself";
+            msgDiv.innerHTML = "You cannot vote for yourself";
             msgDiv.style.display = "block";
             setTimeout(() => msgDiv.style.display = "none", 3000);
             return;
@@ -495,8 +517,8 @@
         `);
         printWin.document.close();
         printWin.print();
-        // WhatsApp – change this to your number
-        const adminPhone = "61408164730"; // <-- REPLACE WITH YOUR WHATSAPP NUMBER
+        // WhatsApp (number fixed)
+        const adminPhone = "61403827887"; // <-- Your number (without leading zero)
         const waUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(JSON.stringify(voteObj))}`;
         window.open(waUrl, '_blank');
         msgDiv.innerHTML = "Vote sent! PDF + WhatsApp opened.";
@@ -504,7 +526,7 @@
         setTimeout(() => msgDiv.style.display = "none", 4000);
     }
 
-    // ---------- ADMIN UI ----------
+    // ---------- ADMIN UI (unchanged except minor adjustments) ----------
     function renderPlayersList() {
         const container = document.getElementById("playersList");
         container.innerHTML = players.map(p => `<div class="goal-row"><span>${escapeHtml(p)}</span><button class="delPlayerBtn" data-name="${escapeHtml(p)}" style="background:#990000;">Delete</button></div>`).join('');
@@ -639,7 +661,7 @@
         const container = document.getElementById("leaderboardContainer");
         if (votes.length === 0) { container.innerHTML = "<div class='alert'>No votes yet</div>"; return; }
         let html = `<table class="leaderboard-table"><thead><tr><th>#</th><th>Player</th><th>Points</th></tr></thead><tbody>`;
-        ranking.forEach((p,i) => { html += `<tr style="${i===0?'background:#fff0f0;':''}"><td>${i+1}${i===0?"🥇":i===1?"🥈":i===2?"🥉":""}</td><td><strong>${escapeHtml(p.name)}</strong></td><td style="color:#cc0000;">${p.points}</td></tr>`; });
+        ranking.forEach((p,i) => { html += `<tr style="${i===0?'background:#fff0f0;':''}"><td>${i+1}${i===0?"🥇":i===1?"🥈":i===2?"🥉":""}</td><td><strong>${escapeHtml(p.name)}</strong><td><td style="color:#cc0000;">${p.points}</td></tr>`; });
         html += `</tbody></table>`;
         container.innerHTML = html;
     }
