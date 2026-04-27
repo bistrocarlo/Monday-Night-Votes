@@ -160,9 +160,8 @@
         renderLoginScreen();
     }
 
-    // ---------- Login Screen (password field hidden) ----------
+    // ---------- Login Screen ----------
     async function renderLoginScreen() {
-        await loadData();
         const container = document.getElementById("appContainer");
         container.innerHTML = `
             <div class="login-card">
@@ -201,7 +200,7 @@
         };
     }
 
-    // ---------- Main App (tabs: Attendance, Top Scorer, Rules, Admin if logged in) ----------
+    // ---------- Main App ----------
     async function renderMainApp() {
         await loadData();
         const container = document.getElementById("appContainer");
@@ -250,7 +249,7 @@
         });
     }
 
-    // ----- Attendance Panel (live – only upcoming weeks) -----
+    // ----- Attendance Panel -----
     function renderAttendancePanel() {
         const container = document.getElementById("attendancePanel");
         const futureWeeks = getFutureWeeks();
@@ -394,8 +393,8 @@
             return;
         }
         let html = `<div class="card"><h2>⚽ TOP GOAL SCORERS</h2><table class="topscorer-table"><thead><tr><th>#</th><th>Player</th><th>Goals</th></tr></thead><tbody>`;
-        sorted.forEach((p,i) => { html += `<tr><td>${i+1}</td><td><strong>${escapeHtml(p.name)}</strong></td><td style="color:#cc0000;">${p.total}</td></tr>`; });
-        html += `</tbody></table></div>`;
+        sorted.forEach((p,i) => { html += `<tr><td>${i+1}</td>}<strong>${escapeHtml(p.name)}</strong></td><td style="color:#cc0000;">${p.total}</td><tr>`; });
+        html += `</tbody></tr></div>`;
         container.innerHTML = html;
     }
 
@@ -405,7 +404,7 @@
         container.innerHTML = `<div class="card"><h2>📜 RULES</h2><div class="rules-content"><ul><li>Hit crossbar → buy a round.</li><li>Own goals = double.</li><li>Last arrival is goalkeeper first 10 min.</li><li>No "mine!" shouting.</li><li>Goal celebrations must include a dance.</li></ul></div></div>`;
     }
 
-    // ----- ADMIN PANEL (only visible if isAdminLoggedIn) -----
+    // ----- ADMIN PANEL -----
     async function renderAdminPanel() {
         const container = document.getElementById("adminPanel");
         await loadData();
@@ -442,11 +441,11 @@
     function renderPlayersListAdmin() {
         const container = document.getElementById("playersList");
         let html = `<table class="payment-table"><thead><tr><th>Player</th><th></th></tr></thead><tbody>`;
-        for (let p of FULL_PLAYER_LIST) html += `<tr><td>${escapeHtml(p)}</td><td><button disabled style="background:#990000;">Delete</button></td></tr>`;
-        html += `</tbody></table>`;
+        for (let p of FULL_PLAYER_LIST) html += `<tr>}的一样${escapeHtml(p)}<button disabled>Delete</button><tr>`;
+        html += `</tbody>`,
         container.innerHTML = html;
     }
-    // ONLY show players who have marked "attending" for the selected week (including guests)
+    // ONLY show players who marked "attending" for the selected week
     async function renderTeamAssignmentUI() {
         const gameDate = document.getElementById("adminWeekSelect").value;
         if (!gameDate) return;
@@ -510,10 +509,10 @@
         for (let week of weeks) {
             const label = ALL_GAME_WEEKS.find(w => w.dateStr === week)?.label || week;
             const weekAtt = attendance.filter(a => a.gameDate === week);
-            for (let a of weekAtt) html += `<tr><td>${escapeHtml(label)}</td><td>${escapeHtml(a.player)}</td><td>${a.status === 'in' ? '✅ Attending' : '❌ Not'}</td></tr>`;
+            for (let a of weekAtt) html += `<tr>}<td>${escapeHtml(label)}</td><td>${escapeHtml(a.player)}</td><td>${a.status === 'in' ? '✅ Attending' : '❌ Not'}</td></tr>`;
         }
         if (weeks.length === 0) html += `<tr><td colspan="3">No records</td></tr>`;
-        html += `</tbody></table>`;
+        html += `</tbody>`,
         container.innerHTML = html;
     }
     async function renderAdminPaymentUI() {
@@ -527,7 +526,7 @@
         for (let week of weeks) {
             const label = ALL_GAME_WEEKS.find(w => w.dateStr === week)?.label || week;
             const paid = payments.filter(p => p.gameDate === week).map(p => p.player).sort();
-            html += `<tr><td>${escapeHtml(label)}</td><td>${paid.join(', ') || 'none'}</td><td>$${paid.length * 5}</td></tr>`;
+            html += `<tr>}<td>${escapeHtml(label)}</td><td>${paid.join(', ') || 'none'}</td><td>$${paid.length * 5}</td></tr>`;
         }
         html += `</tbody></table><div class="alert">💰 Total collected: $${payments.length * 5}</div>`;
         container.innerHTML = html;
