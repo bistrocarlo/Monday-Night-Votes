@@ -6,49 +6,76 @@
     <title>Monday Night Soccer – Complete Hub</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #f8f9fa; font-family: 'Inter', sans-serif; padding: 20px; min-height: 100vh; }
+        body { background: linear-gradient(135deg, #f0f2f5 0%, #e0e5ec 100%); font-family: 'Inter', sans-serif; padding: 20px; min-height: 100vh; }
         .container { max-width: 1400px; margin: 0 auto; }
-        .header { text-align: center; margin-bottom: 28px; }
-        .header h1 { font-size: 2rem; font-weight: 800; color: #cc0000; }
-        .tabs { display: flex; gap: 12px; justify-content: center; margin-bottom: 28px; flex-wrap: wrap; }
-        .tab-btn { background: white; border: 2px solid #cc0000; padding: 8px 20px; border-radius: 60px; font-weight: 600; cursor: pointer; color: #cc0000; }
-        .tab-btn.active { background: #cc0000; color: white; }
+        .header { text-align: center; margin-bottom: 32px; }
+        .header h1 { 
+            font-family: 'Poppins', sans-serif; 
+            font-size: 3rem; 
+            font-weight: 900; 
+            background: linear-gradient(135deg, #cc0000, #ff4444, #cc0000);
+            background-size: 200% auto;
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+            letter-spacing: -0.5px;
+        }
+        .header p { color: #555; font-size: 0.9rem; margin-top: 5px; font-weight: 500; }
+        .tabs { display: flex; gap: 15px; justify-content: center; margin-bottom: 32px; flex-wrap: wrap; }
+        .tab-btn { 
+            background: white; border: none; padding: 12px 28px; border-radius: 60px; font-weight: 700; cursor: pointer; 
+            color: #cc0000; font-size: 0.9rem; min-width: 130px; text-align: center;
+            box-shadow: 0 5px 0 #999;
+            transition: all 0.08s linear;
+            font-family: 'Poppins', sans-serif;
+        }
+        .tab-btn.active { background: #cc0000; color: white; box-shadow: 0 5px 0 #8b0000; }
+        .tab-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #666; }
         .panel { display: none; animation: fade 0.2s; }
         .panel.active-panel { display: block; }
-        @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-        .card { background: white; border-radius: 28px; padding: 20px; margin-bottom: 24px; border: 1px solid #e0e0e0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .card h2, .card h3 { font-weight: 700; margin-bottom: 16px; color: #cc0000; border-left: 5px solid #cc0000; padding-left: 16px; }
-        label { font-weight: 600; display: block; margin-top: 14px; margin-bottom: 6px; }
-        select, input, button, textarea { padding: 10px 14px; border-radius: 60px; border: 1px solid #ddd; font-size: 0.9rem; background: white; width: 100%; margin: 5px 0; }
-        button { background: #cc0000; color: white; font-weight: 700; border: none; cursor: pointer; width: auto; }
-        button:hover { background: #990000; }
-        .login-card { max-width: 400px; margin: 40px auto; background: white; border-radius: 48px; padding: 28px; text-align: center; }
-        .pitch { background: linear-gradient(145deg, #2e7d32, #1b5e20); border-radius: 32px; border: 3px solid white; padding: 14px; position: relative; box-shadow: 0 0 0 3px #cc0000; }
+        @keyframes fade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .card { background: white; border-radius: 28px; padding: 24px; margin-bottom: 28px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.02); }
+        .card h2, .card h3 { font-family: 'Poppins', sans-serif; font-weight: 700; margin-bottom: 18px; color: #cc0000; border-left: 5px solid #cc0000; padding-left: 16px; }
+        label { font-weight: 600; display: block; margin-top: 16px; margin-bottom: 8px; color: #333; }
+        select, input, button, textarea { padding: 12px 18px; border-radius: 60px; border: 1px solid #ddd; font-size: 0.95rem; background: white; width: 100%; margin: 6px 0; font-family: 'Inter', sans-serif; }
+        button { 
+            background: #cc0000; color: white; font-weight: 700; border: none; cursor: pointer; width: auto; min-width: 160px; padding: 12px 28px;
+            box-shadow: 0 5px 0 #8b0000;
+            transition: all 0.08s linear;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+        }
+        button:active { transform: translateY(2px); box-shadow: 0 2px 0 #8b0000; }
+        button:hover { background: #dd2222; }
+        .login-card { max-width: 420px; margin: 60px auto; background: white; border-radius: 48px; padding: 40px 32px; text-align: center; box-shadow: 0 20px 35px -10px rgba(0,0,0,0.2); }
+        .pitch { background: linear-gradient(145deg, #2e7d32, #1b5e20); border-radius: 32px; border: 3px solid white; padding: 20px; position: relative; box-shadow: 0 0 0 3px #cc0000; }
         .pitch::before { content: ""; position: absolute; top: 0; left: 50%; width: 2px; height: 100%; background: white; transform: translateX(-50%); opacity: 0.7; }
-        .pitch::after { content: ""; position: absolute; top: 50%; left: 50%; width: 60px; height: 60px; border: 2px solid white; border-radius: 50%; transform: translate(-50%, -50%); opacity: 0.7; }
-        .teams-row { display: flex; flex-wrap: wrap; gap: 16px; position: relative; z-index: 2; }
-        .team-box { flex: 1; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); border-radius: 24px; padding: 12px; color: white; }
-        .team-title { font-size: 1.2rem; font-weight: 800; text-align: center; margin-bottom: 8px; }
-        .yellow-title { color: #ffea00; }
-        .orange-title { color: #ff9800; }
-        .player-list { display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; }
-        .player-badge { background: rgba(0,0,0,0.7); border-radius: 40px; padding: 5px 8px; text-align: center; font-size: 0.75rem; }
-        .match-result { margin-top: 12px; text-align: center; background: rgba(0,0,0,0.7); border-radius: 40px; padding: 6px; color: white; font-weight: 600; font-size: 0.8rem; }
-        .alert { background: #ffe6e6; border-left: 4px solid #cc0000; padding: 8px 12px; border-radius: 40px; margin: 8px 0; color: #990000; font-size: 0.85rem; }
-        .goal-row { background: #f9f9f9; border-radius: 40px; padding: 6px 10px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
-        .count-box { background: #2c3e50; color: white; border-radius: 40px; padding: 8px 12px; display: inline-block; margin: 5px; min-width: 100px; text-align: center; }
-        .count-number { font-size: 1.3rem; font-weight: 800; }
-        footer { text-align: center; margin-top: 32px; font-size: 0.7rem; color: #6c757d; }
-        .flex-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-        .attending-in { background: #2e7d5e; color: white; }
-        .attending-out { background: #cc0000; color: white; }
-        .payment-table, .attendance-table, .topscorer-table, .pastgames-table { width: 100%; border-collapse: collapse; background: white; border-radius: 20px; overflow: hidden; margin-top: 10px; }
-        .payment-table th, .payment-table td, .attendance-table th, .attendance-table td, .topscorer-table th, .topscorer-table td, .pastgames-table th, .pastgames-table td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #f0f0f0; }
-        .payment-table th, .attendance-table th, .topscorer-table th, .pastgames-table th { background: #fafafa; color: #cc0000; }
+        .pitch::after { content: ""; position: absolute; top: 50%; left: 50%; width: 70px; height: 70px; border: 2px solid white; border-radius: 50%; transform: translate(-50%, -50%); opacity: 0.7; }
+        .teams-row { display: flex; flex-wrap: wrap; gap: 20px; position: relative; z-index: 2; }
+        .team-box { flex: 1; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); border-radius: 24px; padding: 16px; color: white; }
+        .team-title { font-size: 1.4rem; font-weight: 800; text-align: center; margin-bottom: 12px; font-family: 'Poppins', sans-serif; }
+        .yellow-title { color: #ffea00; text-shadow: 0 0 5px rgba(255,234,0,0.5); }
+        .orange-title { color: #ff9800; text-shadow: 0 0 5px rgba(255,152,0,0.5); }
+        .player-list { display: flex; flex-direction: column; gap: 8px; max-height: 350px; overflow-y: auto; }
+        .player-badge { background: rgba(0,0,0,0.7); border-radius: 40px; padding: 8px 12px; text-align: center; font-size: 0.85rem; }
+        .match-result { margin-top: 16px; text-align: center; background: rgba(0,0,0,0.7); border-radius: 40px; padding: 10px; color: white; font-weight: 600; font-size: 0.9rem; }
+        .alert { background: #ffe6e6; border-left: 4px solid #cc0000; padding: 12px 18px; border-radius: 40px; margin: 12px 0; color: #990000; font-size: 0.9rem; }
+        .goal-row { background: #f9f9f9; border-radius: 60px; padding: 12px 18px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .count-box { background: #2c3e50; color: white; border-radius: 40px; padding: 12px 20px; display: inline-block; margin: 8px; min-width: 150px; text-align: center; box-shadow: 0 4px 0 #1a2a3a; }
+        .count-number { font-size: 1.6rem; font-weight: 800; }
+        footer { text-align: center; margin-top: 40px; font-size: 0.75rem; color: #777; }
+        .flex-btns { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 20px; justify-content: center; }
+        .attending-in { background: #2e7d5e; color: white; box-shadow: 0 4px 0 #1a4a3a; }
+        .attending-out { background: #cc0000; color: white; box-shadow: 0 4px 0 #8b0000; }
+        .payment-table, .attendance-table, .topscorer-table, .pastgames-table { width: 100%; border-collapse: collapse; background: white; border-radius: 20px; overflow: hidden; margin-top: 12px; }
+        .payment-table th, .payment-table td, .attendance-table th, .attendance-table td, .topscorer-table th, .topscorer-table td, .pastgames-table th, .pastgames-table td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+        .payment-table th, .attendance-table th, .topscorer-table th, .pastgames-table th { background: #fafafa; color: #cc0000; font-weight: 700; }
         @media (max-width: 700px) { .teams-row { flex-direction: column; } .pitch::before { display: none; } }
+        .debug-info { font-size: 0.75rem; color: #666; margin-top: 8px; }
     </style>
 </head>
 <body>
@@ -148,20 +175,19 @@
         await loadData();
         document.getElementById("appContainer").innerHTML = `
             <div class="login-card">
-                <h2 style="color:#cc0000;">★ MONDAY NIGHT SOCCER ★</h2>
-                <p>Select your name (players) or login as admin</p>
+                <h1 style="font-family:'Poppins',sans-serif; font-size:2rem; color:#cc0000; margin-bottom:16px;">★ MONDAY NIGHT SOCCER ★</h1>
+                <p style="margin-bottom:24px;">Select your name (players) or login as admin</p>
                 <label>👤 YOUR NAME</label>
                 <select id="playerNameSelect">
                     <option value="">-- Select your name --</option>
                     ${FULL_PLAYER_LIST.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('')}
                 </select>
-                <button id="playerLoginBtn">Enter as Player</button>
-                <hr style="margin: 20px 0;">
+                <button id="playerLoginBtn" style="margin-top:8px;">Enter as Player</button>
+                <hr style="margin: 24px 0;">
                 <label>🔐 ADMIN LOGIN</label>
                 <input type="password" id="adminPassword" placeholder="Admin password">
                 <button id="adminLoginBtn">Admin Login</button>
                 <div id="loginError" class="alert" style="display:none;"></div>
-                <p style="margin-top: 16px; font-size:0.7rem;">Admin password: admin123</p>
             </div>
         `;
         document.getElementById("playerLoginBtn").onclick = () => {
@@ -181,12 +207,12 @@
         container.innerHTML = `
             <div class="header">
                 <h1>⚽ MONDAY NIGHT SOCCER ⚽</h1>
-                <p>Live attendance • Pitch & teams • Top goalscorer • Past games</p>
-                <button id="logoutBtn" style="margin-top:8px; background:#cc0000; padding:5px 15px;">Logout</button>
+                <p>${currentUser.role === "admin" ? "ADMIN MODE" : "Player: " + currentUser.name}</p>
+                <button id="logoutBtn" style="margin-top:12px; background:#cc0000; padding:8px 20px; min-width:100px;">Logout</button>
             </div>
             <div class="tabs" id="tabs"></div>
             <div id="panelContainer"></div>
-            <footer>⚡ Live sync via Firebase • Admin: admin123</footer>
+            <footer>⚡ Live sync via Firebase</footer>
         `;
         document.getElementById("logoutBtn").onclick = logout;
 
@@ -233,24 +259,12 @@
                 <select id="attWeekSelect">${weeks.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('')}</select>
                 <label>👤 YOUR NAME</label>
                 <select id="attPlayerSelect"></select>
-                <div class="flex-btns">
-                    <button id="attendingBtn" class="attending-in">✅ I AM ATTENDING</button>
-                    <button id="notAttendingBtn" class="attending-out">❌ I AM NOT ATTENDING</button>
-                    <button id="addGuestBtn">➕ ADD GUEST</button>
-                </div>
+                <div class="flex-btns"><button id="attendingBtn" class="attending-in">✅ I AM ATTENDING</button><button id="notAttendingBtn" class="attending-out">❌ I AM NOT ATTENDING</button><button id="addGuestBtn">➕ ADD GUEST</button></div>
                 <div id="attMsg" class="alert" style="display:none;"></div>
             </div>
             <div class="card"><h2>📊 ATTENDANCE COUNTS</h2><div id="attCounts"></div></div>
-            <div class="card">
-                <h2>🏟️ THIS WEEK'S PITCH & TEAMS</h2>
-                <select id="pitchWeekSelect">${weeks.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('')}</select>
-                <div class="pitch">
-                    <div class="teams-row">
-                        <div class="team-box"><div class="team-title yellow-title">🟡 YELLOW</div><div class="player-list" id="yellowList"></div></div>
-                        <div class="team-box"><div class="team-title orange-title">🟠 ORANGE</div><div class="player-list" id="orangeList"></div></div>
-                    </div>
-                    <div class="match-result" id="matchResultDisplay"></div>
-                </div>
+            <div class="card"><h2>🏟️ THIS WEEK'S PITCH & TEAMS</h2><select id="pitchWeekSelect">${weeks.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('')}</select>
+                <div class="pitch"><div class="teams-row"><div class="team-box"><div class="team-title yellow-title">🟡 YELLOW</div><div class="player-list" id="yellowList"></div></div><div class="team-box"><div class="team-title orange-title">🟠 ORANGE</div><div class="player-list" id="orangeList"></div></div></div><div class="match-result" id="matchResultDisplay"></div></div>
             </div>
         `;
         document.getElementById("attPlayerSelect").innerHTML = '<option value="">-- Select your name --</option>' + FULL_PLAYER_LIST.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
@@ -267,10 +281,7 @@
         if (!week) return;
         const attending = attendance.filter(a => a.gameDate === week && a.status === 'in').map(a => a.player);
         const notAttending = attendance.filter(a => a.gameDate === week && a.status === 'out').map(a => a.player);
-        document.getElementById("attCounts").innerHTML = `
-            <div class="count-box"><div>Attending</div><div class="count-number">${attending.length}</div><div>${attending.join(', ') || 'none'}</div></div>
-            <div class="count-box" style="background:#cc0000;"><div>Not attending</div><div class="count-number">${notAttending.length}</div><div>${notAttending.join(', ') || 'none'}</div></div>
-        `;
+        document.getElementById("attCounts").innerHTML = `<div class="count-box"><div>Attending</div><div class="count-number">${attending.length}</div><div>${attending.join(', ') || 'none'}</div></div><div class="count-box" style="background:#cc0000;"><div>Not attending</div><div class="count-number">${notAttending.length}</div><div>${notAttending.join(', ') || 'none'}</div></div>`;
     }
     async function setAttendance(status) {
         const player = document.getElementById("attPlayerSelect").value;
@@ -316,28 +327,18 @@
         document.getElementById("matchResultDisplay").innerHTML = `<strong>SCORE:</strong> 🟡 ${match.yellowScore} - ${match.orangeScore} 🟠 &nbsp;|&nbsp; ⚽ Goals: ${goalsText || "none"}`;
     }
 
-    // ----- PAST GAMES PANEL (shows all past weeks with teams and results) -----
     async function renderPastGamesPanel() {
         const container = document.getElementById("pastgamesPanel");
         const pastWeeks = getPastWeeks().reverse();
-        if (!pastWeeks.length) {
-            container.innerHTML = `<div class="card"><div class="alert">No past games yet.</div></div>`;
-            return;
-        }
-        let html = `<div class="card"><h2>📆 PAST GAMES</h2><table class="pastgames-table"><thead><tr><th>Week</th><th>🟡 Yellow Team</th><th>🟠 Orange Team</th><th>Result</th><th>Goal Scorers</th><tr></thead><tbody>`;
+        if (!pastWeeks.length) { container.innerHTML = `<div class="card"><div class="alert">No past games yet.</div></div>`; return; }
+        let html = `<div class="card"><h2>📆 PAST GAMES</h2><table class="pastgames-table"><thead><tr><th>Week</th><th>🟡 Yellow Team</th><th>🟠 Orange Team</th><th>Result</th><th>Goal Scorers</th></tr></thead><tbody>`;
         for (let week of pastWeeks) {
             const assignments = teamAssignments[week.dateStr] || {};
             const yellow = Object.keys(assignments).filter(p => assignments[p] === "yellow").sort();
             const orange = Object.keys(assignments).filter(p => assignments[p] === "orange").sort();
             const match = matchResults[week.dateStr] || { yellowScore: 0, orangeScore: 0, goals: {} };
             const goalsText = Object.entries(match.goals || {}).filter(([_,g]) => g>0).map(([p,g]) => `${p} (${g})`).join(", ");
-            html += `<tr>
-                        <td><strong>${week.label}</strong></td>
-                        <td>${yellow.join(', ') || '—'}</td>
-                        <td>${orange.join(', ') || '—'}</td>
-                        <td>🟡 ${match.yellowScore} - ${match.orangeScore} 🟠</td>
-                        <td>${goalsText || '—'}</td>
-                     </tr>`;
+            html += `<tr>}<strong>${week.label}</strong>${yellow.join(', ') || '—'}${orange.join(', ') || '—'}🟡 ${match.yellowScore} - ${match.orangeScore} 🟠${goalsText || '—'}</tr>`;
         }
         html += `</tbody></table></div>`;
         container.innerHTML = html;
@@ -352,39 +353,29 @@
         let sorted = Array.from(goals.entries()).map(([n,t]) => ({ name: n, total: t }));
         sorted.sort((a,b) => b.total - a.total);
         if (!sorted.length) { container.innerHTML = `<div class="card"><div class="alert">No goals recorded yet.</div></div>`; return; }
-        container.innerHTML = `<div class="card"><h2>⚽ TOP GOAL SCORERS</h2><table class="topscorer-table"><thead><tr><th>#</th><th>Player</th><th>Goals</th></tr></thead><tbody>${sorted.map((p,i)=>`<tr><td>${i+1}</td><td><strong>${escapeHtml(p.name)}</strong></td><td style="color:#cc0000;">${p.total}</td></tr>`).join('')}</tbody></table></div>`;
+        container.innerHTML = `<div class="card"><h2>⚽ TOP GOAL SCORERS</h2><table class="topscorer-table"><thead><tr><th>#</th><th>Player</th><th>Goals</th></tr></thead><tbody>${sorted.map((p,i)=>`<tr><td style="color:#cc0000;">${p.total}</td></tr>`).join('')}</tbody><table></div>`;
+        container.innerHTML = `<div class="card"><h2>⚽ TOP GOAL SCORERS</h2><table class="topscorer-table"><thead><tr><th>#</th><th>Player</th><th>Goals</th></tr></thead><tbody>${sorted.map((p,i)=>`<tr><td style="color:#cc0000;">${p.total}</td></tr>`).join('')}</tbody></table></div>`;
     }
 
     function renderRulesPanel() {
         document.getElementById("rulesPanel").innerHTML = `<div class="card"><h2>📜 RULES</h2><div class="rules-content"><ul><li>Hit crossbar → buy a round.</li><li>Own goals = double.</li><li>Last arrival is goalkeeper first 10 min.</li><li>No "mine!" shouting.</li><li>Goal celebrations must include a dance.</li></ul></div></div>`;
     }
 
-    // ========== ADMIN PANEL (team assignment only for future weeks) ==========
     async function renderAdminPanel() {
         const container = document.getElementById("adminPanel");
         await loadData();
         const futureWeeks = getFutureWeeks();
         const allWeeks = ALL_GAME_WEEKS.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
         container.innerHTML = `
-            <div class="card">
-                <h3>👥 PLAYERS (hardcoded list)</h3>
-                <div class="debug-info">✅ ${FULL_PLAYER_LIST.length} players available</div>
-            </div>
-            <div class="card">
-                <h3>📅 TEAM ASSIGNMENT (ONLY ATTENDING PLAYERS - FUTURE WEEKS)</h3>
-                <select id="adminWeekSelect">${futureWeeks.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('')}</select>
-                <div id="teamAssignmentArea"></div>
-                <button id="saveTeamsBtn">💾 SAVE TEAMS</button>
-                <button id="refreshAdminBtn">⟳ REFRESH</button>
-                <div id="adminDebug" class="alert" style="margin-top:8px; font-size:0.75rem;"></div>
-            </div>
-            <div class="card"><h3>⚽ MATCH RESULT & GOALS (ALL WEEKS)</h3><select id="adminWeekSelectResult">${allWeeks}</select><div id="matchResultArea"></div><button id="saveResultBtn">💾 SAVE</button></div>
+            <div class="card"><h3>👥 PLAYERS</h3><div>✅ ${FULL_PLAYER_LIST.length} players</div></div>
+            <div class="card"><h3>📅 TEAM ASSIGNMENT (ONLY ATTENDING - FUTURE WEEKS)</h3><select id="adminWeekSelect">${futureWeeks.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('')}</select><div id="teamAssignmentArea"></div><div class="flex-btns"><button id="saveTeamsBtn">💾 SAVE</button><button id="refreshAdminBtn">⟳ REFRESH</button></div><div id="adminDebug" class="alert" style="margin-top:8px;"></div></div>
+            <div class="card"><h3>⚽ MATCH RESULT & GOALS</h3><select id="adminWeekSelectResult">${allWeeks}</select><div id="matchResultArea"></div><button id="saveResultBtn">💾 SAVE</button></div>
             <div class="card"><h3>💰 PAYMENTS LEDGER</h3><div id="paymentLedger"></div><div class="flex-btns"><select id="adminPaymentPlayer"><option value="">Player</option>${FULL_PLAYER_LIST.map(p=>`<option>${escapeHtml(p)}</option>`).join('')}</select><select id="adminPaymentWeek"><option value="">Week</option>${ALL_GAME_WEEKS.map(w=>`<option value="${w.dateStr}">${w.label}</option>`).join('')}</select><button id="adminMarkPaidBtn">Mark Paid</button></div></div>
             <div class="card"><h3>📋 FULL ATTENDANCE LOG</h3><div id="adminAttendanceOverview"></div></div>
             <div class="card"><h3>💾 BACKUP / RESTORE</h3><div class="flex-btns"><button id="exportAllBtn">📤 EXPORT</button><button id="importAllBtn">📥 IMPORT</button><input type="file" id="importFileInput" style="display:none;"></div></div>
         `;
         document.getElementById("adminWeekSelect").onchange = renderTeamAssignmentUI;
-        document.getElementById("refreshAdminBtn").onclick = () => { renderTeamAssignmentUI(); document.getElementById("adminDebug").innerHTML = "🔄 Refreshed at " + new Date().toLocaleTimeString(); };
+        document.getElementById("refreshAdminBtn").onclick = () => renderTeamAssignmentUI();
         document.getElementById("saveTeamsBtn").onclick = async () => { await saveTeams(); renderPitchAndMatch(); renderPastGamesPanel(); };
         document.getElementById("adminWeekSelectResult").onchange = renderMatchResultUI;
         document.getElementById("saveResultBtn").onclick = saveMatchResultAdmin;
@@ -402,20 +393,14 @@
         const gameDate = document.getElementById("adminWeekSelect").value;
         if (!gameDate) return;
         const attendingPlayers = attendance.filter(a => a.gameDate === gameDate && a.status === 'in').map(a => a.player);
-        const debugDiv = document.getElementById("adminDebug");
-        debugDiv.innerHTML = `📋 Week: ${gameDate} | Attending players: ${attendingPlayers.length} → ${attendingPlayers.join(', ') || 'none'}`;
+        document.getElementById("adminDebug").innerHTML = `📋 Week: ${gameDate} | Attending: ${attendingPlayers.length} → ${attendingPlayers.join(', ') || 'none'}`;
         if (!teamAssignments[gameDate]) teamAssignments[gameDate] = {};
         let html = "";
         for (let p of attendingPlayers) {
             const current = teamAssignments[gameDate][p] || "";
-            html += `<div class="goal-row"><span style="flex:1">${escapeHtml(p)}</span>
-                <select class="team-select" data-player="${escapeHtml(p)}">
-                    <option value="">-- Not playing --</option>
-                    <option value="yellow" ${current==="yellow"?"selected":""}>🟡 Yellow</option>
-                    <option value="orange" ${current==="orange"?"selected":""}>🟠 Orange</option>
-                </select></div>`;
+            html += `<div class="goal-row"><span style="flex:1">${escapeHtml(p)}</span><select class="team-select" data-player="${escapeHtml(p)}"><option value="">-- Not playing --</option><option value="yellow" ${current==="yellow"?"selected":""}>🟡 Yellow</option><option value="orange" ${current==="orange"?"selected":""}>🟠 Orange</option></select></div>`;
         }
-        if (!attendingPlayers.length) html = "<div class='alert'>⚠️ No players have marked 'attending' for this week yet. Players must mark attendance first.</div>";
+        if (!attendingPlayers.length) html = "<div class='alert'>⚠️ No players have marked attending for this week yet.</div>";
         document.getElementById("teamAssignmentArea").innerHTML = html;
         document.querySelectorAll(".team-select").forEach(sel => sel.addEventListener("change", () => {
             const player = sel.dataset.player;
@@ -475,10 +460,10 @@
         for (let week of weeks) {
             const label = ALL_GAME_WEEKS.find(w => w.dateStr === week)?.label || week;
             const paid = payments.filter(p => p.gameDate === week).map(p => p.player);
-            html += `<tr>}。<td>${escapeHtml(label)}</td><td>${paid.join(', ') || 'none'}</td><td>$${paid.length * 5}</td></tr>`;
+            html += `<tr>}<td>${escapeHtml(label)}</td><td>${paid.join(', ') || 'none'}</td><td>$${paid.length * 5}</td></tr>`;
         }
-        if (!weeks.length) html += `<tr><td colspan="3">No payments</td></tr>`;
-        html += `</tbody><tr><div class="alert">💰 Total: $${payments.length * 5}</div>`;
+        if (!weeks.length) html += `<td><td colspan="3">No payments</td></tr>`;
+        html += `</tbody></table><div class="alert">💰 Total collected: $${payments.length * 5}</div>`;
         container.innerHTML = html;
     }
     async function adminMarkPayment() {
