@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Monday Soccer – 3-2-1 Vote</title>
+    <title>Monday Night Soccer – 3-2-1 Vote</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
         body {
             background: #f0f2f5;
             font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -48,6 +52,7 @@
             border: none;
             margin-top: 24px;
             cursor: pointer;
+            transition: 0.15s;
         }
         button:hover {
             background: #990000;
@@ -113,8 +118,8 @@
     // ---------- Generate Monday game weeks (Feb → second-last Monday Dec) ----------
     function generateGameWeeks() {
         const year = new Date().getFullYear();
-        let start = new Date(year, 1, 1);
-        while (start.getDay() !== 1) start.setDate(start.getDate() + 1);
+        let start = new Date(year, 1, 1);           // Feb 1
+        while (start.getDay() !== 1) start.setDate(start.getDate() + 1); // first Monday in Feb
         let dec31 = new Date(year, 11, 31);
         let lastMonday = new Date(dec31);
         while (lastMonday.getDay() !== 1) lastMonday.setDate(lastMonday.getDate() - 1);
@@ -228,7 +233,7 @@
             `Submitted: ${new Date().toLocaleString()}`;
         
         // 🔧 CHANGE THIS NUMBER TO YOUR WHATSAPP NUMBER (country code, no +, no spaces)
-        const adminPhone = "61403827887";
+        const adminPhone = "61403827887";   // Example: Australia 0403 827 887 -> 61403827887
         const waUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`;
         window.open(waUrl, '_blank');
     }
@@ -267,7 +272,7 @@
         setTimeout(() => { msgDiv.style.display = "none"; }, 5000);
     }
 
-    // Helper
+    // Helper to escape HTML characters
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, function(m) {
@@ -278,7 +283,7 @@
         });
     }
 
-    // Initialise
+    // Initialise dropdowns and event listener
     populateDropdowns();
     document.getElementById("sendBtn").addEventListener("click", onSendVote);
 </script>
