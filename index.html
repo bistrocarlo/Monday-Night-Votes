@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Monday Night Soccer – Attendance & Hub</title>
+    <title>Monday Night Soccer – Full Hub</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -180,19 +180,19 @@
             gap: 10px;
         }
         footer { text-align: center; margin-top: 40px; font-size: 0.7rem; color: #6c757d; }
-        .leaderboard-table, .payment-table, .attendance-table {
+        .leaderboard-table, .payment-table, .attendance-table, .topscorer-table {
             width: 100%;
             border-collapse: collapse;
             background: white;
             border-radius: 24px;
             overflow: hidden;
         }
-        .leaderboard-table th, .leaderboard-table td, .payment-table th, .payment-table td, .attendance-table th, .attendance-table td {
+        .leaderboard-table th, .leaderboard-table td, .payment-table th, .payment-table td, .attendance-table th, .attendance-table td, .topscorer-table th, .topscorer-table td {
             padding: 12px 8px;
             text-align: left;
             border-bottom: 1px solid #f0f0f0;
         }
-        .leaderboard-table th, .payment-table th, .attendance-table th { background: #fafafa; color: #cc0000; }
+        .leaderboard-table th, .payment-table th, .attendance-table th, .topscorer-table th { background: #fafafa; color: #cc0000; }
         .flex-btns { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
         .attending-in { background: #2e7d5e; color: white; border: none; }
         .attending-out { background: #cc0000; color: white; border: none; }
@@ -203,11 +203,12 @@
 <div class="container">
     <div class="header">
         <h1>⚽ MONDAY NIGHT SOCCER ⚽</h1>
-        <p>Attendance • Orange vs Yellow • Match results • Goal scorers • $5 payments</p>
+        <p>Attendance • Orange vs Yellow • Match results • Goal scorers • $5 payments • Top scorer</p>
     </div>
     <div class="tabs">
         <button class="tab-btn active" data-tab="attendance">📋 ATTENDANCE</button>
         <button class="tab-btn" data-tab="payment">💰 PAYMENTS</button>
+        <button class="tab-btn" data-tab="topscorer">⚽ TOP SCORER</button>
         <button class="tab-btn" data-tab="admin">👑 ADMIN</button>
     </div>
 
@@ -243,95 +244,4 @@
     </div>
 
     <!-- PAYMENTS PANEL -->
-    <div id="paymentPanel" class="panel">
-        <div class="card">
-            <h2>💰 PAY YOUR $5 MATCH FEE</h2>
-            <label>👤 YOUR NAME</label>
-            <select id="paymentPlayerSelect"></select>
-            <label>📅 GAME WEEK</label>
-            <select id="paymentWeekSelect"></select>
-            <button id="markPaidBtn">✅ I PAID $5</button>
-            <div id="paymentMessage" class="alert" style="display:none;"></div>
-        </div>
-        <div class="card">
-            <h3>📋 PAYMENT LEDGER</h3>
-            <div id="paymentLedger"></div>
-        </div>
-    </div>
-
-    <!-- ADMIN PANEL -->
-    <div id="adminPanel" class="panel">
-        <div class="card">
-            <h2>🔐 ADMIN ACCESS</h2>
-            <div id="adminLoginArea">
-                <input type="password" id="adminPassword" placeholder="Enter password">
-                <button id="adminLoginBtn">Login</button>
-                <div id="adminLoginError" class="alert" style="display:none;">Wrong password</div>
-            </div>
-            <div id="adminContent" style="display: none;">
-                <div class="card"><h3>👥 MANAGE PLAYERS</h3><div id="playersList"></div>
-                <div class="flex-btns"><input type="text" id="newPlayerName" placeholder="New player name" style="flex:2"><button id="addPlayerBtn" style="flex:1">➕ ADD</button><button id="resetPlayersBtn" style="background:#990000;">⟳ RESET</button></div></div>
-                <div class="card"><h3>📅 TEAM ASSIGNMENT (ORANGE vs YELLOW)</h3><select id="adminWeekSelect"></select><div id="teamAssignmentArea"></div><button id="saveTeamsBtn">💾 SAVE TEAMS</button></div>
-                <div class="card"><h3>⚽ MATCH RESULT & GOALS</h3><div id="matchResultArea"></div><button id="saveResultBtn">💾 SAVE RESULT</button></div>
-                <div class="card"><h3>📋 ATTENDANCE OVERVIEW (all players)</h3><div id="adminAttendanceOverview"></div></div>
-                <div class="card"><h3>💾 BACKUP / RESTORE</h3><div class="flex-btns"><button id="exportAllBtn">📤 EXPORT DATA</button><button id="importAllBtn">📥 IMPORT BACKUP</button><input type="file" id="importFileInput" style="display:none;"></div></div>
-            </div>
-        </div>
-    </div>
-    <footer>⚡ Live sync via Firebase • Admin password: admin123 • Past dates are hidden (AEST)</footer>
-</div>
-
-<script>
-    // ========== FIREBASE CONFIG ==========
-    const firebaseConfig = {
-        apiKey: "AIzaSyCWlFqDJyENgrUOhiLXCjSEi4Mk_54SA1w",
-        authDomain: "monday-night-soccer-hub.firebaseapp.com",
-        projectId: "monday-night-soccer-hub",
-        storageBucket: "monday-night-soccer-hub.firebasestorage.app",
-        messagingSenderId: "634335208908",
-        appId: "1:634335208908:web:dca705b65fc52de0606969"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    // ========== UTILITY: Get current date in AEST (Australian Eastern Standard Time) ==========
-    function getCurrentAESTDate() {
-        // AEST is UTC+10 (no daylight saving for simplicity)
-        const now = new Date();
-        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-        const aest = new Date(utc + (10 * 3600000));
-        return aest.toISOString().split('T')[0];
-    }
-
-    // ========== DEFAULT PLAYERS ==========
-    const DEFAULT_PLAYERS = [
-        "Alex Rowe", "Ali Mekawy", "Carlo", "Charlie", "Chris Del Monaco", "Chris M", "Chris S", "Danny", "Dante", "David", "Dimitri",
-        "Enzo", "Farid", "Faros", "Frank", "George B", "George T", "Ivan", "James Zoumis", "James", "Joe T", "Joey",
-        "Kia", "Leo", "Manoli", "Marco", "Mario", "Maurice", "Nector", "Paul", "Perri", "Peter", "Ralph", "Rocco",
-        "Stav", "Stevan", "Theo", "Tony EH", "Vasilis"
-    ].sort();
-
-    // ---------- Generate all Monday weeks for the year (full set) ----------
-    function generateAllGameWeeks() {
-        const year = new Date().getFullYear();
-        let start = new Date(year, 1, 1);
-        while (start.getDay() !== 1) start.setDate(start.getDate() + 1);
-        let dec31 = new Date(year, 11, 31);
-        let lastMonday = new Date(dec31);
-        while (lastMonday.getDay() !== 1) lastMonday.setDate(lastMonday.getDate() - 1);
-        let secondLast = new Date(lastMonday);
-        secondLast.setDate(secondLast.getDate() - 7);
-        let weeks = [];
-        let cur = new Date(start);
-        while (cur <= secondLast) {
-            weeks.push({
-                dateStr: cur.toISOString().split('T')[0],
-                label: `Monday ${cur.toLocaleDateString('en-AU', { day:'numeric', month:'short' })}`
-            });
-            cur.setDate(cur.getDate() + 7);
-        }
-        return weeks;
-    }
-    const ALL_GAME_WEEKS = generateAllGameWeeks();
-
-    //
+    <div id="paymentPanel
