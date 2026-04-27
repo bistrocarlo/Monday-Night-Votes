@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Monday Night Soccer – Full Hub</title>
+    <title>Monday Night Soccer – Live Attendance Hub</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -38,7 +38,7 @@
         .player-badge { background: rgba(0,0,0,0.7); border-radius: 60px; padding: 8px 12px; text-align: center; font-size: 0.85rem; }
         .match-result { margin-top: 20px; text-align: center; background: rgba(0,0,0,0.7); border-radius: 60px; padding: 10px; color: white; font-weight: 600; }
         .alert { background: #ffe6e6; border-left: 5px solid #cc0000; padding: 10px 16px; border-radius: 60px; margin: 12px 0; color: #990000; }
-        .goal-row, .payment-row, .attendance-row, .past-game-item { background: #f9f9f9; border-radius: 60px; padding: 8px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .goal-row, .payment-row, .attendance-row { background: #f9f9f9; border-radius: 60px; padding: 8px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .count-box { background: #2c3e50; color: white; border-radius: 60px; padding: 10px 20px; display: inline-block; margin: 8px; min-width: 140px; text-align: center; }
         .count-number { font-size: 2rem; font-weight: 800; }
         footer { text-align: center; margin-top: 40px; font-size: 0.7rem; color: #6c757d; }
@@ -108,7 +108,6 @@
     }
     const ALL_GAME_WEEKS = generateAllGameWeeks();
     function getFutureWeeks() { const today = getCurrentAESTDate(); return ALL_GAME_WEEKS.filter(w => w.dateStr >= today); }
-    function getPastWeeks() { const today = getCurrentAESTDate(); return ALL_GAME_WEEKS.filter(w => w.dateStr < today); }
 
     // Global data
     let teamAssignments = {};
@@ -204,14 +203,14 @@
         };
     }
 
-    // ---------- Main App (admin tab appears only if isAdminLoggedIn) ----------
+    // ---------- Main App (tabs: Attendance, Top Scorer, Rules, Admin if logged in) ----------
     async function renderMainApp() {
         await loadData();
         const container = document.getElementById("appContainer");
         container.innerHTML = `
             <div class="header">
                 <h1>⚽ MONDAY NIGHT SOCCER ⚽</h1>
-                <p>Attendance • Add guests • Orange vs Yellow • Match results • Goal scorers • Top scorer • Past games</p>
+                <p>Live attendance • Pitch & teams • Top goalscorer</p>
                 <div style="margin-top: 10px;"><button id="logoutBtn" style="background:#cc0000; padding:5px 15px;">Logout</button></div>
             </div>
             <div class="tabs" id="tabs"></div>
@@ -222,7 +221,6 @@
 
         const tabs = [
             { id: "attendance", label: "📋 ATTENDANCE" },
-            { id: "pastgames", label: "📆 PAST GAMES" },
             { id: "topscorer", label: "⚽ TOP SCORER" },
             { id: "rules", label: "📜 RULES" }
         ];
@@ -236,7 +234,6 @@
         document.querySelector(`.tab-btn[data-tab="${firstTab}"]`).classList.add("active");
 
         renderAttendancePanel();
-        renderPastGamesPanel();
         renderTopScorerPanel();
         renderRulesPanel();
         if (isAdminLoggedIn) renderAdminPanel();
@@ -249,17 +246,13 @@
                 document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
                 btn.classList.add("active");
                 if (tabId === "attendance") renderAttendancePanel();
-                if (tabId === "pastgames") renderPastGamesPanel();
                 if (tabId === "topscorer") renderTopScorerPanel();
                 if (tabId === "admin" && isAdminLoggedIn) renderAdminPanel();
             });
         });
     }
 
-    // ----- Attendance Panel (players) -----
-    // ... (the full attendance code – all 34 names appear, guests can be added) ...
-    // I'll implement a concise but complete attendance panel. To save length but keep all features, I'll include the same logic as before but ensure the player dropdown contains all names.
-    // Note: The user wanted full code, so I will provide the complete attendance implementation.
+    // ----- Attendance Panel (live – only upcoming weeks) -----
     function renderAttendancePanel() {
         const container = document.getElementById("attendancePanel");
         const futureWeeks = getFutureWeeks();
@@ -283,7 +276,7 @@
                 <div id="attendanceMessage" class="alert" style="display:none;"></div>
             </div>
             <div class="card">
-                <h2>📊 ATTENDANCE COUNTS</h2>
+                <h2>📊 LIVE ATTENDANCE COUNTS</h2>
                 <div id="attendanceCounts" class="count-grid"></div>
             </div>
             <div class="card">
@@ -298,7 +291,6 @@
                 </div>
             </div>
         `;
-        // Populate attendance player dropdown with all names
         const playerSelect = document.getElementById("attendancePlayerSelect");
         playerSelect.innerHTML = '<option value="">-- Select your name --</option>' + FULL_PLAYER_LIST.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
         document.getElementById("attendanceWeekSelect").addEventListener("change", renderAttendanceCounts);
@@ -386,27 +378,6 @@
         document.getElementById("matchResultDisplay").innerHTML = `<strong>SCORE:</strong> 🟡 ${match.yellowScore} - ${match.orangeScore} 🟠 &nbsp;|&nbsp; ⚽ Goals: ${goalsText || "none"}`;
     }
 
-    // ----- Past Games -----
-    async function renderPastGamesPanel() {
-        const container = document.getElementById("pastgamesPanel");
-        const pastWeeks = getPastWeeks().reverse();
-        if (pastWeeks.length === 0) {
-            container.innerHTML = "<div class='card'><div class='alert'>No past games yet.</div></div>";
-            return;
-        }
-        let html = `<div class="card"><h2>📆 PAST GAMES</h2>`;
-        for (let week of pastWeeks) {
-            const assignments = teamAssignments[week.dateStr] || {};
-            const yellow = Object.keys(assignments).filter(p => assignments[p] === "yellow").sort();
-            const orange = Object.keys(assignments).filter(p => assignments[p] === "orange").sort();
-            const match = matchResults[week.dateStr] || { yellowScore: 0, orangeScore: 0, goals: {} };
-            const goalsText = Object.entries(match.goals || {}).filter(([_,g]) => g>0).map(([p,g]) => `${p} (${g})`).join(", ");
-            html += `<div class="past-game-item"><strong>${week.label}</strong><br>🟡 YELLOW: ${yellow.join(', ') || 'none'}<br>🟠 ORANGE: ${orange.join(', ') || 'none'}<br><strong>RESULT:</strong> 🟡 ${match.yellowScore} - ${match.orangeScore} 🟠<br>⚽ GOALS: ${goalsText || "none"}<hr></div>`;
-        }
-        html += `</div>`;
-        container.innerHTML = html;
-    }
-
     // ----- Top Scorer -----
     async function renderTopScorerPanel() {
         const container = document.getElementById("topscorerPanel");
@@ -425,7 +396,7 @@
             return;
         }
         let html = `<div class="card"><h2>⚽ TOP GOAL SCORERS</h2><table class="topscorer-table"><thead><tr><th>#</th><th>Player</th><th>Goals</th></tr></thead><tbody>`;
-        sorted.forEach((p,i) => { html += `<tr><td>${i+1}</td>}<strong>${escapeHtml(p.name)}</strong></td><td style="color:#cc0000;">${p.total}</td></tr>`; });
+        sorted.forEach((p,i) => { html += `<tr><td>${i+1}</td>}<strong>${escapeHtml(p.name)}</strong></td><td style="color:#cc0000;">${p.total}</td></table>`; });
         html += `</tbody></table></div>`;
         container.innerHTML = html;
     }
@@ -444,7 +415,7 @@
         container.innerHTML = `
             <div class="card"><h3>👥 MANAGE PLAYERS (hardcoded)</h3><div id="playersList"></div>
             <div class="flex-btns"><input type="text" id="newPlayerName" placeholder="New player name" style="flex:2"><button id="addPlayerBtn">➕ ADD</button><button id="resetPlayersBtn" style="background:#990000;">⟳ RESET</button></div></div>
-            <div class="card"><h3>📅 TEAM ASSIGNMENT (ALL WEEKS)</h3>
+            <div class="card"><h3>📅 TEAM ASSIGNMENT (ONLY ATTENDING PLAYERS)</h3>
                 <select id="adminWeekSelect">${allWeeks}</select><div id="teamAssignmentArea"></div><button id="saveTeamsBtn">💾 SAVE</button>
             </div>
             <div class="card"><h3>⚽ MATCH RESULT & GOALS</h3>
@@ -463,7 +434,7 @@
         renderAdminPaymentUI();
         document.getElementById("addPlayerBtn").onclick = () => alert("To add a player, edit FULL_PLAYER_LIST in code.");
         document.getElementById("resetPlayersBtn").onclick = () => alert("Player list is hardcoded. Edit code to reset.");
-        document.getElementById("saveTeamsBtn").onclick = async () => { await saveTeams(); renderPitchAndMatch(); renderPastGamesPanel(); };
+        document.getElementById("saveTeamsBtn").onclick = async () => { await saveTeams(); renderPitchAndMatch(); };
         document.getElementById("saveResultBtn").onclick = saveMatchResultAdmin;
         document.getElementById("adminMarkPaidBtn").onclick = adminMarkPayment;
         document.getElementById("exportAllBtn").onclick = exportAllData;
@@ -473,15 +444,19 @@
     function renderPlayersListAdmin() {
         const container = document.getElementById("playersList");
         let html = `<table class="payment-table"><thead><tr><th>Player</th><th></th></tr></thead><tbody>`;
-        for (let p of FULL_PLAYER_LIST) html += `<tr><td>${escapeHtml(p)}</td><td><button disabled style="background:#990000;">Delete</button></td></tr>`;
+        for (let p of FULL_PLAYER_LIST) html += `<tr>}<td>${escapeHtml(p)}</td><td><button disabled style="background:#990000;">Delete</button></td></tr>`;
         html += `</tbody></table>`;
         container.innerHTML = html;
     }
+    // ONLY show players who have marked "attending" for the selected week (including guests)
     async function renderTeamAssignmentUI() {
         const gameDate = document.getElementById("adminWeekSelect").value;
+        if (!gameDate) return;
+        // Get list of attending players for this week
+        const attendingPlayers = attendance.filter(a => a.gameDate === gameDate && a.status === 'in').map(a => a.player);
         if (!teamAssignments[gameDate]) teamAssignments[gameDate] = {};
         let html = "";
-        for (let p of FULL_PLAYER_LIST) {
+        for (let p of attendingPlayers) {
             const current = teamAssignments[gameDate][p] || "";
             html += `<div class="goal-row"><span style="flex:1">${escapeHtml(p)}</span>
                 <select class="team-select" data-player="${escapeHtml(p)}">
@@ -490,6 +465,7 @@
                     <option value="orange" ${current==="orange"?"selected":""}>🟠 Orange</option>
                 </select></div>`;
         }
+        if (attendingPlayers.length === 0) html = "<div class='alert'>No players have marked 'attending' for this week yet.</div>";
         document.getElementById("teamAssignmentArea").innerHTML = html;
         document.querySelectorAll(".team-select").forEach(sel => sel.addEventListener("change", () => {
             const player = sel.getAttribute("data-player");
@@ -498,7 +474,6 @@
             else delete teamAssignments[gameDate][player];
             saveTeams();
             renderPitchAndMatch();
-            renderPastGamesPanel();
         }));
     }
     async function renderMatchResultUI() {
@@ -506,7 +481,7 @@
         const match = matchResults[gameDate] || { yellowScore: 0, orangeScore: 0, goals: {} };
         let html = `<div style="display:flex; gap:12px;"><div><label>🟡 Yellow</label><input type="number" id="yellowScore" value="${match.yellowScore}" min="0"></div><div><label>🟠 Orange</label><input type="number" id="orangeScore" value="${match.orangeScore}" min="0"></div></div><h4>⚽ Goals</h4>`;
         const playersInMatch = Object.keys(teamAssignments[gameDate] || {});
-        if (playersInMatch.length === 0) html += "<div class='alert'>Assign teams first</div>";
+        if (playersInMatch.length === 0) html += "<div class='alert'>Assign teams first (only attending players appear).</div>";
         for (let player of playersInMatch) {
             const goals = (match.goals && match.goals[player]) || 0;
             html += `<div class="goal-row"><span>${escapeHtml(player)}</span>
@@ -518,7 +493,7 @@
             const goals = parseInt(sel.value);
             if (!matchResults[gameDate]) matchResults[gameDate] = { goals: {} };
             matchResults[gameDate].goals[player] = goals;
-            saveResults(); renderPitchAndMatch(); renderPastGamesPanel(); renderTopScorerPanel();
+            saveResults(); renderPitchAndMatch(); renderTopScorerPanel();
         }));
     }
     async function saveMatchResultAdmin() {
@@ -528,7 +503,7 @@
         if (!matchResults[gameDate]) matchResults[gameDate] = { goals: {} };
         matchResults[gameDate].yellowScore = yellow;
         matchResults[gameDate].orangeScore = orange;
-        await saveResults(); renderPitchAndMatch(); renderPastGamesPanel(); renderTopScorerPanel();
+        await saveResults(); renderPitchAndMatch(); renderTopScorerPanel();
         alert("Result saved");
     }
     async function renderAdminAttendanceOverview() {
@@ -538,10 +513,10 @@
         for (let week of weeks) {
             const label = ALL_GAME_WEEKS.find(w => w.dateStr === week)?.label || week;
             const weekAtt = attendance.filter(a => a.gameDate === week);
-            for (let a of weekAtt) html += `<tr>}<td>${escapeHtml(label)}</td><td>${escapeHtml(a.player)}</td><td>${a.status === 'in' ? '✅ Attending' : '❌ Not'}</td></tr>`;
+            for (let a of weekAtt) html += `<tr>}了一样${escapeHtml(label)}</td> was${escapeHtml(a.player)}${a.status === 'in' ? '✅ Attending' : '❌ Not'}<tr>`;
         }
-        if (weeks.length === 0) html += `<tr><td colspan="3">No records</td></tr>`;
-        html += `</tbody></table>`;
+        if (weeks.length === 0) html += `<tr><td colspan="3">No records</tr>`;
+        html += `</tbody>`,
         container.innerHTML = html;
     }
     async function renderAdminPaymentUI() {
@@ -555,7 +530,7 @@
         for (let week of weeks) {
             const label = ALL_GAME_WEEKS.find(w => w.dateStr === week)?.label || week;
             const paid = payments.filter(p => p.gameDate === week).map(p => p.player).sort();
-            html += `<tr><td>${escapeHtml(label)}</td><td>${paid.join(', ') || 'none'}</td><td>$${paid.length * 5}</td></tr>`;
+            html += `<tr>}<td>${escapeHtml(label)}</td><td>${paid.join(', ') || 'none'}</td><td>$${paid.length * 5}</td></tr>`;
         }
         html += `</tbody></table><div class="alert">💰 Total collected: $${payments.length * 5}</div>`;
         container.innerHTML = html;
@@ -586,7 +561,7 @@
                 await saveTeams(); await saveResults();
                 for (let p of payments) await savePayment(p);
                 for (let a of attendance) await saveAttendance(a);
-                renderAdminPanel(); renderPitchAndMatch(); renderPastGamesPanel(); renderTopScorerPanel();
+                renderAdminPanel(); renderPitchAndMatch(); renderTopScorerPanel();
             } catch(err) { alert("Invalid backup"); }
         };
         reader.readAsText(file);
