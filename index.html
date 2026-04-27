@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Monday Night Soccer Hub – Live</title>
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
@@ -186,12 +185,15 @@
         </div>
     </div>
 
-    <!-- ADMIN PANEL -->
+    <!-- ADMIN PANEL (fixed login) -->
     <div id="adminPanel" class="panel">
         <div class="card">
             <h2>🔐 ADMIN ACCESS</h2>
-            <input type="password" id="adminPassword" placeholder="Enter password">
-            <button id="adminLoginBtn">Login</button>
+            <div id="adminLoginArea">
+                <input type="password" id="adminPassword" placeholder="Enter password">
+                <button id="adminLoginBtn">Login</button>
+                <div id="adminLoginError" class="alert" style="display:none; margin-top:10px;">Wrong password</div>
+            </div>
             <div id="adminContent" style="display: none;">
                 <div class="card">
                     <h3>👥 MANAGE PLAYERS</h3>
@@ -233,7 +235,7 @@
             </div>
         </div>
     </div>
-    <footer>⚽ Live sync via Firebase • Admin password: admin123 • Double‑check security rules are in test mode</footer>
+    <footer>⚽ Live sync via Firebase • Admin login hides after success • Double‑check Firestore rules are in test mode</footer>
 </div>
 
 <script>
@@ -251,7 +253,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // ---------- DEFAULT PLAYERS (alphabetical) ----------
+    // ---------- DEFAULT PLAYERS ----------
     const DEFAULT_PLAYERS = [
         "Alex Rowe", "Ali Mekawy", "Carlo", "Chris Del Monaco", "Chris M", "Chris S", "Danny", "David", "Dimitri",
         "Enzo", "Farid", "Faros", "Frank", "George B", "George T", "Ivan", "James Zoumis", "James", "Joe T", "Joey",
@@ -281,14 +283,12 @@
     }
     const GAME_WEEKS = generateGameWeeks();
 
-    // Global data
     let players = [];
     let teamAssignments = {};
     let matchResults = {};
     let votes = [];
     let isAdminLoggedIn = false;
 
-    // Firestore references
     const playersRef = db.collection("config").doc("players");
     const teamsRef = db.collection("config").doc("teamAssignments");
     const resultsRef = db.collection("config").doc("matchResults");
@@ -327,7 +327,7 @@
         }
     }
 
-    // ----- PLAYER VIEW RENDERING -----
+    // ----- PLAYER VIEW -----
     function renderPlayerWeekSelect() {
         const select = document.getElementById("playerWeekSelect");
         select.innerHTML = GAME_WEEKS.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
@@ -414,8 +414,8 @@
         `);
         printWin.document.close();
         printWin.print();
-        // WhatsApp – replace with your admin number
-        const adminPhone = "61408164730"; // <-- CHANGE THIS TO YOUR WHATSAPP NUMBER
+        // WhatsApp – change the number below to your admin's WhatsApp
+        const adminPhone = "61408164730"; // <-- CHANGE THIS
         const waUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(JSON.stringify(voteObj))}`;
         window.open(waUrl, '_blank');
         msgDiv.innerHTML = "<div class='alert'>Vote sent! PDF + WhatsApp opened.</div>";
@@ -583,17 +583,23 @@
         };
         reader.readAsText(file);
     }
+
+    // Admin login - fixed
     function adminLogin() {
         const pwd = document.getElementById("adminPassword").value;
+        const errorDiv = document.getElementById("adminLoginError");
         if (pwd === "admin123") {
             isAdminLoggedIn = true;
             document.getElementById("adminLoginArea").style.display = "none";
             document.getElementById("adminContent").style.display = "block";
             refreshAll();
-        } else alert("Wrong password");
+        } else {
+            errorDiv.style.display = "block";
+            setTimeout(() => errorDiv.style.display = "none", 2000);
+        }
     }
 
-    // ----- EVENT LISTENERS & INIT -----
+    // ----- INIT EVENT LISTENERS -----
     document.addEventListener("DOMContentLoaded", async () => {
         await loadData();
         renderPlayerWeekSelect();
@@ -622,8 +628,6 @@
                 if (tab === "player") renderPlayerPitch();
             });
         });
-        // Show initial data
-        if (document.getElementById("playerWeekSelect").value) renderPlayerPitch();
     });
 
     function escapeHtml(str) { return String(str).replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
