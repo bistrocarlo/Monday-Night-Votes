@@ -211,11 +211,10 @@
         <button class="tab-btn" data-tab="admin">👑 ADMIN</button>
     </div>
 
-    <!-- ATTENDANCE PANEL (replaces voting) -->
+    <!-- ATTENDANCE PANEL -->
     <div id="attendancePanel" class="panel active-panel">
         <div class="card">
             <h2>📅 MARK YOUR ATTENDANCE</h2>
-            <p>Select your name and the game week, then mark if you are attending or not.</p>
             <label>👤 YOUR NAME</label>
             <select id="attendancePlayerSelect"></select>
             <label>📅 GAME WEEK</label>
@@ -243,7 +242,7 @@
         </div>
     </div>
 
-    <!-- PAYMENTS PANEL (unchanged) -->
+    <!-- PAYMENTS PANEL -->
     <div id="paymentPanel" class="panel">
         <div class="card">
             <h2>💰 PAY YOUR $5 MATCH FEE</h2>
@@ -260,7 +259,7 @@
         </div>
     </div>
 
-    <!-- ADMIN PANEL (manage players, teams, results, attendance view) -->
+    <!-- ADMIN PANEL -->
     <div id="adminPanel" class="panel">
         <div class="card">
             <h2>🔐 ADMIN ACCESS</h2>
@@ -279,7 +278,7 @@
             </div>
         </div>
     </div>
-    <footer>⚡ Live sync via Firebase • Admin password: admin123</footer>
+    <footer>⚡ Live sync via Firebase • Admin password: admin123 • Past dates are hidden (AEST)</footer>
 </div>
 
 <script>
@@ -295,7 +294,16 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // ========== DEFAULT PLAYERS (full list) ==========
+    // ========== UTILITY: Get current date in AEST (Australian Eastern Standard Time) ==========
+    function getCurrentAESTDate() {
+        // AEST is UTC+10 (no daylight saving for simplicity)
+        const now = new Date();
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        const aest = new Date(utc + (10 * 3600000));
+        return aest.toISOString().split('T')[0];
+    }
+
+    // ========== DEFAULT PLAYERS ==========
     const DEFAULT_PLAYERS = [
         "Alex Rowe", "Ali Mekawy", "Carlo", "Charlie", "Chris Del Monaco", "Chris M", "Chris S", "Danny", "Dante", "David", "Dimitri",
         "Enzo", "Farid", "Faros", "Frank", "George B", "George T", "Ivan", "James Zoumis", "James", "Joe T", "Joey",
@@ -303,7 +311,8 @@
         "Stav", "Stevan", "Theo", "Tony EH", "Vasilis"
     ].sort();
 
-    function generateGameWeeks() {
+    // ---------- Generate all Monday weeks for the year (full set) ----------
+    function generateAllGameWeeks() {
         const year = new Date().getFullYear();
         let start = new Date(year, 1, 1);
         while (start.getDay() !== 1) start.setDate(start.getDate() + 1);
@@ -323,330 +332,6 @@
         }
         return weeks;
     }
-    const GAME_WEEKS = generateGameWeeks();
+    const ALL_GAME_WEEKS = generateAllGameWeeks();
 
-    let players = [], teamAssignments = {}, matchResults = {}, payments = [], attendance = []; // attendance: { player, gameDate, status }
-    let isAdminLoggedIn = false;
-
-    const playersRef = db.collection("config").doc("players");
-    const teamsRef = db.collection("config").doc("teamAssignments");
-    const resultsRef = db.collection("config").doc("matchResults");
-    const paymentsRef = db.collection("payments");
-    const attendanceRef = db.collection("attendance");
-
-    async function loadData() {
-        const playersDoc = await playersRef.get();
-        if (playersDoc.exists) players = playersDoc.data().list;
-        else players = [...DEFAULT_PLAYERS];
-        const teamsDoc = await teamsRef.get();
-        if (teamsDoc.exists) teamAssignments = teamsDoc.data();
-        else teamAssignments = {};
-        const resultsDoc = await resultsRef.get();
-        if (resultsDoc.exists) matchResults = resultsDoc.data();
-        else matchResults = {};
-        const paymentsSnap = await paymentsRef.get();
-        payments = []; paymentsSnap.forEach(doc => payments.push(doc.data()));
-        const attendanceSnap = await attendanceRef.get();
-        attendance = []; attendanceSnap.forEach(doc => attendance.push(doc.data()));
-    }
-    async function savePlayers() { await playersRef.set({ list: players }); }
-    async function saveTeams() { await teamsRef.set(teamAssignments); }
-    async function saveResults() { await resultsRef.set(matchResults); }
-    async function savePayment(paymentObj) { await paymentsRef.doc(`${paymentObj.player}_${paymentObj.gameDate}`).set(paymentObj); }
-    async function saveAttendance(attObj) { await attendanceRef.doc(`${attObj.player}_${attObj.gameDate}`).set(attObj); }
-
-    async function refreshAll() {
-        await loadData();
-        renderAttendancePlayerSelect();
-        renderAttendanceWeekSelect();
-        renderAttendanceSummary();
-        renderPitchList();
-        renderPitchAndMatch();
-        renderPaymentPlayerSelect();
-        renderPaymentWeekSelect();
-        renderPaymentLedger();
-        if (isAdminLoggedIn) {
-            renderPlayersList();
-            renderAdminWeekSelect();
-            renderTeamAssignmentUI();
-            renderMatchResultUI();
-            renderAdminAttendanceOverview();
-        }
-    }
-
-    // --- Attendance UI in player tab ---
-    function renderAttendancePlayerSelect() {
-        const select = document.getElementById("attendancePlayerSelect");
-        select.innerHTML = '<option value="">-- Select your name --</option>' + players.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
-    }
-    function renderAttendanceWeekSelect() {
-        const select = document.getElementById("attendanceWeekSelect");
-        select.innerHTML = GAME_WEEKS.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
-    }
-    async function setAttendance(status) {
-        const player = document.getElementById("attendancePlayerSelect").value;
-        const gameDate = document.getElementById("attendanceWeekSelect").value;
-        const msgDiv = document.getElementById("attendanceMessage");
-        if (!player || !gameDate) {
-            msgDiv.innerHTML = "Select your name and a game week"; msgDiv.style.display = "block";
-            setTimeout(() => msgDiv.style.display = "none", 3000);
-            return;
-        }
-        const existing = attendance.find(a => a.player === player && a.gameDate === gameDate);
-        if (existing && existing.status === status) {
-            msgDiv.innerHTML = `You are already marked as ${status === 'in' ? 'attending' : 'not attending'} for this week.`;
-            msgDiv.style.display = "block";
-            setTimeout(() => msgDiv.style.display = "none", 3000);
-            return;
-        }
-        await saveAttendance({ player, gameDate, status, timestamp: new Date().toISOString() });
-        // update local array
-        const index = attendance.findIndex(a => a.player === player && a.gameDate === gameDate);
-        if (index !== -1) attendance[index] = { player, gameDate, status };
-        else attendance.push({ player, gameDate, status });
-        msgDiv.innerHTML = `✅ You are ${status === 'in' ? 'attending' : 'NOT attending'} on ${gameDate}`;
-        msgDiv.style.display = "block";
-        setTimeout(() => msgDiv.style.display = "none", 3000);
-        renderAttendanceSummary();
-        if (isAdminLoggedIn) renderAdminAttendanceOverview();
-    }
-
-    async function renderAttendanceSummary() {
-        const container = document.getElementById("attendanceSummary");
-        // group by gameDate
-        const weeks = [...new Set(attendance.map(a => a.gameDate))].sort();
-        let html = `<table class="attendance-table"><thead><tr><th>Game Week</th><th>Attending Players</th><th>Not Attending</th></tr></thead><tbody>`;
-        for (let week of weeks) {
-            const weekLabel = GAME_WEEKS.find(w => w.dateStr === week)?.label || week;
-            const attending = attendance.filter(a => a.gameDate === week && a.status === 'in').map(a => a.player).sort();
-            const notAttending = attendance.filter(a => a.gameDate === week && a.status === 'out').map(a => a.player).sort();
-            html += `<tr><td>${escapeHtml(weekLabel)}</td><td>${attending.join(', ') || 'none'}</td><td>${notAttending.join(', ') || 'none'}</td></tr>`;
-        }
-        if (weeks.length === 0) html += `<tr><td colspan="3">No attendance records yet.</td></tr>`;
-        html += `</tbody></table>`;
-        container.innerHTML = html;
-    }
-
-    // --- Pitch view (teams, match result) ---
-    function renderPitchList() {
-        const select = document.getElementById("pitchWeekSelect");
-        select.innerHTML = GAME_WEEKS.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
-        select.addEventListener("change", () => renderPitchAndMatch());
-    }
-    function renderPitchAndMatch() {
-        const gameDate = document.getElementById("pitchWeekSelect").value;
-        const assignments = teamAssignments[gameDate] || {};
-        const yellow = [], orange = [];
-        for (let [p, team] of Object.entries(assignments)) {
-            if (team === "yellow") yellow.push(p);
-            else if (team === "orange") orange.push(p);
-        }
-        yellow.sort(); orange.sort();
-        const match = matchResults[gameDate] || { yellowScore: 0, orangeScore: 0, goals: {} };
-        const goalsText = Object.entries(match.goals || {}).filter(([_,g]) => g>0).map(([p,g]) => `${p} (${g})`).join(", ");
-        document.getElementById("yellowList").innerHTML = yellow.map(p => `<div class="player-badge">${escapeHtml(p)}</div>`).join('') || "<div class='player-badge'>—</div>";
-        document.getElementById("orangeList").innerHTML = orange.map(p => `<div class="player-badge">${escapeHtml(p)}</div>`).join('') || "<div class='player-badge'>—</div>";
-        document.getElementById("matchResultDisplay").innerHTML = `<strong>FINAL SCORE:</strong> 🟡 ${match.yellowScore} - ${match.orangeScore} 🟠 &nbsp;|&nbsp; ⚽ Goals: ${goalsText || "none"}`;
-    }
-
-    // --- Payments (unchanged) ---
-    function renderPaymentPlayerSelect() {
-        const select = document.getElementById("paymentPlayerSelect");
-        select.innerHTML = '<option value="">-- Select your name --</option>' + players.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
-    }
-    function renderPaymentWeekSelect() {
-        const select = document.getElementById("paymentWeekSelect");
-        select.innerHTML = GAME_WEEKS.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
-    }
-    async function markPayment() {
-        const player = document.getElementById("paymentPlayerSelect").value;
-        const gameDate = document.getElementById("paymentWeekSelect").value;
-        const msgDiv = document.getElementById("paymentMessage");
-        if (!player || !gameDate) {
-            msgDiv.innerHTML = "Select your name and a game week"; msgDiv.style.display = "block";
-            setTimeout(() => msgDiv.style.display = "none", 3000);
-            return;
-        }
-        const existing = payments.find(p => p.player === player && p.gameDate === gameDate);
-        if (existing) {
-            msgDiv.innerHTML = "You have already marked paid for this week"; msgDiv.style.display = "block";
-            setTimeout(() => msgDiv.style.display = "none", 3000);
-            return;
-        }
-        await savePayment({ player, gameDate, paid: true, timestamp: new Date().toISOString() });
-        payments.push({ player, gameDate, paid: true });
-        msgDiv.innerHTML = "✅ Payment recorded! $5 thank you."; msgDiv.style.display = "block";
-        setTimeout(() => msgDiv.style.display = "none", 3000);
-        renderPaymentLedger();
-    }
-    async function renderPaymentLedger() {
-        const container = document.getElementById("paymentLedger");
-        const weeks = [...new Set(payments.map(p => p.gameDate))].sort();
-        let html = `<table class="payment-table"><thead><tr><th>Game Week</th><th>Players who paid</th><th>Total $</th></tr></thead><tbody>`;
-        for (let week of weeks) {
-            const weekLabel = GAME_WEEKS.find(w => w.dateStr === week)?.label || week;
-            const paidPlayers = payments.filter(p => p.gameDate === week).map(p => p.player).sort();
-            const amount = paidPlayers.length * 5;
-            html += `<tr><td>${escapeHtml(weekLabel)}</td><td>${paidPlayers.map(p => escapeHtml(p)).join(', ') || 'none'}</td><td>$${amount}</td></tr>`;
-        }
-        html += `</tbody></table>`;
-        const totalCollected = payments.length * 5;
-        html += `<div class="alert" style="margin-top:12px;">💰 Total collected across all weeks: $${totalCollected}</div>`;
-        container.innerHTML = html;
-    }
-
-    // --- Admin UI (players, teams, results, attendance overview) ---
-    function renderPlayersList() {
-        const container = document.getElementById("playersList");
-        container.innerHTML = players.map(p => `<div class="goal-row"><span>${escapeHtml(p)}</span><button class="delPlayerBtn" data-name="${escapeHtml(p)}" style="background:#990000;">Delete</button></div>`).join('');
-        document.querySelectorAll(".delPlayerBtn").forEach(btn => btn.addEventListener("click", async () => {
-            const name = btn.getAttribute("data-name");
-            if (confirm(`Delete ${name}?`)) { players = players.filter(p => p !== name); await savePlayers(); refreshAll(); }
-        }));
-    }
-    async function addNewPlayer() {
-        const name = document.getElementById("newPlayerName").value.trim();
-        if (!name) return;
-        if (players.includes(name)) { document.getElementById("adminMessage").innerHTML = "<div class='alert'>Player exists</div>"; setTimeout(() => document.getElementById("adminMessage").innerHTML = "", 2000); return; }
-        players.push(name); players.sort(); await savePlayers(); refreshAll(); document.getElementById("newPlayerName").value = ""; document.getElementById("adminMessage").innerHTML = "<div class='alert'>✅ Added</div>"; setTimeout(() => document.getElementById("adminMessage").innerHTML = "", 2000);
-    }
-    async function resetToDefaultPlayers() { if (confirm("Reset to default list?")) { players = [...DEFAULT_PLAYERS]; await savePlayers(); refreshAll(); } }
-    function renderAdminWeekSelect() {
-        const select = document.getElementById("adminWeekSelect");
-        select.innerHTML = GAME_WEEKS.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
-        select.addEventListener("change", () => { renderTeamAssignmentUI(); renderMatchResultUI(); });
-    }
-    function renderTeamAssignmentUI() {
-        const gameDate = document.getElementById("adminWeekSelect").value;
-        if (!teamAssignments[gameDate]) teamAssignments[gameDate] = {};
-        let html = "";
-        players.forEach(p => {
-            const current = teamAssignments[gameDate][p] || "";
-            html += `<div class="goal-row"><span style="flex:1">${escapeHtml(p)}</span><select class="team-select" data-player="${escapeHtml(p)}"><option value="">-- Not playing --</option><option value="yellow" ${current==="yellow"?"selected":""}>🟡 Yellow</option><option value="orange" ${current==="orange"?"selected":""}>🟠 Orange</option></select></div>`;
-        });
-        document.getElementById("teamAssignmentArea").innerHTML = html;
-        document.querySelectorAll(".team-select").forEach(sel => sel.addEventListener("change", () => {
-            const player = sel.getAttribute("data-player");
-            const team = sel.value;
-            if (team) teamAssignments[gameDate][player] = team; else delete teamAssignments[gameDate][player];
-            saveTeams(); renderPitchAndMatch();
-        }));
-    }
-    function renderMatchResultUI() {
-        const gameDate = document.getElementById("adminWeekSelect").value;
-        const match = matchResults[gameDate] || { yellowScore: 0, orangeScore: 0, goals: {} };
-        let html = `<div style="display:flex; gap:12px;"><div><label>🟡 Yellow</label><input type="number" id="yellowScore" value="${match.yellowScore}" min="0"></div><div><label>🟠 Orange</label><input type="number" id="orangeScore" value="${match.orangeScore}" min="0"></div></div><h4>⚽ Goals</h4>`;
-        const playersInMatch = Object.keys(teamAssignments[gameDate] || {});
-        if (playersInMatch.length === 0) html += "<div class='alert'>Assign teams first</div>";
-        playersInMatch.forEach(player => {
-            const goals = (match.goals && match.goals[player]) || 0;
-            html += `<div class="goal-row"><span>${escapeHtml(player)}</span><select class="goal-select" data-player="${escapeHtml(player)}">${[0,1,2,3,4,5].map(n => `<option value="${n}" ${goals===n?"selected":""}>${n} goal${n!==1?'s':''}</option>`).join('')}</select></div>`;
-        });
-        document.getElementById("matchResultArea").innerHTML = html;
-        document.querySelectorAll(".goal-select").forEach(sel => sel.addEventListener("change", () => {
-            const player = sel.getAttribute("data-player");
-            const goals = parseInt(sel.value);
-            if (!matchResults[gameDate]) matchResults[gameDate] = { goals: {} };
-            matchResults[gameDate].goals[player] = goals;
-            saveResults(); renderPitchAndMatch();
-        }));
-    }
-    async function saveMatchResult() {
-        const gameDate = document.getElementById("adminWeekSelect").value;
-        const yellowScore = parseInt(document.getElementById("yellowScore")?.value || 0);
-        const orangeScore = parseInt(document.getElementById("orangeScore")?.value || 0);
-        if (!matchResults[gameDate]) matchResults[gameDate] = { goals: {} };
-        matchResults[gameDate].yellowScore = yellowScore;
-        matchResults[gameDate].orangeScore = orangeScore;
-        await saveResults(); renderPitchAndMatch();
-        document.getElementById("adminMessage").innerHTML = "<div class='alert'>Result saved</div>"; setTimeout(() => document.getElementById("adminMessage").innerHTML = "", 2000);
-    }
-    async function renderAdminAttendanceOverview() {
-        const container = document.getElementById("adminAttendanceOverview");
-        const weeks = [...new Set(attendance.map(a => a.gameDate))].sort();
-        let html = `<table class="attendance-table"><thead><tr><th>Game Week</th><th>Player</th><th>Status</th></tr></thead><tbody>`;
-        for (let week of weeks) {
-            const weekLabel = GAME_WEEKS.find(w => w.dateStr === week)?.label || week;
-            const weekAttendances = attendance.filter(a => a.gameDate === week);
-            for (let att of weekAttendances) {
-                html += `<tr><td>${escapeHtml(weekLabel)}</td><td>${escapeHtml(att.player)}</td><td>${att.status === 'in' ? '✅ Attending' : '❌ Not attending'}</td></tr>`;
-            }
-        }
-        if (weeks.length === 0) html += `<tr><td colspan="3">No attendance records yet.</td></tr>`;
-        html += `</tbody></table>`;
-        container.innerHTML = html;
-    }
-    function exportAllData() {
-        const data = { players, teamAssignments, matchResults, payments, attendance };
-        const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
-        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `soccer_backup_${new Date().toISOString().slice(0,19)}.json`; a.click();
-    }
-    function importAllData(file) {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            try {
-                const data = JSON.parse(e.target.result);
-                if (data.players) players = data.players;
-                if (data.teamAssignments) teamAssignments = data.teamAssignments;
-                if (data.matchResults) matchResults = data.matchResults;
-                if (data.payments) payments = data.payments;
-                if (data.attendance) attendance = data.attendance;
-                await savePlayers(); await saveTeams(); await saveResults();
-                for (let p of payments) await savePayment(p);
-                for (let a of attendance) await saveAttendance(a);
-                refreshAll();
-            } catch(err) { alert("Invalid backup"); }
-        };
-        reader.readAsText(file);
-    }
-    function adminLogin() {
-        const pwd = document.getElementById("adminPassword").value;
-        if (pwd === "admin123") {
-            isAdminLoggedIn = true;
-            document.getElementById("adminLoginArea").style.display = "none";
-            document.getElementById("adminContent").style.display = "block";
-            refreshAll();
-        } else { document.getElementById("adminLoginError").style.display = "block"; setTimeout(() => document.getElementById("adminLoginError").style.display = "none", 2000); }
-    }
-
-    // Event listeners
-    document.addEventListener("DOMContentLoaded", async () => {
-        await loadData();
-        renderAttendancePlayerSelect();
-        renderAttendanceWeekSelect();
-        renderAttendanceSummary();
-        renderPitchList();
-        renderPitchAndMatch();
-        renderPaymentPlayerSelect();
-        renderPaymentWeekSelect();
-        renderPaymentLedger();
-        document.getElementById("attendingBtn").addEventListener("click", () => setAttendance("in"));
-        document.getElementById("notAttendingBtn").addEventListener("click", () => setAttendance("out"));
-        document.getElementById("adminLoginBtn").addEventListener("click", adminLogin);
-        document.getElementById("addPlayerBtn").addEventListener("click", addNewPlayer);
-        document.getElementById("resetPlayersBtn").addEventListener("click", resetToDefaultPlayers);
-        document.getElementById("saveTeamsBtn").addEventListener("click", async () => { await saveTeams(); renderPitchAndMatch(); });
-        document.getElementById("saveResultBtn").addEventListener("click", saveMatchResult);
-        document.getElementById("markPaidBtn").addEventListener("click", markPayment);
-        document.getElementById("exportAllBtn").addEventListener("click", exportAllData);
-        document.getElementById("importAllBtn").addEventListener("click", () => document.getElementById("importFileInput").click());
-        document.getElementById("importFileInput").addEventListener("change", e => { if(e.target.files.length) importAllData(e.target.files[0]); e.target.value=""; });
-        const tabs = document.querySelectorAll(".tab-btn");
-        tabs.forEach(btn => {
-            btn.addEventListener("click", () => {
-                const tab = btn.getAttribute("data-tab");
-                document.querySelectorAll(".panel").forEach(p => p.classList.remove("active-panel"));
-                document.getElementById(`${tab}Panel`).classList.add("active-panel");
-                tabs.forEach(b => b.classList.remove("active"));
-                btn.classList.add("active");
-                if (tab === "admin" && isAdminLoggedIn) refreshAll();
-                if (tab === "attendance") renderAttendanceSummary();
-                if (tab === "payment") renderPaymentLedger();
-            });
-        });
-    });
-
-    function escapeHtml(str) { return String(str).replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
-</script>
-</body>
-</html>
+    //
