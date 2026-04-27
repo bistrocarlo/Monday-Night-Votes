@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Monday Night Soccer – Full Hub</title>
+    <title>Monday Night Soccer – Attendance & Hub</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -160,8 +160,6 @@
             color: white;
             font-weight: 600;
         }
-        .vote-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 16px; }
-        .vote-row > div { flex: 1; min-width: 130px; }
         .alert {
             background: #ffe6e6;
             border-left: 5px solid #cc0000;
@@ -170,7 +168,7 @@
             margin: 12px 0;
             color: #990000;
         }
-        .goal-row, .payment-row {
+        .goal-row, .payment-row, .attendance-row {
             background: #f9f9f9;
             border-radius: 60px;
             padding: 8px 12px;
@@ -182,20 +180,22 @@
             gap: 10px;
         }
         footer { text-align: center; margin-top: 40px; font-size: 0.7rem; color: #6c757d; }
-        .leaderboard-table, .payment-table {
+        .leaderboard-table, .payment-table, .attendance-table {
             width: 100%;
             border-collapse: collapse;
             background: white;
             border-radius: 24px;
             overflow: hidden;
         }
-        .leaderboard-table th, .leaderboard-table td, .payment-table th, .payment-table td {
+        .leaderboard-table th, .leaderboard-table td, .payment-table th, .payment-table td, .attendance-table th, .attendance-table td {
             padding: 12px 8px;
             text-align: left;
             border-bottom: 1px solid #f0f0f0;
         }
-        .leaderboard-table th, .payment-table th { background: #fafafa; color: #cc0000; }
+        .leaderboard-table th, .payment-table th, .attendance-table th { background: #fafafa; color: #cc0000; }
         .flex-btns { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+        .attending-in { background: #2e7d5e; color: white; border: none; }
+        .attending-out { background: #cc0000; color: white; border: none; }
         @media (max-width: 700px) { .teams-row { flex-direction: column; } .pitch::before { display: none; } }
     </style>
 </head>
@@ -203,19 +203,36 @@
 <div class="container">
     <div class="header">
         <h1>⚽ MONDAY NIGHT SOCCER ⚽</h1>
-        <p>Orange vs Yellow • 3-2-1 Voting • Match results • Goal scorers • $5 payments</p>
+        <p>Attendance • Orange vs Yellow • Match results • Goal scorers • $5 payments</p>
     </div>
     <div class="tabs">
-        <button class="tab-btn active" data-tab="player">👕 PLAYER VIEW</button>
+        <button class="tab-btn active" data-tab="attendance">📋 ATTENDANCE</button>
         <button class="tab-btn" data-tab="payment">💰 PAYMENTS</button>
         <button class="tab-btn" data-tab="admin">👑 ADMIN</button>
     </div>
 
-    <!-- PLAYER PANEL -->
-    <div id="playerPanel" class="panel active-panel">
+    <!-- ATTENDANCE PANEL (replaces voting) -->
+    <div id="attendancePanel" class="panel active-panel">
         <div class="card">
-            <h2>📅 GAME WEEK</h2>
-            <select id="playerWeekSelect"></select>
+            <h2>📅 MARK YOUR ATTENDANCE</h2>
+            <p>Select your name and the game week, then mark if you are attending or not.</p>
+            <label>👤 YOUR NAME</label>
+            <select id="attendancePlayerSelect"></select>
+            <label>📅 GAME WEEK</label>
+            <select id="attendanceWeekSelect"></select>
+            <div class="flex-btns">
+                <button id="attendingBtn" class="attending-in">✅ I AM ATTENDING</button>
+                <button id="notAttendingBtn" class="attending-out">❌ I AM NOT ATTENDING</button>
+            </div>
+            <div id="attendanceMessage" class="alert" style="display:none;"></div>
+        </div>
+        <div class="card">
+            <h2>📊 ATTENDANCE SUMMARY (PER WEEK)</h2>
+            <div id="attendanceSummary"></div>
+        </div>
+        <div class="card">
+            <h2>🏟️ TODAY'S PITCH & TEAMS</h2>
+            <select id="pitchWeekSelect"></select>
             <div class="pitch">
                 <div class="teams-row">
                     <div class="team-box"><div class="team-title yellow-title">🟡 YELLOW TEAM</div><div class="player-list" id="yellowList"></div></div>
@@ -224,21 +241,9 @@
                 <div class="match-result" id="matchResultDisplay"></div>
             </div>
         </div>
-        <div class="card">
-            <h2>🏆 VOTE 3-2-1</h2>
-            <label>👤 YOUR NAME</label>
-            <select id="voterNameSelect"></select>
-            <div class="vote-row">
-                <div><label>🥇 3 pts</label><select id="vote3"></select></div>
-                <div><label>🥈 2 pts</label><select id="vote2"></select></div>
-                <div><label>🥉 1 pt</label><select id="vote1"></select></div>
-            </div>
-            <button id="sendVoteBtn">📤 SEND VOTE (PDF + WhatsApp)</button>
-            <div id="voterMessage" class="alert" style="display:none;"></div>
-        </div>
     </div>
 
-    <!-- PAYMENTS PANEL -->
+    <!-- PAYMENTS PANEL (unchanged) -->
     <div id="paymentPanel" class="panel">
         <div class="card">
             <h2>💰 PAY YOUR $5 MATCH FEE</h2>
@@ -255,7 +260,7 @@
         </div>
     </div>
 
-    <!-- ADMIN PANEL -->
+    <!-- ADMIN PANEL (manage players, teams, results, attendance view) -->
     <div id="adminPanel" class="panel">
         <div class="card">
             <h2>🔐 ADMIN ACCESS</h2>
@@ -269,17 +274,16 @@
                 <div class="flex-btns"><input type="text" id="newPlayerName" placeholder="New player name" style="flex:2"><button id="addPlayerBtn" style="flex:1">➕ ADD</button><button id="resetPlayersBtn" style="background:#990000;">⟳ RESET</button></div></div>
                 <div class="card"><h3>📅 TEAM ASSIGNMENT (ORANGE vs YELLOW)</h3><select id="adminWeekSelect"></select><div id="teamAssignmentArea"></div><button id="saveTeamsBtn">💾 SAVE TEAMS</button></div>
                 <div class="card"><h3>⚽ MATCH RESULT & GOALS</h3><div id="matchResultArea"></div><button id="saveResultBtn">💾 SAVE RESULT</button></div>
-                <div class="card"><h3>🏆 LEADERBOARD (3-2-1 votes)</h3><button id="refreshLeaderboardBtn">⟳ REFRESH</button><div id="leaderboardContainer"></div></div>
-                <div class="card"><h3>📥 IMPORT VOTE</h3><textarea id="pasteVoteArea" rows="2" placeholder="Paste JSON vote"></textarea><button id="addVoteBtn">ADD VOTE</button><div id="adminMessage"></div></div>
-                <div class="card"><h3>💾 BACKUP / RESTORE</h3><div class="flex-btns"><button id="exportAllBtn">📤 EXPORT</button><button id="importAllBtn">📥 IMPORT</button><input type="file" id="importFileInput" style="display:none;"></div></div>
+                <div class="card"><h3>📋 ATTENDANCE OVERVIEW (all players)</h3><div id="adminAttendanceOverview"></div></div>
+                <div class="card"><h3>💾 BACKUP / RESTORE</h3><div class="flex-btns"><button id="exportAllBtn">📤 EXPORT DATA</button><button id="importAllBtn">📥 IMPORT BACKUP</button><input type="file" id="importFileInput" style="display:none;"></div></div>
             </div>
         </div>
     </div>
-    <footer>⚡ Live sync via Firebase • Admin password: admin123 | 📲 WhatsApp number: change inside code</footer>
+    <footer>⚡ Live sync via Firebase • Admin password: admin123</footer>
 </div>
 
 <script>
-    // ========== FIREBASE CONFIG (already set – do not change unless needed) ==========
+    // ========== FIREBASE CONFIG ==========
     const firebaseConfig = {
         apiKey: "AIzaSyCWlFqDJyENgrUOhiLXCjSEi4Mk_54SA1w",
         authDomain: "monday-night-soccer-hub.firebaseapp.com",
@@ -291,7 +295,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // ========== DEFAULT PLAYERS (full list, including Charlie & Dante) ==========
+    // ========== DEFAULT PLAYERS (full list) ==========
     const DEFAULT_PLAYERS = [
         "Alex Rowe", "Ali Mekawy", "Carlo", "Charlie", "Chris Del Monaco", "Chris M", "Chris S", "Danny", "Dante", "David", "Dimitri",
         "Enzo", "Farid", "Faros", "Frank", "George B", "George T", "Ivan", "James Zoumis", "James", "Joe T", "Joey",
@@ -321,14 +325,14 @@
     }
     const GAME_WEEKS = generateGameWeeks();
 
-    let players = [], teamAssignments = {}, matchResults = {}, votes = [], payments = [];
+    let players = [], teamAssignments = {}, matchResults = {}, payments = [], attendance = []; // attendance: { player, gameDate, status }
     let isAdminLoggedIn = false;
 
     const playersRef = db.collection("config").doc("players");
     const teamsRef = db.collection("config").doc("teamAssignments");
     const resultsRef = db.collection("config").doc("matchResults");
-    const votesRef = db.collection("votes");
     const paymentsRef = db.collection("payments");
+    const attendanceRef = db.collection("attendance");
 
     async function loadData() {
         const playersDoc = await playersRef.get();
@@ -340,22 +344,24 @@
         const resultsDoc = await resultsRef.get();
         if (resultsDoc.exists) matchResults = resultsDoc.data();
         else matchResults = {};
-        const votesSnap = await votesRef.get();
-        votes = []; votesSnap.forEach(doc => votes.push(doc.data()));
         const paymentsSnap = await paymentsRef.get();
         payments = []; paymentsSnap.forEach(doc => payments.push(doc.data()));
+        const attendanceSnap = await attendanceRef.get();
+        attendance = []; attendanceSnap.forEach(doc => attendance.push(doc.data()));
     }
     async function savePlayers() { await playersRef.set({ list: players }); }
     async function saveTeams() { await teamsRef.set(teamAssignments); }
     async function saveResults() { await resultsRef.set(matchResults); }
-    async function saveVote(voteObj) { await votesRef.doc(`${voteObj.voter}_${voteObj.gameDate}`).set(voteObj); }
     async function savePayment(paymentObj) { await paymentsRef.doc(`${paymentObj.player}_${paymentObj.gameDate}`).set(paymentObj); }
+    async function saveAttendance(attObj) { await attendanceRef.doc(`${attObj.player}_${attObj.gameDate}`).set(attObj); }
 
     async function refreshAll() {
         await loadData();
-        renderPlayerSelectors();
+        renderAttendancePlayerSelect();
+        renderAttendanceWeekSelect();
+        renderAttendanceSummary();
+        renderPitchList();
         renderPitchAndMatch();
-        renderVoterDropdowns();
         renderPaymentPlayerSelect();
         renderPaymentWeekSelect();
         renderPaymentLedger();
@@ -364,18 +370,71 @@
             renderAdminWeekSelect();
             renderTeamAssignmentUI();
             renderMatchResultUI();
-            renderLeaderboard();
+            renderAdminAttendanceOverview();
         }
     }
 
-    // --- Player view: week selector + pitch ---
-    function renderPlayerSelectors() {
-        const select = document.getElementById("playerWeekSelect");
+    // --- Attendance UI in player tab ---
+    function renderAttendancePlayerSelect() {
+        const select = document.getElementById("attendancePlayerSelect");
+        select.innerHTML = '<option value="">-- Select your name --</option>' + players.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+    }
+    function renderAttendanceWeekSelect() {
+        const select = document.getElementById("attendanceWeekSelect");
+        select.innerHTML = GAME_WEEKS.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
+    }
+    async function setAttendance(status) {
+        const player = document.getElementById("attendancePlayerSelect").value;
+        const gameDate = document.getElementById("attendanceWeekSelect").value;
+        const msgDiv = document.getElementById("attendanceMessage");
+        if (!player || !gameDate) {
+            msgDiv.innerHTML = "Select your name and a game week"; msgDiv.style.display = "block";
+            setTimeout(() => msgDiv.style.display = "none", 3000);
+            return;
+        }
+        const existing = attendance.find(a => a.player === player && a.gameDate === gameDate);
+        if (existing && existing.status === status) {
+            msgDiv.innerHTML = `You are already marked as ${status === 'in' ? 'attending' : 'not attending'} for this week.`;
+            msgDiv.style.display = "block";
+            setTimeout(() => msgDiv.style.display = "none", 3000);
+            return;
+        }
+        await saveAttendance({ player, gameDate, status, timestamp: new Date().toISOString() });
+        // update local array
+        const index = attendance.findIndex(a => a.player === player && a.gameDate === gameDate);
+        if (index !== -1) attendance[index] = { player, gameDate, status };
+        else attendance.push({ player, gameDate, status });
+        msgDiv.innerHTML = `✅ You are ${status === 'in' ? 'attending' : 'NOT attending'} on ${gameDate}`;
+        msgDiv.style.display = "block";
+        setTimeout(() => msgDiv.style.display = "none", 3000);
+        renderAttendanceSummary();
+        if (isAdminLoggedIn) renderAdminAttendanceOverview();
+    }
+
+    async function renderAttendanceSummary() {
+        const container = document.getElementById("attendanceSummary");
+        // group by gameDate
+        const weeks = [...new Set(attendance.map(a => a.gameDate))].sort();
+        let html = `<table class="attendance-table"><thead><tr><th>Game Week</th><th>Attending Players</th><th>Not Attending</th></tr></thead><tbody>`;
+        for (let week of weeks) {
+            const weekLabel = GAME_WEEKS.find(w => w.dateStr === week)?.label || week;
+            const attending = attendance.filter(a => a.gameDate === week && a.status === 'in').map(a => a.player).sort();
+            const notAttending = attendance.filter(a => a.gameDate === week && a.status === 'out').map(a => a.player).sort();
+            html += `<tr><td>${escapeHtml(weekLabel)}</td><td>${attending.join(', ') || 'none'}</td><td>${notAttending.join(', ') || 'none'}</td></tr>`;
+        }
+        if (weeks.length === 0) html += `<tr><td colspan="3">No attendance records yet.</td></tr>`;
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+    }
+
+    // --- Pitch view (teams, match result) ---
+    function renderPitchList() {
+        const select = document.getElementById("pitchWeekSelect");
         select.innerHTML = GAME_WEEKS.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
         select.addEventListener("change", () => renderPitchAndMatch());
     }
     function renderPitchAndMatch() {
-        const gameDate = document.getElementById("playerWeekSelect").value;
+        const gameDate = document.getElementById("pitchWeekSelect").value;
         const assignments = teamAssignments[gameDate] || {};
         const yellow = [], orange = [];
         for (let [p, team] of Object.entries(assignments)) {
@@ -390,77 +449,7 @@
         document.getElementById("matchResultDisplay").innerHTML = `<strong>FINAL SCORE:</strong> 🟡 ${match.yellowScore} - ${match.orangeScore} 🟠 &nbsp;|&nbsp; ⚽ Goals: ${goalsText || "none"}`;
     }
 
-    // --- Voting dropdowns (names never disappear) ---
-    function renderVoterDropdowns() {
-        const voterSelect = document.getElementById("voterNameSelect");
-        voterSelect.innerHTML = '<option value="">-- Select your name --</option>' + players.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
-        function updateVoteDropdowns() {
-            const voter = voterSelect.value;
-            if (!voter) {
-                document.getElementById("vote3").innerHTML = '<option value="">-- Select voter first --</option>';
-                document.getElementById("vote2").innerHTML = '<option value="">-- Select voter first --</option>';
-                document.getElementById("vote1").innerHTML = '<option value="">-- Select voter first --</option>';
-                return;
-            }
-            const available = players.filter(p => p !== voter);
-            const opt = '<option value="">-- Select --</option>' + available.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
-            // preserve selections if still valid
-            const old3 = document.getElementById("vote3").value;
-            const old2 = document.getElementById("vote2").value;
-            const old1 = document.getElementById("vote1").value;
-            document.getElementById("vote3").innerHTML = opt;
-            document.getElementById("vote2").innerHTML = opt;
-            document.getElementById("vote1").innerHTML = opt;
-            if (available.includes(old3)) document.getElementById("vote3").value = old3;
-            if (available.includes(old2)) document.getElementById("vote2").value = old2;
-            if (available.includes(old1)) document.getElementById("vote1").value = old1;
-        }
-        voterSelect.addEventListener("change", updateVoteDropdowns);
-        updateVoteDropdowns();
-    }
-
-    async function sendVote() {
-        const voter = document.getElementById("voterNameSelect").value;
-        const gameDate = document.getElementById("playerWeekSelect").value;
-        const first = document.getElementById("vote3").value;
-        const second = document.getElementById("vote2").value;
-        const third = document.getElementById("vote1").value;
-        const msgDiv = document.getElementById("voterMessage");
-        if (!voter || !gameDate || !first || !second || !third) {
-            msgDiv.innerHTML = "Please fill all fields"; msgDiv.style.display = "block";
-            setTimeout(() => msgDiv.style.display = "none", 3000);
-            return;
-        }
-        if (first === second || first === third || second === third) {
-            msgDiv.innerHTML = "You cannot give the same player multiple awards"; msgDiv.style.display = "block";
-            setTimeout(() => msgDiv.style.display = "none", 3000);
-            return;
-        }
-        if (first === voter || second === voter || third === voter) {
-            msgDiv.innerHTML = "You cannot vote for yourself"; msgDiv.style.display = "block";
-            setTimeout(() => msgDiv.style.display = "none", 3000);
-            return;
-        }
-        const voteObj = { voter, gameDate, first, second, third, timestamp: new Date().toISOString() };
-        await saveVote(voteObj);
-        votes.push(voteObj);
-        // PDF
-        const printWin = window.open('', '_blank');
-        if (printWin) {
-            printWin.document.write(`<html><head><title>Vote - ${escapeHtml(voter)}</title><style>body{font-family:Inter;padding:2rem;}</style></head><body><h1 style="color:#cc0000;">⚽ Monday Soccer Vote</h1><p><strong>Voter:</strong> ${escapeHtml(voter)}</p><p><strong>Game:</strong> ${escapeHtml(gameDate)}</p><p><strong>3 points:</strong> ${escapeHtml(first)}</p><p><strong>2 points:</strong> ${escapeHtml(second)}</p><p><strong>1 point:</strong> ${escapeHtml(third)}</p><p>${new Date().toLocaleString()}</p></body></html>`);
-            printWin.document.close();
-            printWin.print();
-        } else {
-            alert("Please allow pop-ups to generate the PDF.");
-        }
-        // WhatsApp
-        const adminPhone = "61403827887"; // <-- CHANGE TO YOUR WHATSAPP NUMBER (country code, no +)
-        window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(JSON.stringify(voteObj))}`, '_blank');
-        msgDiv.innerHTML = "Vote sent! PDF + WhatsApp opened."; msgDiv.style.display = "block";
-        setTimeout(() => msgDiv.style.display = "none", 4000);
-    }
-
-    // --- Payments ---
+    // --- Payments (unchanged) ---
     function renderPaymentPlayerSelect() {
         const select = document.getElementById("paymentPlayerSelect");
         select.innerHTML = '<option value="">-- Select your name --</option>' + players.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
@@ -506,7 +495,7 @@
         container.innerHTML = html;
     }
 
-    // --- Admin UI (players, teams, results, leaderboard) ---
+    // --- Admin UI (players, teams, results, attendance overview) ---
     function renderPlayersList() {
         const container = document.getElementById("playersList");
         container.innerHTML = players.map(p => `<div class="goal-row"><span>${escapeHtml(p)}</span><button class="delPlayerBtn" data-name="${escapeHtml(p)}" style="background:#990000;">Delete</button></div>`).join('');
@@ -572,35 +561,23 @@
         await saveResults(); renderPitchAndMatch();
         document.getElementById("adminMessage").innerHTML = "<div class='alert'>Result saved</div>"; setTimeout(() => document.getElementById("adminMessage").innerHTML = "", 2000);
     }
-    async function renderLeaderboard() {
-        await loadData();
-        const points = new Map(); players.forEach(p => points.set(p, 0));
-        votes.forEach(v => {
-            points.set(v.first, (points.get(v.first)||0)+3);
-            points.set(v.second, (points.get(v.second)||0)+2);
-            points.set(v.third, (points.get(v.third)||0)+1);
-        });
-        let ranking = Array.from(points.entries()).map(([n,p]) => ({ name: n, points: p }));
-        ranking.sort((a,b) => b.points - a.points);
-        const container = document.getElementById("leaderboardContainer");
-        if (votes.length === 0) { container.innerHTML = "<div class='alert'>No votes yet</div>"; return; }
-        let html = `<table class="leaderboard-table"><thead><tr><th>#</th><th>Player</th><th>Points</th></tr></thead><tbody>`;
-        ranking.forEach((p,i) => { html += `<tr${i===0?' style="background:#fff0f0;"':''}><td>${i+1}${i===0?"🥇":i===1?"🥈":i===2?"🥉":""}</td><td><strong>${escapeHtml(p.name)}</strong><td><td style="color:#cc0000;">${p.points}</td></tr>`; });
+    async function renderAdminAttendanceOverview() {
+        const container = document.getElementById("adminAttendanceOverview");
+        const weeks = [...new Set(attendance.map(a => a.gameDate))].sort();
+        let html = `<table class="attendance-table"><thead><tr><th>Game Week</th><th>Player</th><th>Status</th></tr></thead><tbody>`;
+        for (let week of weeks) {
+            const weekLabel = GAME_WEEKS.find(w => w.dateStr === week)?.label || week;
+            const weekAttendances = attendance.filter(a => a.gameDate === week);
+            for (let att of weekAttendances) {
+                html += `<tr><td>${escapeHtml(weekLabel)}</td><td>${escapeHtml(att.player)}</td><td>${att.status === 'in' ? '✅ Attending' : '❌ Not attending'}</td></tr>`;
+            }
+        }
+        if (weeks.length === 0) html += `<tr><td colspan="3">No attendance records yet.</td></tr>`;
         html += `</tbody></table>`;
         container.innerHTML = html;
     }
-    async function importVoteFromText() {
-        const text = document.getElementById("pasteVoteArea").value;
-        try {
-            const data = JSON.parse(text);
-            if (!data.voter || !data.gameDate || !data.first || !data.second || !data.third) throw new Error();
-            await saveVote(data); votes.push(data);
-            document.getElementById("adminMessage").innerHTML = `<div class='alert'>Vote added for ${data.voter}</div>`;
-            renderLeaderboard(); document.getElementById("pasteVoteArea").value = "";
-        } catch(e) { document.getElementById("adminMessage").innerHTML = "<div class='alert'>Invalid format</div>"; }
-    }
     function exportAllData() {
-        const data = { players, teamAssignments, matchResults, votes, payments };
+        const data = { players, teamAssignments, matchResults, payments, attendance };
         const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
         const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `soccer_backup_${new Date().toISOString().slice(0,19)}.json`; a.click();
     }
@@ -612,11 +589,11 @@
                 if (data.players) players = data.players;
                 if (data.teamAssignments) teamAssignments = data.teamAssignments;
                 if (data.matchResults) matchResults = data.matchResults;
-                if (data.votes) votes = data.votes;
                 if (data.payments) payments = data.payments;
+                if (data.attendance) attendance = data.attendance;
                 await savePlayers(); await saveTeams(); await saveResults();
-                for (let v of votes) await saveVote(v);
                 for (let p of payments) await savePayment(p);
+                for (let a of attendance) await saveAttendance(a);
                 refreshAll();
             } catch(err) { alert("Invalid backup"); }
         };
@@ -632,24 +609,25 @@
         } else { document.getElementById("adminLoginError").style.display = "block"; setTimeout(() => document.getElementById("adminLoginError").style.display = "none", 2000); }
     }
 
-    // --- Initialisation ---
+    // Event listeners
     document.addEventListener("DOMContentLoaded", async () => {
         await loadData();
-        renderPlayerSelectors();
+        renderAttendancePlayerSelect();
+        renderAttendanceWeekSelect();
+        renderAttendanceSummary();
+        renderPitchList();
         renderPitchAndMatch();
-        renderVoterDropdowns();
         renderPaymentPlayerSelect();
         renderPaymentWeekSelect();
         renderPaymentLedger();
+        document.getElementById("attendingBtn").addEventListener("click", () => setAttendance("in"));
+        document.getElementById("notAttendingBtn").addEventListener("click", () => setAttendance("out"));
         document.getElementById("adminLoginBtn").addEventListener("click", adminLogin);
         document.getElementById("addPlayerBtn").addEventListener("click", addNewPlayer);
         document.getElementById("resetPlayersBtn").addEventListener("click", resetToDefaultPlayers);
         document.getElementById("saveTeamsBtn").addEventListener("click", async () => { await saveTeams(); renderPitchAndMatch(); });
         document.getElementById("saveResultBtn").addEventListener("click", saveMatchResult);
-        document.getElementById("sendVoteBtn").addEventListener("click", sendVote);
         document.getElementById("markPaidBtn").addEventListener("click", markPayment);
-        document.getElementById("addVoteBtn").addEventListener("click", importVoteFromText);
-        document.getElementById("refreshLeaderboardBtn").addEventListener("click", renderLeaderboard);
         document.getElementById("exportAllBtn").addEventListener("click", exportAllData);
         document.getElementById("importAllBtn").addEventListener("click", () => document.getElementById("importFileInput").click());
         document.getElementById("importFileInput").addEventListener("change", e => { if(e.target.files.length) importAllData(e.target.files[0]); e.target.value=""; });
@@ -662,7 +640,7 @@
                 tabs.forEach(b => b.classList.remove("active"));
                 btn.classList.add("active");
                 if (tab === "admin" && isAdminLoggedIn) refreshAll();
-                if (tab === "player") renderPitchAndMatch();
+                if (tab === "attendance") renderAttendanceSummary();
                 if (tab === "payment") renderPaymentLedger();
             });
         });
