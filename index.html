@@ -254,7 +254,6 @@
         const aest = new Date(utc + (10 * 3600000));
         return aest.toISOString().split('T')[0];
     }
-    function isPastDate(dateStr) { return dateStr < getCurrentAESTDate(); }
 
     function generateAllGameWeeks() {
         const year = new Date().getFullYear();
@@ -281,7 +280,6 @@
     function getFutureWeeks() { const today = getCurrentAESTDate(); return ALL_GAME_WEEKS.filter(w => w.dateStr >= today); }
     function getPastWeeks() { const today = getCurrentAESTDate(); return ALL_GAME_WEEKS.filter(w => w.dateStr < today); }
 
-    let players = [...FULL_PLAYER_LIST];  // always use hardcoded list for players
     let teamAssignments = {}, matchResults = {}, payments = [], attendance = [];
     let isAdminLoggedIn = false;
     let currentUser = null;
@@ -308,7 +306,7 @@
     async function savePayment(paymentObj) { await paymentsRef.doc(`${paymentObj.player}_${paymentObj.gameDate}`).set(paymentObj); }
     async function saveAttendance(attObj) { await attendanceRef.doc(`${attObj.player}_${attObj.gameDate}`).set(attObj); }
 
-    // ---------- Authentication (player login from hardcoded list) ----------
+    // ---------- Authentication ----------
     async function loginAsPlayer(name) {
         currentUser = { name: name, role: "player" };
         isAdminLoggedIn = false;
@@ -331,7 +329,7 @@
         renderLoginScreen();
     }
 
-    // ---------- Login Screen ----------
+    // ---------- Login Screen (player dropdown + admin password hidden) ----------
     async function renderLoginScreen() {
         const container = document.getElementById("appContainer");
         container.innerHTML = `
@@ -376,7 +374,7 @@
         });
     }
 
-    // ---------- Main App ----------
+    // ---------- Main App (tabs include Admin only when isAdminLoggedIn true) ----------
     function renderMainApp() {
         const container = document.getElementById("appContainer");
         container.innerHTML = `
@@ -427,7 +425,7 @@
         })();
     }
 
-    // ----- Attendance Panel -----
+    // ----- Attendance Panel (players) -----
     async function renderAttendancePanel() {
         const container = document.getElementById("attendancePanel");
         const futureWeeks = getFutureWeeks();
@@ -551,7 +549,7 @@
     }
 
     // ----- Pitch view -----
-    function renderPitchAndMatch() {
+    async function renderPitchAndMatch() {
         const gameDate = document.getElementById("pitchWeekSelect").value;
         if (!gameDate) return;
         const assignments = teamAssignments[gameDate] || {};
@@ -617,7 +615,7 @@
         }
         let html = `<div class="card"><h2>⚽ TOP GOAL SCORERS (RUNNING SHEET)</h2><table class="topscorer-table"><thead><tr><th>#</th><th>Player</th><th>Total Goals</th></tr></thead><tbody>`;
         sorted.forEach((p, idx) => {
-            html += `<tr><td>${idx+1}</td><td>${escapeHtml(p.name)}</td><td>${p.total}</td></tr>`;
+            html += `<tr><td>${idx+1}</td>}<strong>${escapeHtml(p.name)}</strong></td><td style="color:#cc0000;">${p.total}</td></tr>`;
         });
         html += `</tbody></table></div>`;
         container.innerHTML = html;
@@ -643,13 +641,13 @@
         `;
     }
 
-    // ----- Admin Panel -----
+    // ----- ADMIN PANEL (only visible after admin login) -----
     async function renderAdminPanel() {
         const container = document.getElementById("adminPanel");
         await loadData();
         const allWeeks = ALL_GAME_WEEKS.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
         container.innerHTML = `
-            <div class="card"><h3>👥 MANAGE PLAYERS</h3><div id="playersList"></div>
+            <div class="card"><h3>👥 MANAGE PLAYERS (hardcoded list)</h3><div id="playersList"></div>
             <div class="flex-btns"><input type="text" id="newPlayerName" placeholder="New player name" style="flex:2"><button id="addPlayerBtn" style="flex:1">➕ ADD</button><button id="resetPlayersBtn" style="background:#990000;">⟳ RESET</button></div></div>
             <div class="card"><h3>📅 TEAM ASSIGNMENT (ORANGE vs YELLOW) – ALL WEEKS</h3>
                 <select id="adminWeekSelect">${allWeeks}</select>
@@ -686,16 +684,12 @@
         const container = document.getElementById("playersList");
         let html = `<table class="payment-table"><thead><tr><th>Player</th><th>Action</th></tr></thead><tbody>`;
         for (let p of FULL_PLAYER_LIST) {
-            html += `<tr><td>${escapeHtml(p)}</td><td><button class="del-player-btn" data-player="${escapeHtml(p)}" style="background:#990000;">Delete</button></td></tr>`;
+            html += `<tr>}<td>${escapeHtml(p)}</td><td><button class="del-player-btn" data-player="${escapeHtml(p)}" style="background:#990000;">Delete</button></td></tr>`;
         }
         html += `</tbody></table>`;
         container.innerHTML = html;
         document.querySelectorAll(".del-player-btn").forEach(btn => btn.addEventListener("click", async () => {
-            const player = btn.getAttribute("data-player");
-            if (confirm(`Delete player "${player}"?`)) {
-                // Remove from FULL_PLAYER_LIST is not possible because it's constant; instead we can filter but we keep the list static.
-                alert("Players cannot be deleted from the hardcoded list. To remove, edit the code.");
-            }
+            alert("Players cannot be deleted from the hardcoded list. To remove, edit the code.");
         }));
     }
     async function addPlayerAdmin() {
@@ -801,9 +795,9 @@
             const weekLabel = ALL_GAME_WEEKS.find(w => w.dateStr === week)?.label || week;
             const paidPlayers = payments.filter(p => p.gameDate === week).map(p => p.player).sort();
             const amount = paidPlayers.length * 5;
-            html += `<td><td>${escapeHtml(weekLabel)}</td><td>${paidPlayers.join(', ') || 'none'}</td><td>$${amount}</td></tr>`;
+            html += `<tr><td>${escapeHtml(weekLabel)}</td><td>${paidPlayers.join(', ') || 'none'}</td><td>$${amount}</td></tr>`;
         }
-        html += `</tbody></table><div class="alert">💰 Total collected: $${payments.length * 5}</div>`;
+        html += `</tbody><td><div class="alert">💰 Total collected: $${payments.length * 5}</div>`;
         container.innerHTML = html;
     }
     async function adminMarkPayment() {
@@ -848,7 +842,7 @@
     }
     function escapeHtml(str) { return String(str).replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
 
-    // Initialize the app
+    // Start the app
     (async () => {
         const storedUser = localStorage.getItem("soccer_user");
         if (storedUser) {
