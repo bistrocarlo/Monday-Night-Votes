@@ -169,7 +169,7 @@
     }
     const GAME_WEEKS = generateGameWeeks();
 
-    let players = [], teamAssignments = {}, matchResults = {}, votes = [], payments = []; // payments: { player, gameDate, paid: true }
+    let players = [], teamAssignments = {}, matchResults = {}, votes = [], payments = [];
     let isAdminLoggedIn = false;
 
     const playersRef = db.collection("config").doc("players");
@@ -216,7 +216,6 @@
         }
     }
 
-    // ----- PLAYER VIEW -----
     function renderPlayerSelectors() {
         const select = document.getElementById("playerWeekSelect");
         select.innerHTML = GAME_WEEKS.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
@@ -238,7 +237,7 @@
         document.getElementById("matchResultDisplay").innerHTML = `<strong>FINAL SCORE:</strong> 🟡 ${match.yellowScore} - ${match.orangeScore} 🟠 &nbsp;|&nbsp; ⚽ Goals: ${goalsText || "none"}`;
     }
 
-    // Fixed dynamic vote dropdowns (using disabled options, no blanking)
+    // Fixed dynamic vote dropdowns – using disabled options
     function renderVoterDropdowns() {
         const voterSelect = document.getElementById("voterNameSelect");
         voterSelect.innerHTML = '<option value="">-- Select your name --</option>' + players.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
@@ -251,7 +250,6 @@
                 return;
             }
             const allOther = players.filter(p => p !== voter);
-            // Helper to build options with disabled based on selected values in other selects
             const selected3 = document.getElementById("vote3").value;
             const selected2 = document.getElementById("vote2").value;
             const selected1 = document.getElementById("vote1").value;
@@ -261,20 +259,11 @@
                     return `<option value="${escapeHtml(p)}"${disabled}>${escapeHtml(p)}</option>`;
                 }).join('');
             };
-            // Update vote3: exclude players already chosen in vote2 and vote1
             document.getElementById("vote3").innerHTML = buildOpts(new Set([selected2, selected1].filter(v => v)));
-            // Update vote2: exclude players chosen in vote3 and vote1
             document.getElementById("vote2").innerHTML = buildOpts(new Set([selected3, selected1].filter(v => v)));
-            // Update vote1: exclude players chosen in vote3 and vote2
             document.getElementById("vote1").innerHTML = buildOpts(new Set([selected3, selected2].filter(v => v)));
         }
-        voterSelect.addEventListener("change", () => {
-            // reset vote dropdowns when voter changes
-            document.getElementById("vote3").innerHTML = '';
-            document.getElementById("vote2").innerHTML = '';
-            document.getElementById("vote1").innerHTML = '';
-            populateVoteSelects();
-        });
+        voterSelect.addEventListener("change", () => { populateVoteSelects(); });
         document.getElementById("vote3").addEventListener("change", populateVoteSelects);
         document.getElementById("vote2").addEventListener("change", populateVoteSelects);
         document.getElementById("vote1").addEventListener("change", populateVoteSelects);
@@ -300,12 +289,10 @@
         const voteObj = { voter, gameDate, first, second, third, timestamp: new Date().toISOString() };
         await saveVote(voteObj);
         votes.push(voteObj);
-        // PDF
         const printWin = window.open('', '_blank');
         printWin.document.write(`<html><head><title>Vote - ${escapeHtml(voter)}</title><style>body{font-family:Inter;padding:2rem;}</style></head><body><h1 style="color:#cc0000;">⚽ Monday Soccer Vote</h1><p><strong>Voter:</strong> ${escapeHtml(voter)}</p><p><strong>Game:</strong> ${escapeHtml(gameDate)}</p><p><strong>3 points:</strong> ${escapeHtml(first)}</p><p><strong>2 points:</strong> ${escapeHtml(second)}</p><p><strong>1 point:</strong> ${escapeHtml(third)}</p><p>${new Date().toLocaleString()}</p></body></html>`);
         printWin.document.close();
         printWin.print();
-        // WhatsApp
         const adminPhone = "61403827887";
         window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(JSON.stringify(voteObj))}`, '_blank');
         msgDiv.innerHTML = "Vote sent! PDF + WhatsApp opened."; msgDiv.style.display = "block"; setTimeout(() => msgDiv.style.display = "none", 4000);
@@ -338,22 +325,21 @@
     }
     async function renderPaymentLedger() {
         const container = document.getElementById("paymentLedger");
-        // group by gameDate
         const weeks = [...new Set(payments.map(p => p.gameDate))].sort();
-        let html = `<table class="payment-table"><thead><tr><th>Game Week</th><th>Player</th><th>Paid</th></tr></thead><tbody>`;
+        let html = `<table class="payment-table"><thead><tr><th>Game Week</th><th>Players who paid</th><th>Total $</th></tr></thead><tbody>`;
         for (let week of weeks) {
             const weekLabel = GAME_WEEKS.find(w => w.dateStr === week)?.label || week;
             const paidPlayers = payments.filter(p => p.gameDate === week).map(p => p.player).sort();
-            html += `<tr><td>${escapeHtml(weekLabel)}</td><td colspan="2">${paidPlayers.map(p => escapeHtml(p)).join(', ') || 'none'}</td></tr>`;
+            const amount = paidPlayers.length * 5;
+            html += `<tr><td>${escapeHtml(weekLabel)}</td><td>${paidPlayers.map(p => escapeHtml(p)).join(', ') || 'none'}</td><td>$${amount}</td></tr>`;
         }
-        html += `</tbody></table>`;
-        // also total amount collected per week
+        html += `</tbody><td>`;
         const totalCollected = payments.length * 5;
         html += `<div class="alert" style="margin-top:12px;">💰 Total collected across all weeks: $${totalCollected}</div>`;
         container.innerHTML = html;
     }
 
-    // ----- ADMIN UI (same as before, plus payments visible) -----
+    // ----- ADMIN UI (players, teams, results, leaderboard) -----
     function renderPlayersList() {
         const container = document.getElementById("playersList");
         container.innerHTML = players.map(p => `<div class="goal-row"><span>${escapeHtml(p)}</span><button class="delPlayerBtn" data-name="${escapeHtml(p)}" style="background:#990000;">Delete</button></div>`).join('');
