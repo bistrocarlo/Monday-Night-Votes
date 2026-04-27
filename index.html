@@ -17,7 +17,7 @@
         }
         .container { max-width: 1400px; margin: 0 auto; }
         .header {
-            background: linear-gradient(135deg, #0c0c1c, #1a1a2e);
+            background: white;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -26,21 +26,19 @@
             padding: 12px 24px;
             border-radius: 60px;
             margin-bottom: 28px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-            border-bottom: 2px solid #cc0000;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.05);
+            border-bottom: 3px solid #cc0000;
         }
         .header h1 {
             font-family: 'Inter', sans-serif;
             font-size: 1.6rem;
             font-weight: 800;
             letter-spacing: -0.5px;
-            background: linear-gradient(135deg, #f9d423, #cc0000);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
+            color: #1e1e1e;
         }
+        .header h1 span { color: #cc0000; }
         .header p {
-            color: #ddd;
+            color: #4a4a4a;
             font-size: 0.8rem;
             font-weight: 500;
         }
@@ -270,7 +268,7 @@
 <body>
 <div class="container">
     <div class="header">
-        <h1>⚽ MONDAY NIGHT SOCCER ⚽</h1>
+        <h1>★ MONDAY NIGHT SOCCER ★</h1>
         <p>Attendance • Live chat • Results • Top scorer</p>
     </div>
     <div class="tabs">
@@ -298,7 +296,7 @@
             <div id="attendanceMessage" class="alert" style="display:none;"></div>
         </div>
         <div class="card">
-            <h2>📋 ATTENDING PLAYERS (per week)</h2>
+            <h2>📋 ATTENDING PLAYERS (upcoming weeks)</h2>
             <div id="attendingNamesList"></div>
         </div>
         <div class="card">
@@ -348,7 +346,7 @@
         <div class="card">
             <h2>📜 RULES</h2>
             <div class="rules-content">
-                <p>🥅 <strong>Funny rules (edit later)</strong></p>
+                <p>★ <strong>Funny rules (edit later)</strong></p>
                 <ul>
                     <li>Hit crossbar → buy a round.</li>
                     <li>Own goals = double for opponents.</li>
@@ -382,7 +380,7 @@
             </div>
         </div>
     </div>
-    <footer>⚡ Live sync via Firebase • Admin: admin123 • Payments only for admin</footer>
+    <footer>★ Live sync via Firebase • Admin: admin123 • Payments only for admin</footer>
 </div>
 
 <script>
@@ -458,7 +456,7 @@
     async function refreshAll() {
         await loadData();
         renderAttendanceSelects();
-        renderAttendingNamesList();
+        renderAttendingNamesList(); // only future weeks
         renderPitchStuff();
         renderPastGames();
         renderTopScorer();
@@ -518,17 +516,17 @@
         document.getElementById("attendanceMessage").innerHTML = `Guest "${guestName}" added as attending.`;
         setTimeout(() => document.getElementById("attendanceMessage").innerHTML = "", 2000);
     }
+    // Only show future weeks in attending list
     async function renderAttendingNamesList() {
         const container = document.getElementById("attendingNamesList");
-        const weeksWithAttendance = [...new Set(attendance.filter(a => a.status === 'in').map(a => a.gameDate))].sort().reverse();
-        if (weeksWithAttendance.length === 0) { container.innerHTML = "<div class='alert'>No attending records yet.</div>"; return; }
+        const futureWeeks = getFutureWeeks();
+        if (futureWeeks.length === 0) { container.innerHTML = "<div class='alert'>No upcoming game weeks.</div>"; return; }
         let html = "";
-        for (let w of weeksWithAttendance) {
-            const weekLabel = ALL_GAME_WEEKS.find(week => week.dateStr === w)?.label || w;
-            const attendees = attendance.filter(a => a.gameDate === w && a.status === 'in').map(a => a.player).sort();
+        for (let week of futureWeeks) {
+            const attendees = attendance.filter(a => a.gameDate === week.dateStr && a.status === 'in').map(a => a.player).sort();
             html += `<div class="attending-week-card">
                         <div class="attending-week-header">
-                            <span class="attending-week-label">${escapeHtml(weekLabel)}</span>
+                            <span class="attending-week-label">${escapeHtml(week.label)}</span>
                             <span class="attending-count-badge">${attendees.length} attending</span>
                         </div>
                         <div class="attending-names">
@@ -714,7 +712,7 @@
                 html += `<tr><td>${escapeHtml(label)}</td><td>${escapeHtml(a.player)}</td><td>${a.status === 'in' ? '✅ Attending' : '❌ Not'}</td></tr>`;
             }
         }
-        if (weeks.length === 0) html += `�<td colspan="3">No records</td></tr>`;
+        if (weeks.length === 0) html += `<tr><td colspan="3">No records</td></tr>`;
         html += `</tbody></table>`;
         container.innerHTML = html;
     }
