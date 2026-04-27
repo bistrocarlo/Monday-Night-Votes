@@ -3,65 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Monday Night Football Hub | Live via Google Sheets</title>
+    <title>Monday Soccer – Vote & Compile (3-2-1)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: linear-gradient(145deg, #eef5ff 0%, #d9e9ff 100%);
-            font-family: 'Inter', system-ui, sans-serif;
+            font-family: 'Inter', sans-serif;
             padding: 20px;
             min-height: 100vh;
             color: #1a2c3e;
         }
         .container { max-width: 1400px; margin: 0 auto; }
-        .header { text-align: center; margin-bottom: 24px; cursor: pointer; }
+        .header { text-align: center; margin-bottom: 24px; }
         .header h1 {
             font-family: 'Poppins', sans-serif;
-            font-size: 2.2rem;
+            font-size: 2rem;
             background: linear-gradient(135deg, #2c7da0, #1f5068);
             background-clip: text;
             -webkit-background-clip: text;
             color: transparent;
         }
-        .player-selector {
-            background: #fef9ef;
-            border-radius: 60px;
-            padding: 12px 20px;
-            margin-bottom: 20px;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 15px;
-        }
-        select, button, input, textarea {
-            padding: 10px 16px;
-            border-radius: 60px;
-            border: 1px solid #e2d6b0;
-            font-size: 0.9rem;
-            background: #fffef7;
-        }
-        button {
-            background: #f5b042;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        button.danger { background: #d9534f; color: white; }
         .tabs {
             display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
+            gap: 12px;
             justify-content: center;
             margin-bottom: 28px;
+            flex-wrap: wrap;
         }
         .tab-btn {
             background: white;
             border: none;
-            padding: 10px 22px;
+            padding: 10px 28px;
             border-radius: 60px;
             font-family: 'Poppins', sans-serif;
             font-weight: 600;
+            font-size: 1rem;
             cursor: pointer;
             color: #1f5068;
             box-shadow: 0 2px 6px rgba(0,0,0,0.05);
@@ -76,153 +53,150 @@
         .card {
             background: white;
             border-radius: 32px;
-            padding: 22px 24px;
-            margin-bottom: 24px;
+            padding: 24px;
+            margin-bottom: 28px;
             border: 1px solid #f0e2c0;
-            box-shadow: 0 6px 14px rgba(0,0,0,0.03);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
         }
         .card h2, .card h3 {
             font-family: 'Poppins', sans-serif;
             font-weight: 600;
-            margin-bottom: 18px;
+            margin-bottom: 20px;
             color: #1f5068;
             border-left: 5px solid #f5b042;
-            padding-left: 16px;
+            padding-left: 18px;
         }
-        .week-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            max-height: 420px;
-            overflow-y: auto;
+        label {
+            font-weight: 600;
+            color: #2c5a74;
+            display: block;
+            margin-top: 16px;
+            margin-bottom: 6px;
         }
-        .week-row {
-            background: #fef9ef;
-            border-radius: 60px;
+        select, button, textarea {
             padding: 10px 16px;
+            border-radius: 60px;
+            border: 1px solid #e2d6b0;
+            font-size: 0.95rem;
+            background: #fffef7;
+            font-family: inherit;
+        }
+        button {
+            background: #f5b042;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        button:active { transform: scale(0.97); }
+        .vote-row {
             display: flex;
             flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
+            gap: 20px;
+            background: #faf6e9;
+            padding: 20px;
+            border-radius: 32px;
+            margin: 20px 0;
         }
-        .week-label { font-weight: 600; min-width: 130px; }
-        .badge {
-            font-size: 0.8rem;
-            padding: 4px 12px;
-            border-radius: 60px;
-        }
-        .in { background: #d4edda; color: #155724; }
-        .out { background: #f8d7da; color: #721c24; }
-        .paid { background: #d4edda; color: #155724; }
-        .unpaid { background: #fff3cd; color: #856404; }
-        .leaderboard-table, .accounts-table {
+        .vote-select { flex: 1; min-width: 180px; }
+        .leaderboard-table {
             width: 100%;
             border-collapse: collapse;
             background: white;
             border-radius: 24px;
             overflow: hidden;
+            margin-top: 12px;
         }
-        th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #f0e6cf; }
-        th { background: #fef5e3; color: #b2711a; }
-        .flex-btns { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
-        .news-content { background: #fef9ef; padding: 16px; border-radius: 28px; white-space: pre-wrap; min-height: 100px; }
-        .loading { color: #777; font-style: italic; }
-        footer { text-align: center; margin-top: 32px; font-size: 0.75rem; color: #4b6f82; }
-        @media (max-width: 700px) {
-            .week-row { flex-direction: column; align-items: stretch; }
-            .header h1 { font-size: 1.8rem; }
-        }
+        th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #f0e6cf; }
+        th { background: #fef5e3; color: #b2711a; font-weight: 700; }
+        .flex-btns { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+        .vote-file-info { background: #eef2fa; border-radius: 60px; padding: 12px 20px; margin-top: 16px; font-size: 0.85rem; }
+        .alert { background: #fff3cd; border-left: 6px solid #f5b042; padding: 12px 18px; border-radius: 60px; margin: 14px 0; }
+        .success { background: #e3f5ec; border-left-color: #2e7d5e; }
+        .error { background: #f8d7da; border-left-color: #d9534f; }
+        footer { text-align: center; margin-top: 40px; font-size: 0.75rem; color: #4b6f82; }
+        @media (max-width: 700px) { .vote-row { flex-direction: column; } }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <h1>⚽ Monday Night Football Hub ⚽</h1>
-        <p>Live attendance • Best & Fairest • Payments • News • Accounts (Google Sheets)</p>
-    </div>
-
-    <div class="player-selector">
-        <label><strong>👤 Your name:</strong></label>
-        <select id="playerNameSelect"></select>
-        <div id="loginStatus" style="font-weight:500;"></div>
+        <h1>⚽ Monday Night Soccer – Best & Fairest ⚽</h1>
+        <p>3 points • 2 points • 1 point | Download vote file → send to admin → admin compiles final leaderboard</p>
     </div>
 
     <div class="tabs">
-        <button class="tab-btn active" data-tab="attendance">📋 Attendance</button>
-        <button class="tab-btn" data-tab="voting">🏆 Best & Fairest</button>
-        <button class="tab-btn" data-tab="payments">💰 Payments</button>
-        <button class="tab-btn" data-tab="news">📢 News</button>
-        <button class="tab-btn" data-tab="accounts">📊 Accounts</button>
+        <button class="tab-btn active" data-tab="voter">🗳️ Voter – Create my vote file</button>
+        <button class="tab-btn" data-tab="admin">👑 Admin – Compile vote files & leaderboard</button>
     </div>
 
-    <!-- Attendance -->
-    <div id="attendancePanel" class="panel active-panel">
+    <!-- VOTER TAB -->
+    <div id="voterPanel" class="panel active-panel">
         <div class="card">
-            <h2>📅 Mark your attendance</h2>
-            <div id="attendanceList" class="week-grid">Loading weeks...</div>
+            <h2>📝 Create your vote (3-2-1)</h2>
+            <p>1. Select your name & game week<br>2. Award 3, 2, and 1 point to three different teammates<br>3. Download the vote file and send it to the admin (WhatsApp / email)</p>
+            
+            <label>👤 Your name</label>
+            <select id="voterName"></select>
+            
+            <label>📅 Monday game week</label>
+            <select id="voterWeek"></select>
+            
+            <div class="vote-row">
+                <div class="vote-select"><label>🏆 3 pts (Best & Fairest)</label><select id="vote3"></select></div>
+                <div class="vote-select"><label>🥈 2 pts (Runner-up)</label><select id="vote2"></select></div>
+                <div class="vote-select"><label>🥉 1 pt (Most consistent)</label><select id="vote1"></select></div>
+            </div>
+            
+            <div class="flex-btns">
+                <button id="generateVoteBtn">📄 Generate & Download vote file</button>
+            </div>
+            <div id="voterMessage" class="vote-file-info"></div>
         </div>
         <div class="card">
-            <h3>👥 Who's coming next game?</h3>
-            <div id="nextGameAttendance" class="loading">Loading...</div>
-        </div>
-    </div>
-
-    <!-- Voting -->
-    <div id="votingPanel" class="panel">
-        <div class="card">
-            <h2>🗳️ 3-2-1 Votes (Best & Fairest)</h2>
-            <div id="votingWeeksList" class="week-grid">Loading...</div>
-        </div>
-        <div class="card">
-            <h2>🏆 Current Leaderboard</h2>
-            <button id="refreshLeaderboardBtn">⟳ Refresh Leaderboard</button>
-            <div id="leaderboardContainer"></div>
-        </div>
-    </div>
-
-    <!-- Payments -->
-    <div id="paymentsPanel" class="panel">
-        <div class="card">
-            <h2>💰 Mark payment for each week ($10 match fee)</h2>
-            <div id="paymentsList" class="week-grid">Loading...</div>
+            <h3>📢 How to send your vote</h3>
+            <p>After downloading the <code>.vote</code> file, send it via WhatsApp or email to the group admin. The admin will compile all files at the end of the season.</p>
         </div>
     </div>
 
-    <!-- News -->
-    <div id="newsPanel" class="panel">
+    <!-- ADMIN TAB -->
+    <div id="adminPanel" class="panel">
         <div class="card">
-            <h2>📢 Latest Announcements</h2>
-            <div id="newsContent" class="news-content">Loading news...</div>
-            <div id="adminNewsArea" style="display:none; margin-top:20px;">
-                <textarea id="newsInput" rows="3" style="width:100%; border-radius:24px; padding:12px;" placeholder="Write new announcement..."></textarea>
-                <button id="postNewsBtn" style="margin-top:8px;">Post Update</button>
+            <h2>📥 Import vote files from players</h2>
+            <p>Collect all <code>.vote</code> files that players sent you. Import them here (multiple at once). Duplicate votes (same player + same week) are automatically rejected.</p>
+            <div class="flex-btns">
+                <button id="importVotesBtn">📂 Import vote file(s)</button>
+                <input type="file" id="fileInput" accept=".vote,.txt,application/json" multiple style="display:none;">
+                <button id="resetLeaderboardBtn" style="background:#e07c4c;">🗑️ Reset all compiled votes</button>
+                <button id="printLeaderboardBtn">🖨️ Print leaderboard (PDF)</button>
+            </div>
+            <div id="adminMessage"></div>
+        </div>
+
+        <div class="card">
+            <h2>🏆 Final Leaderboard (cumulative)</h2>
+            <div id="leaderboardContainer" class="alert">No votes imported yet. Use "Import vote file(s)".</div>
+        </div>
+
+        <div class="card">
+            <h3>📋 Imported votes (latest 50)</h3>
+            <div id="voteHistory" style="max-height: 300px; overflow-y: auto; font-size: 0.85rem;"></div>
+        </div>
+        
+        <div class="card">
+            <h3>💾 Backup / Restore master data</h3>
+            <div class="flex-btns">
+                <button id="exportMasterBtn">📤 Export master data (JSON)</button>
+                <button id="importMasterBtn">📥 Import master data (restore backup)</button>
+                <input type="file" id="masterFileInput" accept=".json" style="display:none;">
             </div>
         </div>
     </div>
-
-    <!-- Accounts -->
-    <div id="accountsPanel" class="panel">
-        <div class="card">
-            <h2>💰 Financial Summary</h2>
-            <div id="accountsSummary"></div>
-        </div>
-        <div class="card">
-            <h3>📋 Detailed Player Ledger</h3>
-            <div id="accountsTable"></div>
-        </div>
-    </div>
-
-    <footer>
-        📡 Live data via Google Sheets • Double-click the header to enable Admin mode (PIN: admin123)
-    </footer>
+    <footer>🔐 All data stays on your computer. Votes are stored in files – no cloud, no accounts.</footer>
 </div>
 
 <script>
-    // ==================== CONFIG ====================
-    const API_BASE = "YOUR_APPS_SCRIPT_URL_HERE";   // ←←← REPLACE WITH YOUR WEB APP URL
-    // ===============================================
-
+    // ---------- FULL ROSTER (34 players) ----------
     const FULL_ROSTER = [
         "James Zoumis", "Stav", "Paul", "Ali Mekawy", "Danny", "Alex Rowe", "Kiarash Piani",
         "enzo rivellese", "Stefan Бранковић", "Dimitri Superstar", "Ivan Soccer", "Leo Soccer",
@@ -232,389 +206,317 @@
         "Chris", "Chris Del Monaco", "Maurice Delmonte", "Peter Desensi", "Tony El Hajj", "Farid", "James"
     ];
 
-    let currentPlayer = "";
-    let isAdmin = false;
-    let gameWeeks = [];
-
-    // Helper functions
-    async function fetchJSON(action, params = {}) {
-        let url = `${API_BASE}?action=${action}`;
-        Object.entries(params).forEach(([k, v]) => {
-            url += `&${k}=${encodeURIComponent(v)}`;
-        });
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-    }
-
-    async function postJSON(data) {
-        const res = await fetch(API_BASE, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-    }
-
-    function escapeHtml(str) {
-        return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-    }
-
-    // Load game weeks
-    async function loadGameWeeks() {
-        try {
-            const data = await fetchJSON("getGames");
-            gameWeeks = data.length ? data : [];
-            if (gameWeeks.length === 0) {
-                // Fallback generation (should not happen if script works)
-                console.warn("No games returned from sheet");
-            }
-        } catch (e) {
-            console.error("Failed to load games", e);
-            gameWeeks = [];
-        }
-    }
-
-    // Attendance
-    async function loadAttendance() {
-        if (!currentPlayer) return;
-        const container = document.getElementById("attendanceList");
-        container.innerHTML = '<div class="loading">Loading attendance...</div>';
-        try {
-            const attendanceMap = await fetchJSON("getAttendance");
-            let html = "";
-            for (let week of gameWeeks) {
-                const key = `${currentPlayer}|${week.date}`;
-                const status = attendanceMap[key] || "unknown";
-                const isIn = status === "in";
-                html += `
-                    <div class="week-row">
-                        <div class="week-label">${week.label}</div>
-                        <div>
-                            <button class="attending-btn in-btn" data-date="${week.date}" style="${isIn ? 'background:#2e7d5e;color:white;' : ''}">✅ In</button>
-                            <button class="attending-btn out-btn" data-date="${week.date}" style="${!isIn && status !== 'unknown' ? 'background:#d9534f;color:white;' : ''}">❌ Out</button>
-                        </div>
-                        <div class="badge ${isIn ? 'in' : (status === 'out' ? 'out' : '')}">${isIn ? 'Attending' : (status === 'out' ? 'Not attending' : 'Not set')}</div>
-                    </div>
-                `;
-            }
-            container.innerHTML = html;
-
-            document.querySelectorAll(".attending-btn").forEach(btn => {
-                btn.addEventListener("click", async () => {
-                    const date = btn.dataset.date;
-                    const status = btn.classList.contains("in-btn") ? "in" : "out";
-                    await postJSON({ action: "setAttendance", playerName: currentPlayer, gameDate: date, status });
-                    loadAttendance();
-                    updateNextGameAttendance();
-                });
+    // ---------- Generate Monday game weeks (Feb -> second-last Monday Dec) ----------
+    function generateGameWeeks() {
+        const year = new Date().getFullYear();
+        let start = new Date(year, 1, 1);
+        while (start.getDay() !== 1) start.setDate(start.getDate() + 1);
+        let dec31 = new Date(year, 11, 31);
+        let lastMonday = new Date(dec31);
+        while (lastMonday.getDay() !== 1) lastMonday.setDate(lastMonday.getDate() - 1);
+        let secondLast = new Date(lastMonday);
+        secondLast.setDate(secondLast.getDate() - 7);
+        let weeks = [];
+        let cur = new Date(start);
+        while (cur <= secondLast) {
+            weeks.push({
+                dateStr: cur.toISOString().split('T')[0],
+                label: `Monday ${cur.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}`
             });
-        } catch (e) {
-            container.innerHTML = `<div style="color:red;">Error loading attendance. Check connection.</div>`;
+            cur.setDate(cur.getDate() + 7);
         }
+        return weeks;
+    }
+    const GAME_WEEKS = generateGameWeeks();
+
+    // ---------- Voter side: populate dropdowns ----------
+    function populateVoterDropdowns() {
+        const voterSelect = document.getElementById("voterName");
+        voterSelect.innerHTML = '<option value="">-- Select your name --</option>' + 
+            FULL_ROSTER.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+        
+        const weekSelect = document.getElementById("voterWeek");
+        weekSelect.innerHTML = GAME_WEEKS.map(w => `<option value="${w.dateStr}">${w.label} (${w.dateStr})</option>`).join('');
+        
+        const vote3 = document.getElementById("vote3");
+        const vote2 = document.getElementById("vote2");
+        const vote1 = document.getElementById("vote1");
+        const playerOptions = FULL_ROSTER.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+        vote3.innerHTML = '<option value="">-- Select --</option>' + playerOptions;
+        vote2.innerHTML = '<option value="">-- Select --</option>' + playerOptions;
+        vote1.innerHTML = '<option value="">-- Select --</option>' + playerOptions;
     }
 
-    async function updateNextGameAttendance() {
-        const container = document.getElementById("nextGameAttendance");
-        if (!gameWeeks.length) return;
-        const today = new Date().toISOString().split('T')[0];
-        let nextGame = gameWeeks.find(w => w.date >= today) || gameWeeks[0];
-
-        try {
-            const attendanceMap = await fetchJSON("getAttendance");
-            const attending = FULL_ROSTER.filter(p => {
-                const key = `${p}|${nextGame.date}`;
-                return attendanceMap[key] === "in";
-            });
-            container.innerHTML = `<strong>${nextGame.label}</strong><br>Attending: ${attending.length ? attending.join(", ") : "No one yet"}`;
-        } catch (e) {
-            container.innerHTML = "Error loading attendees";
-        }
-    }
-
-    // Voting
-    async function loadVotingWeeks() {
-        if (!currentPlayer) return;
-        const container = document.getElementById("votingWeeksList");
-        container.innerHTML = '<div class="loading">Loading votes...</div>';
-        try {
-            const votesMap = await fetchJSON("getVotes");
-            let html = "";
-            for (let week of gameWeeks) {
-                const key = `${currentPlayer}|${week.date}`;
-                const vote = votesMap[key];
-                const status = vote ? `✅ 3:${vote.first} | 2:${vote.second} | 1:${vote.third}` : "⭕ Not voted";
-                html += `
-                    <div class="week-row">
-                        <div class="week-label">${week.label}</div>
-                        <div class="badge">${status}</div>
-                        <div><button class="vote-open-btn" data-date="${week.date}" data-label="${week.label}">✏️ Vote</button></div>
-                    </div>
-                `;
-            }
-            container.innerHTML = html;
-
-            document.querySelectorAll(".vote-open-btn").forEach(btn => {
-                btn.addEventListener("click", () => openVoteModal(btn.dataset.date, btn.dataset.label));
-            });
-        } catch (e) {
-            container.innerHTML = "Error loading voting data";
-        }
-    }
-
-    function openVoteModal(gameDate, weekLabel) {
-        let options = '<option value="">-- Select --</option>';
-        FULL_ROSTER.forEach(p => {
-            if (p !== currentPlayer) options += `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`;
-        });
-
-        const modal = document.createElement("div");
-        modal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;z-index:1000;";
-        modal.innerHTML = `
-            <div style="background:white;border-radius:48px;padding:28px;max-width:520px;width:90%;max-height:90vh;overflow:auto;">
-                <h3>${weekLabel}</h3>
-                <p style="margin:10px 0 5px;">3 points</p><select id="vote3" style="width:100%;">${options}</select>
-                <p style="margin:10px 0 5px;">2 points</p><select id="vote2" style="width:100%;">${options}</select>
-                <p style="margin:10px 0 5px;">1 point</p><select id="vote1" style="width:100%;">${options}</select>
-                <div class="flex-btns" style="margin-top:20px;">
-                    <button id="saveVoteBtn">Save Vote</button>
-                    <button id="cancelVoteBtn">Cancel</button>
-                </div>
-                <div id="voteError" style="color:red;margin-top:10px;"></div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-
-        document.getElementById("saveVoteBtn").onclick = async () => {
-            const first = document.getElementById("vote3").value;
-            const second = document.getElementById("vote2").value;
-            const third = document.getElementById("vote1").value;
-            if (!first || !second || !third) {
-                document.getElementById("voteError").innerText = "Please select all three players.";
-                return;
-            }
-            if (first === second || first === third || second === third) {
-                document.getElementById("voteError").innerText = "All three players must be different.";
-                return;
-            }
-            try {
-                await postJSON({ action: "setVote", playerName: currentPlayer, gameDate, first, second, third });
-                document.body.removeChild(modal);
-                loadVotingWeeks();
-                renderLeaderboard();
-            } catch (e) {
-                document.getElementById("voteError").innerText = "Failed to save vote.";
-            }
+    // Download vote file
+    document.getElementById("generateVoteBtn").addEventListener("click", () => {
+        const voter = document.getElementById("voterName").value;
+        const weekDate = document.getElementById("voterWeek").value;
+        const weekLabel = GAME_WEEKS.find(w => w.dateStr === weekDate)?.label || weekDate;
+        const first = document.getElementById("vote3").value;
+        const second = document.getElementById("vote2").value;
+        const third = document.getElementById("vote1").value;
+        const msgDiv = document.getElementById("voterMessage");
+        
+        if (!voter) { msgDiv.innerHTML = "<div class='alert error'>❌ Please select your name.</div>"; return; }
+        if (!weekDate) { msgDiv.innerHTML = "<div class='alert error'>❌ Please select a game week.</div>"; return; }
+        if (!first || !second || !third) { msgDiv.innerHTML = "<div class='alert error'>❌ Please select all three players (3,2,1).</div>"; return; }
+        if (first === second || first === third || second === third) { msgDiv.innerHTML = "<div class='alert error'>❌ You must choose three different players.</div>"; return; }
+        if (first === voter || second === voter || third === voter) { msgDiv.innerHTML = "<div class='alert error'>❌ You cannot vote for yourself.</div>"; return; }
+        
+        // Create vote object
+        const voteObj = {
+            version: "1.0",
+            voter: voter,
+            gameDate: weekDate,
+            gameLabel: weekLabel,
+            first: first,
+            second: second,
+            third: third,
+            timestamp: new Date().toISOString()
         };
-
-        document.getElementById("cancelVoteBtn").onclick = () => document.body.removeChild(modal);
-    }
-
-    async function renderLeaderboard() {
-        const container = document.getElementById("leaderboardContainer");
-        container.innerHTML = '<div class="loading">Loading leaderboard...</div>';
-        try {
-            const votesMap = await fetchJSON("getVotes");
-            const points = new Map();
-            FULL_ROSTER.forEach(name => points.set(name, 0));
-
-            Object.values(votesMap).forEach(v => {
-                if (v.first) points.set(v.first, (points.get(v.first) || 0) + 3);
-                if (v.second) points.set(v.second, (points.get(v.second) || 0) + 2);
-                if (v.third) points.set(v.third, (points.get(v.third) || 0) + 1);
-            });
-
-            let ranking = Array.from(points.entries()).map(([name, pts]) => ({name, points: pts}));
-            ranking.sort((a, b) => b.points - a.points);
-
-            if (ranking.length === 0) {
-                container.innerHTML = "<p>No votes recorded yet.</p>";
-                return;
-            }
-
-            let html = `<table class="leaderboard-table"><thead><tr><th>#</th><th>Player</th><th>Points</th></tr></thead><tbody>`;
-            ranking.forEach((p, i) => {
-                html += `<tr><td>${i+1}</td><td>${escapeHtml(p.name)}</td><td><strong>${p.points}</strong></td></tr>`;
-            });
-            html += `</tbody></table>`;
-            container.innerHTML = html;
-        } catch (e) {
-            container.innerHTML = "Error loading leaderboard";
-        }
-    }
-
-    // Payments
-    async function loadPayments() {
-        if (!currentPlayer) return;
-        const container = document.getElementById("paymentsList");
-        container.innerHTML = '<div class="loading">Loading payments...</div>';
-        try {
-            const paymentsMap = await fetchJSON("getPayments");
-            let html = "";
-            for (let week of gameWeeks) {
-                const key = `${currentPlayer}|${week.date}`;
-                const paid = !!paymentsMap[key];
-                html += `
-                    <div class="week-row">
-                        <div class="week-label">${week.label}</div>
-                        <div>
-                            <button class="payment-toggle" data-date="${week.date}" style="background:${paid ? '#2e7d5e' : '#e0a800'}; color:${paid ? 'white' : 'black'}">
-                                ${paid ? '✅ Paid' : '❌ Unpaid'}
-                            </button>
-                        </div>
-                        <div class="badge ${paid ? 'paid' : 'unpaid'}">${paid ? 'Paid' : 'Not paid'}</div>
-                    </div>
-                `;
-            }
-            container.innerHTML = html;
-
-            document.querySelectorAll(".payment-toggle").forEach(btn => {
-                btn.addEventListener("click", async () => {
-                    const date = btn.dataset.date;
-                    const currentPaid = (await fetchJSON("getPayments"))[`${currentPlayer}|${date}`] === true;
-                    await postJSON({ action: "setPayment", playerName: currentPlayer, gameDate: date, paid: !currentPaid });
-                    loadPayments();
-                    renderAccounts();
-                });
-            });
-        } catch (e) {
-            container.innerHTML = "Error loading payments";
-        }
-    }
-
-    // News
-    async function loadNews() {
-        try {
-            const data = await fetchJSON("getNews");
-            document.getElementById("newsContent").innerHTML = data.content || "No announcements yet.";
-        } catch (e) {
-            document.getElementById("newsContent").innerHTML = "Error loading news";
-        }
-    }
-
-    // Accounts
-    async function renderAccounts() {
-        const summaryEl = document.getElementById("accountsSummary");
-        const tableEl = document.getElementById("accountsTable");
-        summaryEl.innerHTML = '<div class="loading">Loading accounts...</div>';
-        tableEl.innerHTML = "";
-        try {
-            const paymentsMap = await fetchJSON("getPayments");
-            const totalWeeks = gameWeeks.length;
-            const fee = 10;
-            let totalCollected = 0;
-            let rows = "";
-
-            FULL_ROSTER.forEach(name => {
-                let paidWeeks = 0;
-                gameWeeks.forEach(week => {
-                    if (paymentsMap[`${name}|${week.date}`]) paidWeeks++;
-                });
-                const paidAmount = paidWeeks * fee;
-                totalCollected += paidAmount;
-                const owed = totalWeeks * fee;
-                rows += `<tr><td>${escapeHtml(name)}</td><td>${paidWeeks}/${totalWeeks}</td><td>$${paidAmount}</td><td>$${owed - paidAmount}</td></tr>`;
-            });
-
-            summaryEl.innerHTML = `<strong>Total collected: $${totalCollected} out of $${totalWeeks * FULL_ROSTER.length * fee}</strong>`;
-            tableEl.innerHTML = `
-                <table class="accounts-table">
-                    <thead><tr><th>Player</th><th>Weeks Paid</th><th>Paid ($)</th><th>Outstanding ($)</th></tr></thead>
-                    <tbody>${rows}</tbody>
-                </table>
-            `;
-        } catch (e) {
-            summaryEl.innerHTML = "Error loading accounts";
-        }
-    }
-
-    // Admin
-    function enableAdminMode() {
-        const pwd = prompt("Enter admin master PIN:");
-        if (pwd === "admin123") {
-            isAdmin = true;
-            document.getElementById("adminNewsArea").style.display = "block";
-            alert("✅ Admin mode enabled. You can now post news.");
-        } else {
-            alert("Incorrect PIN");
-        }
-    }
-
-    document.getElementById("postNewsBtn").addEventListener("click", async () => {
-        if (!isAdmin) return;
-        const content = document.getElementById("newsInput").value.trim();
-        if (!content) return;
-        try {
-            await postJSON({ action: "postNews", content });
-            loadNews();
-            document.getElementById("newsInput").value = "";
-            alert("News posted successfully");
-        } catch (e) {
-            alert("Failed to post news");
-        }
+        
+        const jsonStr = JSON.stringify(voteObj, null, 2);
+        const blob = new Blob([jsonStr], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `vote_${voter.replace(/\s/g, '_')}_${weekDate}.vote`;
+        a.click();
+        URL.revokeObjectURL(url);
+        msgDiv.innerHTML = `<div class='alert success'>✅ Vote file downloaded! Send this file to the admin (WhatsApp / email).</div>`;
     });
 
-    // Player selector
-    function populatePlayerDropdown() {
-        const select = document.getElementById("playerNameSelect");
-        select.innerHTML = '<option value="">-- Select your name --</option>';
-        FULL_ROSTER.forEach(name => {
-            select.innerHTML += `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
-        });
+    // ---------- ADMIN SIDE: store compiled votes ----------
+    let compiledVotes = []; // each: { voter, gameDate, first, second, third }
 
-        select.addEventListener("change", async () => {
-            currentPlayer = select.value;
-            const statusEl = document.getElementById("loginStatus");
-            if (currentPlayer) {
-                statusEl.innerHTML = `✅ Logged in as <strong>${currentPlayer}</strong>`;
-                await loadAttendance();
-                await loadVotingWeeks();
-                await loadPayments();
-                await renderLeaderboard();
-                await renderAccounts();
-                updateNextGameAttendance();
-            } else {
-                statusEl.innerHTML = "";
-            }
-        });
+    function loadCompiledFromStorage() {
+        const stored = localStorage.getItem("soccer_compiled_votes");
+        if (stored) {
+            try {
+                compiledVotes = JSON.parse(stored);
+            } catch(e) { compiledVotes = []; }
+        } else {
+            compiledVotes = [];
+        }
+    }
+    function saveCompiledToStorage() {
+        localStorage.setItem("soccer_compiled_votes", JSON.stringify(compiledVotes));
     }
 
-    // Tabs
+    // Add a vote (check duplicate: same voter + same gameDate)
+    function addVoteToCompiled(vote) {
+        const exists = compiledVotes.some(v => v.voter === vote.voter && v.gameDate === vote.gameDate);
+        if (exists) return { success: false, reason: `${vote.voter} already voted for ${vote.gameDate}` };
+        compiledVotes.push({
+            voter: vote.voter,
+            gameDate: vote.gameDate,
+            first: vote.first,
+            second: vote.second,
+            third: vote.third
+        });
+        saveCompiledToStorage();
+        return { success: true };
+    }
+
+    function resetCompiledVotes() {
+        if (confirm("⚠️ Delete ALL compiled votes? This cannot be undone.")) {
+            compiledVotes = [];
+            saveCompiledToStorage();
+            renderAdminLeaderboard();
+            renderVoteHistory();
+            document.getElementById("adminMessage").innerHTML = "<div class='alert success'>✅ All votes cleared.</div>";
+        }
+    }
+
+    function computeLeaderboard() {
+        const points = new Map();
+        FULL_ROSTER.forEach(name => points.set(name, 0));
+        for (let v of compiledVotes) {
+            points.set(v.first, (points.get(v.first) || 0) + 3);
+            points.set(v.second, (points.get(v.second) || 0) + 2);
+            points.set(v.third, (points.get(v.third) || 0) + 1);
+        }
+        let ranking = Array.from(points.entries()).map(([name, pts]) => ({ name, points: pts }));
+        ranking.sort((a,b) => b.points - a.points);
+        return ranking;
+    }
+
+    function renderAdminLeaderboard() {
+        const container = document.getElementById("leaderboardContainer");
+        const ranking = computeLeaderboard();
+        if (compiledVotes.length === 0) {
+            container.innerHTML = "<div class='alert'>No votes imported yet. Use 'Import vote file(s)'.</div>";
+            return;
+        }
+        let html = `<table class="leaderboard-table"><thead><tr><th>#</th><th>Player</th><th>Total Points</th></tr></thead><tbody>`;
+        ranking.forEach((p, idx) => {
+            let medal = "";
+            if (idx === 0) medal = "🥇";
+            else if (idx === 1) medal = "🥈";
+            else if (idx === 2) medal = "🥉";
+            html += `<tr><td>${idx+1} ${medal}</td><td><strong>${escapeHtml(p.name)}</strong></td><td style="color:#d48d1a; font-weight:700;">${p.points}</td></tr>`;
+        });
+        html += `</tbody><table>`;
+        container.innerHTML = html;
+    }
+
+    function renderVoteHistory() {
+        const container = document.getElementById("voteHistory");
+        if (compiledVotes.length === 0) {
+            container.innerHTML = "<div class='alert'>No votes imported.</div>";
+            return;
+        }
+        let html = `<ul style="list-style:none; padding-left:0;">`;
+        // show last 50
+        compiledVotes.slice(-50).forEach(v => {
+            html += `<li style="background:#fef9ef; margin-bottom:6px; padding:8px 12px; border-radius:60px;">📅 ${v.gameDate} | 👤 ${escapeHtml(v.voter)} | 3:${escapeHtml(v.first)} | 2:${escapeHtml(v.second)} | 1:${escapeHtml(v.third)}</li>`;
+        });
+        if (compiledVotes.length > 50) html += `<li class="small-text">... and ${compiledVotes.length - 50} more</li>`;
+        html += `</ul>`;
+        container.innerHTML = html;
+    }
+
+    // Import vote files (multiple)
+    async function importVoteFiles(files) {
+        let added = 0;
+        let duplicates = 0;
+        let errors = 0;
+        let errorList = [];
+        for (let file of files) {
+            try {
+                const text = await file.text();
+                const data = JSON.parse(text);
+                // Validate required fields
+                if (!data.voter || !data.gameDate || !data.first || !data.second || !data.third) {
+                    errors++;
+                    errorList.push(`${file.name}: missing fields`);
+                    continue;
+                }
+                // Validate players exist
+                const rosterSet = new Set(FULL_ROSTER);
+                if (!rosterSet.has(data.voter) || !rosterSet.has(data.first) || !rosterSet.has(data.second) || !rosterSet.has(data.third)) {
+                    errors++;
+                    errorList.push(`${file.name}: unknown player name`);
+                    continue;
+                }
+                // Validate game date exists
+                const validDate = GAME_WEEKS.some(w => w.dateStr === data.gameDate);
+                if (!validDate) {
+                    errors++;
+                    errorList.push(`${file.name}: invalid game date ${data.gameDate}`);
+                    continue;
+                }
+                const result = addVoteToCompiled({
+                    voter: data.voter,
+                    gameDate: data.gameDate,
+                    first: data.first,
+                    second: data.second,
+                    third: data.third
+                });
+                if (result.success) added++;
+                else { duplicates++; errorList.push(`${file.name}: ${result.reason}`); }
+            } catch(e) {
+                errors++;
+                errorList.push(`${file.name}: invalid JSON format`);
+            }
+        }
+        renderAdminLeaderboard();
+        renderVoteHistory();
+        let msg = `✅ Imported ${added} new votes. Duplicates: ${duplicates}, Errors: ${errors}.`;
+        if (errorList.length) msg += `<br>Details: ${errorList.slice(0,5).join("; ")}${errorList.length>5 ? " ..." : ""}`;
+        document.getElementById("adminMessage").innerHTML = `<div class="alert success">${msg}</div>`;
+    }
+
+    // Export master data
+    function exportMasterData() {
+        const data = {
+            exportedAt: new Date().toISOString(),
+            votes: compiledVotes
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `soccer_master_backup_${new Date().toISOString().slice(0,19)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("adminMessage").innerHTML = "<div class='alert success'>✅ Master data exported.</div>";
+    }
+
+    function importMasterData(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (data.votes && Array.isArray(data.votes)) {
+                    compiledVotes = data.votes;
+                    saveCompiledToStorage();
+                    renderAdminLeaderboard();
+                    renderVoteHistory();
+                    document.getElementById("adminMessage").innerHTML = "<div class='alert success'>✅ Master data restored successfully.</div>";
+                } else {
+                    throw new Error("Invalid format");
+                }
+            } catch(err) {
+                document.getElementById("adminMessage").innerHTML = "<div class='alert error'>❌ Invalid backup file.</div>";
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function printLeaderboard() {
+        const ranking = computeLeaderboard();
+        const printWindow = window.open('', '_blank');
+        let html = `<html><head><title>Monday Soccer - Final Leaderboard</title><style>body{font-family:Inter,sans-serif;padding:2rem;} table{border-collapse:collapse;width:100%} th,td{padding:10px;border-bottom:1px solid #ddd} th{background:#f5b042}</style></head><body><h1>🏆 Best & Fairest - Final Standings</h1>`;
+        html += `<table><thead><tr><th>#</th><th>Player</th><th>Points</th></tr></thead><tbody>`;
+        ranking.forEach((p,i) => { html += `<tr><td>${i+1}</td><td>${escapeHtml(p.name)}</td><td>${p.points}</td></tr>`; });
+        html += `</tbody></table><p>Generated: ${new Date().toLocaleString()}</p></body></html>`;
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    // ---------- Tab switching ----------
     function initTabs() {
-        document.querySelectorAll(".tab-btn").forEach(btn => {
+        const btns = document.querySelectorAll(".tab-btn");
+        btns.forEach(btn => {
             btn.addEventListener("click", () => {
+                const tab = btn.getAttribute("data-tab");
                 document.querySelectorAll(".panel").forEach(p => p.classList.remove("active-panel"));
-                document.getElementById(btn.dataset.tab + "Panel").classList.add("active-panel");
-
-                document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+                document.getElementById(`${tab}Panel`).classList.add("active-panel");
+                btns.forEach(b => b.classList.remove("active"));
                 btn.classList.add("active");
-
-                if (btn.dataset.tab === "accounts") renderAccounts();
-                if (btn.dataset.tab === "voting") renderLeaderboard();
-                if (btn.dataset.tab === "attendance") updateNextGameAttendance();
+                if (tab === "admin") {
+                    renderAdminLeaderboard();
+                    renderVoteHistory();
+                }
             });
         });
     }
 
-    // Boot
-    (async () => {
-        if (API_BASE === "YOUR_APPS_SCRIPT_URL_HERE") {
-            alert("Please replace YOUR_APPS_SCRIPT_URL_HERE with your actual Google Apps Script Web App URL");
-            return;
-        }
+    function escapeHtml(str) { return String(str).replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
 
-        populatePlayerDropdown();
-        initTabs();
-        await loadGameWeeks();
-        loadNews();
+    // Event binding
+    document.getElementById("importVotesBtn").addEventListener("click", () => document.getElementById("fileInput").click());
+    document.getElementById("fileInput").addEventListener("change", (e) => {
+        if (e.target.files.length) importVoteFiles(e.target.files);
+        e.target.value = "";
+    });
+    document.getElementById("resetLeaderboardBtn").addEventListener("click", resetCompiledVotes);
+    document.getElementById("printLeaderboardBtn").addEventListener("click", printLeaderboard);
+    document.getElementById("exportMasterBtn").addEventListener("click", exportMasterData);
+    document.getElementById("importMasterBtn").addEventListener("click", () => document.getElementById("masterFileInput").click());
+    document.getElementById("masterFileInput").addEventListener("change", (e) => {
+        if (e.target.files.length) importMasterData(e.target.files[0]);
+        e.target.value = "";
+    });
 
-        // Admin via double-click header
-        document.querySelector(".header").addEventListener("dblclick", enableAdminMode);
-
-        // Refresh button
-        document.getElementById("refreshLeaderboardBtn").addEventListener("click", renderLeaderboard);
-    })();
+    // Bootstrap
+    populateVoterDropdowns();
+    loadCompiledFromStorage();
+    renderAdminLeaderboard();
+    renderVoteHistory();
+    initTabs();
 </script>
 </body>
 </html>
