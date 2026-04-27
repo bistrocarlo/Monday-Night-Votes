@@ -3,342 +3,249 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Monday Soccer – Best & Fairest (3-2-1)</title>
+    <title>Monday Soccer – Best & Fairest + Match Stats</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: #000000;
             font-family: 'Inter', sans-serif;
-            padding: 24px 20px;
+            padding: 20px;
             color: #ffffff;
         }
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
+        .container { max-width: 1400px; margin: 0 auto; }
         .header {
             text-align: center;
-            margin-bottom: 32px;
-            border-bottom: 2px solid #cc0000;
-            padding-bottom: 16px;
+            margin-bottom: 28px;
+            border-bottom: 2px solid #f5b042;
+            padding-bottom: 12px;
         }
         .header h1 {
-            font-size: 2.2rem;
+            font-size: 2rem;
             font-weight: 800;
-            letter-spacing: -0.5px;
-            background: linear-gradient(135deg, #ffffff, #ff4d4d);
+            background: linear-gradient(135deg, #ffffff, #f5b042);
             background-clip: text;
             -webkit-background-clip: text;
             color: transparent;
-        }
-        .header p {
-            color: #cccccc;
-            margin-top: 8px;
         }
         .tabs {
             display: flex;
             gap: 12px;
             justify-content: center;
-            margin-bottom: 32px;
+            margin-bottom: 28px;
             flex-wrap: wrap;
         }
         .tab-btn {
             background: #1a1a1a;
-            border: 1px solid #cc0000;
-            padding: 12px 28px;
+            border: 1px solid #f5b042;
+            padding: 10px 24px;
             border-radius: 60px;
-            font-family: 'Inter', sans-serif;
             font-weight: 700;
-            font-size: 1rem;
+            font-size: 0.95rem;
             cursor: pointer;
-            color: #ffffff;
-            transition: all 0.2s;
+            color: white;
         }
         .tab-btn.active {
-            background: #cc0000;
-            border-color: #cc0000;
-            color: white;
-            box-shadow: 0 0 12px rgba(204,0,0,0.5);
+            background: #f5b042;
+            color: black;
+            border-color: #f5b042;
         }
-        .tab-btn:hover:not(.active) {
-            background: #2a2a2a;
-            border-color: #ff4d4d;
-        }
-        .panel {
-            display: none;
-            animation: fadeIn 0.2s ease;
-        }
-        .panel.active-panel {
-            display: block;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px);}
-            to { opacity: 1; transform: translateY(0);}
-        }
+        .panel { display: none; }
+        .panel.active-panel { display: block; }
         .card {
             background: #111111;
-            border-radius: 32px;
-            padding: 28px;
-            margin-bottom: 28px;
+            border-radius: 28px;
+            padding: 22px;
+            margin-bottom: 24px;
             border: 1px solid #2a2a2a;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
         }
         .card h2, .card h3 {
             font-weight: 700;
-            margin-bottom: 20px;
-            color: #ffffff;
-            border-left: 5px solid #cc0000;
-            padding-left: 18px;
+            margin-bottom: 16px;
+            color: #f5b042;
+            border-left: 4px solid #f5b042;
+            padding-left: 16px;
         }
         label {
             font-weight: 600;
-            color: #dddddd;
+            color: #ddd;
             display: block;
-            margin-top: 18px;
-            margin-bottom: 8px;
+            margin-top: 14px;
+            margin-bottom: 6px;
         }
         select, input, button, textarea {
-            padding: 12px 18px;
+            padding: 10px 14px;
             border-radius: 60px;
-            border: 1px solid #333333;
-            font-size: 0.95rem;
+            border: 1px solid #333;
+            font-size: 0.9rem;
             background: #1e1e1e;
-            font-family: inherit;
             color: white;
+            font-family: inherit;
             width: 100%;
         }
-        select option {
-            background: #1e1e1e;
-            color: white;
-        }
         button {
-            background: #cc0000;
-            border: none;
+            background: #f5b042;
+            color: black;
             font-weight: 700;
+            border: none;
             cursor: pointer;
-            transition: 0.15s;
             width: auto;
-            color: white;
         }
-        button:hover {
-            background: #ff1a1a;
-            transform: translateY(-1px);
-        }
-        button:active {
-            transform: scale(0.97);
-        }
-        .vote-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
+        .flex-btns { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+        .team-row, .goal-row {
             background: #0a0a0a;
-            padding: 24px;
-            border-radius: 32px;
-            margin: 20px 0;
-            border: 1px solid #2c2c2c;
-        }
-        .vote-select {
-            flex: 1;
-            min-width: 200px;
-        }
-        .guest-section {
-            background: #1a1a1a;
-            border-radius: 28px;
-            padding: 16px 20px;
-            margin-bottom: 20px;
+            border-radius: 60px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
             display: flex;
             flex-wrap: wrap;
-            gap: 12px;
-            align-items: flex-end;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
         }
-        .guest-section input {
-            flex: 2;
+        .team-yellow { border-left: 5px solid #f5b042; }
+        .team-orange { border-left: 5px solid #f5a623; }
+        .badge {
+            background: #2a2a2a;
+            border-radius: 60px;
+            padding: 4px 12px;
+            font-size: 0.8rem;
         }
-        .guest-section button {
-            flex: 0;
-        }
-        .leaderboard-table {
+        .leaderboard-table, .stats-table {
             width: 100%;
             border-collapse: collapse;
             background: #0d0d0d;
-            border-radius: 24px;
+            border-radius: 20px;
             overflow: hidden;
-            margin-top: 16px;
         }
-        .leaderboard-table th, .leaderboard-table td {
-            padding: 14px 12px;
+        th, td {
+            padding: 12px 8px;
             text-align: left;
             border-bottom: 1px solid #2a2a2a;
         }
-        .leaderboard-table th {
-            background: #1f1f1f;
-            color: #ff4d4d;
-            font-weight: 700;
-        }
-        .flex-btns {
-            display: flex;
-            gap: 14px;
-            flex-wrap: wrap;
-            margin-top: 20px;
-        }
+        th { background: #1f1f1f; color: #f5b042; }
         .alert {
-            background: #2a1a1a;
-            border-left: 6px solid #cc0000;
-            padding: 14px 20px;
-            border-radius: 60px;
-            margin: 16px 0;
-            color: #ffcccc;
-        }
-        .success {
-            background: #1a2a1a;
-            border-left-color: #00cc66;
-            color: #ccffdd;
-        }
-        .error {
-            background: #2a1a1a;
-            border-left-color: #ff3333;
-        }
-        .vote-history-item {
             background: #1a1a1a;
+            border-left: 5px solid #f5b042;
+            padding: 12px 16px;
             border-radius: 60px;
-            padding: 12px 18px;
-            margin-bottom: 10px;
-            font-size: 0.85rem;
-            border: 1px solid #2a2a2a;
+            margin: 12px 0;
         }
-        footer {
-            text-align: center;
-            margin-top: 48px;
-            font-size: 0.75rem;
-            color: #666666;
-        }
-        @media (max-width: 700px) {
-            .vote-row { flex-direction: column; }
-            .guest-section { flex-direction: column; align-items: stretch; }
-        }
-        .print-vote-slip {
-            background: #2a2a2a;
-            border: 1px solid #cc0000;
-            color: white;
-        }
+        footer { text-align: center; margin-top: 40px; font-size: 0.7rem; color: #666; }
+        @media (max-width: 700px) { .team-row, .goal-row { flex-direction: column; align-items: stretch; } }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
         <h1>⚽ MONDAY NIGHT SOCCER ⚽</h1>
-        <p>Best & Fairest • 3 points • 2 points • 1 point • Secret ballot</p>
+        <p>Best & Fairest • Match results • Goal scorers • Team assignments</p>
     </div>
 
     <div class="tabs">
-        <button class="tab-btn active" data-tab="voter">🗳️ VOTER – Create my vote</button>
-        <button class="tab-btn" data-tab="admin">👑 ADMIN – Compile votes & leaderboard</button>
+        <button class="tab-btn active" data-tab="voter">👕 PLAYER – My team & vote</button>
+        <button class="tab-btn" data-tab="admin">👑 ADMIN – Setup & results</button>
     </div>
 
-    <!-- VOTER TAB -->
+    <!-- PLAYER TAB -->
     <div id="voterPanel" class="panel active-panel">
         <div class="card">
-            <h2>📝 CREATE YOUR 3-2-1 VOTE</h2>
-            <p>Select your name, the game week, and award 3, 2, 1 points to three different players (or guests). Then send your vote to the admin.</p>
+            <h2>📋 YOUR TEAM & VOTE</h2>
+            <label>👤 Your name</label>
+            <select id="playerNameSelect"></select>
+            <div id="playerTeamDisplay" class="alert" style="margin-top: 12px;">Select your name to see your team</div>
+            <label>📅 Game week</label>
+            <select id="playerWeekSelect"></select>
             
-            <!-- Guest player addition -->
-            <div class="guest-section">
-                <input type="text" id="guestNameInput" placeholder="Enter guest player name (e.g., 'John Guest')">
-                <button id="addGuestBtn">➕ Add Guest Player</button>
-                <button id="resetGuestsBtn" style="background:#333;">🗑️ Clear Guests</button>
+            <div class="vote-row" style="margin-top: 20px;">
+                <div><label>🏆 3 pts</label><select id="vote3"></select></div>
+                <div><label>🥈 2 pts</label><select id="vote2"></select></div>
+                <div><label>🥉 1 pt</label><select id="vote1"></select></div>
             </div>
-            
-            <label>👤 YOUR NAME</label>
-            <select id="voterName"></select>
-            
-            <label>📅 MONDAY GAME WEEK</label>
-            <select id="voterWeek"></select>
-            
-            <div class="vote-row">
-                <div class="vote-select">
-                    <label>🏆 3 POINTS (Best & Fairest)</label>
-                    <select id="vote3"></select>
-                </div>
-                <div class="vote-select">
-                    <label>🥈 2 POINTS (Runner-up)</label>
-                    <select id="vote2"></select>
-                </div>
-                <div class="vote-select">
-                    <label>🥉 1 POINT (Most consistent)</label>
-                    <select id="vote1"></select>
-                </div>
-            </div>
-            
-            <div class="flex-btns">
-                <button id="generateVoteBtn">📄 Download vote file (.vote)</button>
-                <button id="copyVoteBtn">📋 Copy vote to clipboard</button>
-                <button id="printVoteBtn" class="print-vote-slip">🖨️ Print vote slip</button>
-            </div>
-            <div id="voterMessage" class="alert" style="display:none;"></div>
+            <button id="sendVoteBtn" style="margin-top: 16px;">📤 SEND VOTE (PDF + WhatsApp)</button>
+            <div id="voterMessage"></div>
         </div>
         <div class="card">
-            <h3>📢 HOW TO SEND YOUR VOTE</h3>
-            <p>After creating your vote, use one of the options above:<br>
-            - <strong>Download file</strong>: save the .vote file and send via WhatsApp/email to admin.<br>
-            - <strong>Copy to clipboard</strong>: paste the vote text directly into a chat.<br>
-            - <strong>Print vote slip</strong>: print or save as PDF and send photo.<br>
-            The admin will import all votes to calculate the final leaderboard.</p>
+            <h3>⚽ TODAY'S FIXTURE</h3>
+            <div id="fixtureDisplay">Select a game week to see teams and score</div>
         </div>
     </div>
 
     <!-- ADMIN TAB -->
     <div id="adminPanel" class="panel">
         <div class="card">
-            <h2>📥 IMPORT VOTES FROM PLAYERS</h2>
-            <p>Import .vote files or paste vote text. Duplicate votes (same player + same week) are rejected.</p>
+            <h2>👥 MANAGE PLAYERS</h2>
+            <div id="playersList"></div>
             <div class="flex-btns">
-                <button id="importVotesBtn">📂 Import vote file(s)</button>
-                <input type="file" id="fileInput" accept=".vote,.txt,application/json" multiple style="display:none;">
-                <button id="pasteVoteBtn">📋 Paste vote from clipboard</button>
-                <button id="resetLeaderboardBtn" style="background:#660000;">🗑️ Reset all compiled votes</button>
-                <button id="printLeaderboardBtn">🖨️ Print leaderboard (PDF)</button>
+                <input type="text" id="newPlayerName" placeholder="New player name">
+                <button id="addPlayerBtn">➕ Add</button>
+                <button id="resetPlayersBtn">⟳ Reset to default</button>
             </div>
+        </div>
+
+        <div class="card">
+            <h2>📅 GAME WEEK & TEAM ASSIGNMENT</h2>
+            <label>Select game week</label>
+            <select id="adminGameWeekSelect"></select>
+            <div id="teamAssignmentArea"></div>
+            <button id="saveTeamsBtn">💾 Save team assignments</button>
+        </div>
+
+        <div class="card">
+            <h2>📊 MATCH RESULTS (Score & Goal scorers)</h2>
+            <div id="matchResultArea"></div>
+            <button id="saveResultBtn">💾 Save match result</button>
+        </div>
+
+        <div class="card">
+            <h2>🏆 BEST & FAIREST LEADERBOARD (votes only)</h2>
+            <button id="refreshLeaderboardBtn">⟳ Refresh</button>
+            <div id="leaderboardContainer"></div>
+        </div>
+
+        <div class="card">
+            <h2>📈 SEASON SUMMARY (team stats)</h2>
+            <div id="seasonStats"></div>
+        </div>
+
+        <div class="card">
+            <h2>📋 IMPORT VOTES FROM PLAYERS</h2>
+            <textarea id="pasteVoteArea" placeholder="Paste JSON vote from WhatsApp..."></textarea>
+            <button id="addVoteBtn">Add vote</button>
             <div id="adminMessage"></div>
-            <textarea id="pasteArea" placeholder="Paste vote text here (JSON format from clipboard)..." style="margin-top:16px; border-radius:24px; display:none;"></textarea>
-            <button id="confirmPasteBtn" style="display:none; margin-top:8px;">Confirm paste</button>
         </div>
 
         <div class="card">
-            <h2>🏆 FINAL LEADERBOARD (CUMULATIVE)</h2>
-            <div id="leaderboardContainer" class="alert">No votes imported yet. Use "Import vote file(s)" or paste votes.</div>
-        </div>
-
-        <div class="card">
-            <h3>📋 IMPORTED VOTES (latest 50)</h3>
-            <div id="voteHistory" style="max-height: 350px; overflow-y: auto;"></div>
-        </div>
-        
-        <div class="card">
-            <h3>💾 BACKUP / RESTORE MASTER DATA</h3>
+            <h3>💾 BACKUP / RESTORE</h3>
             <div class="flex-btns">
-                <button id="exportMasterBtn">📤 Export master data (JSON)</button>
-                <button id="importMasterBtn">📥 Import master data (restore backup)</button>
-                <input type="file" id="masterFileInput" accept=".json" style="display:none;">
+                <button id="exportAllBtn">📤 Export all data</button>
+                <button id="importAllBtn">📥 Import backup</button>
+                <input type="file" id="importFileInput" style="display:none;">
             </div>
         </div>
     </div>
-    <footer>🔐 All data stored locally in your browser. Votes are private until you share the file. Use guest players for any ring-ins.</footer>
+    <footer>⚽ Data stays in your browser. Admin assigns teams, records scores, imports votes.</footer>
 </div>
 
 <script>
-    // ---------- MASTER ROSTER (alphabetical order) ----------
-    const BASE_ROSTER = [
-        "Alex Rowe", "Ali Mekawy", "Carlo", "Chris Del Monaco", "Chris M", "Chris S", "Danny", "David", "Dimitri", "Enzo", "Farid", "Faros", "Frank", "George B", "George T", "Ivan", "James Zoumis", "James", "Joe T", "Joey", "Kia", "Leo", "Manoli", "Marco", "Mario", "Maurice", "Nector", "Paul", "Perri", "Peter", "Ralph", "Rocco", "Stav", "Stevan", "Theo", "Tony EH", "Vasilis"
-    ];
-    // Ensure unique and sorted
-    let dynamicRoster = [...BASE_ROSTER].sort((a,b) => a.localeCompare(b));
-    
-    // ---------- Generate Monday game weeks (Feb -> second-last Monday Dec) ----------
+    // ---------- DEFAULT PLAYERS (37) ----------
+    const DEFAULT_PLAYERS = [
+        "Alex Rowe", "Ali Mekawy", "Carlo", "Chris Del Monaco", "Chris M", "Chris S", "Danny", "David", "Dimitri",
+        "Enzo", "Farid", "Faros", "Frank", "George B", "George T", "Ivan", "James Zoumis", "James", "Joe T",
+        "Joey", "Kia", "Leo", "Manoli", "Marco", "Mario", "Maurice", "Nector", "Paul", "Perri", "Peter",
+        "Ralph", "Rocco", "Stav", "Stevan", "Theo", "Tony EH", "Vasilis"
+    ].sort();
+
+    // ---------- DATA STRUCTURES ----------
+    let players = [...DEFAULT_PLAYERS];
+    let gameWeeks = []; // populated from generateGameWeeks
+    // teamAssignments: { gameDate: { playerName: "yellow" or "orange" } }
+    let teamAssignments = {};
+    // matchResults: { gameDate: { yellowScore, orangeScore, goals: { playerName: goalsCount } } }
+    let matchResults = {};
+    // votes: array of { voter, gameDate, first, second, third }
+    let votes = [];
+
     function generateGameWeeks() {
         const year = new Date().getFullYear();
         let start = new Date(year, 1, 1);
@@ -353,373 +260,411 @@
         while (cur <= secondLast) {
             weeks.push({
                 dateStr: cur.toISOString().split('T')[0],
-                label: `Monday ${cur.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}`
+                label: `Monday ${cur.toLocaleDateString('en-AU', { day:'numeric', month:'short' })}`
             });
             cur.setDate(cur.getDate() + 7);
         }
         return weeks;
     }
-    const GAME_WEEKS = generateGameWeeks();
 
-    // ---------- Helper: update all dropdowns with current dynamic roster ----------
-    function updateAllDropdowns() {
-        const rosterSorted = [...dynamicRoster].sort((a,b) => a.localeCompare(b));
-        const voterSelect = document.getElementById("voterName");
-        const currentVoter = voterSelect.value;
-        voterSelect.innerHTML = '<option value="">-- Select your name --</option>' + 
-            rosterSorted.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
-        if (rosterSorted.includes(currentVoter)) voterSelect.value = currentVoter;
-        
-        const weekSelect = document.getElementById("voterWeek");
-        weekSelect.innerHTML = GAME_WEEKS.map(w => `<option value="${w.dateStr}">${w.label} (${w.dateStr})</option>`).join('');
-        
-        // For vote dropdowns, exclude the selected voter dynamically (handled in updateVoteDropdowns)
-        updateVoteDropdowns();
+    // ---------- STORAGE ----------
+    function saveAll() {
+        localStorage.setItem("soccer_players", JSON.stringify(players));
+        localStorage.setItem("soccer_teamAssignments", JSON.stringify(teamAssignments));
+        localStorage.setItem("soccer_matchResults", JSON.stringify(matchResults));
+        localStorage.setItem("soccer_votes", JSON.stringify(votes));
     }
-    
-    function updateVoteDropdowns() {
-        const voter = document.getElementById("voterName").value;
-        let availablePlayers = [...dynamicRoster];
-        if (voter && availablePlayers.includes(voter)) {
-            availablePlayers = availablePlayers.filter(p => p !== voter);
-        }
-        availablePlayers.sort((a,b) => a.localeCompare(b));
-        const options = '<option value="">-- Select --</option>' + availablePlayers.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
-        document.getElementById("vote3").innerHTML = options;
-        document.getElementById("vote2").innerHTML = options;
-        document.getElementById("vote1").innerHTML = options;
+    function loadAll() {
+        const storedPlayers = localStorage.getItem("soccer_players");
+        if (storedPlayers) players = JSON.parse(storedPlayers);
+        else players = [...DEFAULT_PLAYERS];
+        const storedTeams = localStorage.getItem("soccer_teamAssignments");
+        if (storedTeams) teamAssignments = JSON.parse(storedTeams);
+        const storedResults = localStorage.getItem("soccer_matchResults");
+        if (storedResults) matchResults = JSON.parse(storedResults);
+        const storedVotes = localStorage.getItem("soccer_votes");
+        if (storedVotes) votes = JSON.parse(storedVotes);
+        gameWeeks = generateGameWeeks();
     }
 
-    // Add guest player
-    function addGuestPlayer() {
-        const guestName = document.getElementById("guestNameInput").value.trim();
-        if (!guestName) return;
-        if (dynamicRoster.includes(guestName)) {
-            showVoterMessage("Guest already exists in list.", "error");
-            return;
-        }
-        dynamicRoster.push(guestName);
-        dynamicRoster.sort((a,b) => a.localeCompare(b));
-        updateAllDropdowns();
-        document.getElementById("guestNameInput").value = "";
-        showVoterMessage(`✅ Guest "${guestName}" added to all dropdowns.`, "success");
-    }
-    
-    function resetGuests() {
-        dynamicRoster = [...BASE_ROSTER];
-        dynamicRoster.sort((a,b) => a.localeCompare(b));
-        updateAllDropdowns();
-        showVoterMessage("All guest players removed. Only original roster remains.", "success");
-    }
-    
-    function showVoterMessage(msg, type) {
-        const div = document.getElementById("voterMessage");
-        div.innerHTML = `<div class="alert ${type}">${msg}</div>`;
-        div.style.display = "block";
-        setTimeout(() => { div.style.display = "none"; }, 3000);
-    }
-    
-    // ---------- Generate vote object and handle outputs ----------
-    function getCurrentVoteData() {
-        const voter = document.getElementById("voterName").value;
-        const weekDate = document.getElementById("voterWeek").value;
-        const weekLabel = GAME_WEEKS.find(w => w.dateStr === weekDate)?.label || weekDate;
-        const first = document.getElementById("vote3").value;
-        const second = document.getElementById("vote2").value;
-        const third = document.getElementById("vote1").value;
-        return { voter, weekDate, weekLabel, first, second, third };
-    }
-    
-    function validateVote(voter, weekDate, first, second, third) {
-        if (!voter) return "Please select your name.";
-        if (!weekDate) return "Please select a game week.";
-        if (!first || !second || !third) return "Please select all three players (3,2,1).";
-        if (first === second || first === third || second === third) return "You must choose three different players.";
-        if (first === voter || second === voter || third === voter) return "You cannot vote for yourself.";
-        return null;
-    }
-    
-    function buildVoteObject() {
-        let { voter, weekDate, weekLabel, first, second, third } = getCurrentVoteData();
-        const error = validateVote(voter, weekDate, first, second, third);
-        if (error) return { error };
-        return {
-            version: "1.0",
-            voter, gameDate: weekDate, gameLabel: weekLabel,
-            first, second, third,
-            timestamp: new Date().toISOString()
-        };
-    }
-    
-    // Download file
-    document.getElementById("generateVoteBtn").addEventListener("click", () => {
-        const voteObj = buildVoteObject();
-        if (voteObj.error) { showVoterMessage(voteObj.error, "error"); return; }
-        const jsonStr = JSON.stringify(voteObj, null, 2);
-        const blob = new Blob([jsonStr], {type: "application/json"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `vote_${voteObj.voter.replace(/\s/g, '_')}_${voteObj.gameDate}.vote`;
-        a.click();
-        URL.revokeObjectURL(url);
-        showVoterMessage("✅ Vote file downloaded! Send to admin.", "success");
-    });
-    
-    // Copy to clipboard
-    document.getElementById("copyVoteBtn").addEventListener("click", async () => {
-        const voteObj = buildVoteObject();
-        if (voteObj.error) { showVoterMessage(voteObj.error, "error"); return; }
-        const text = JSON.stringify(voteObj, null, 2);
-        try {
-            await navigator.clipboard.writeText(text);
-            showVoterMessage("📋 Vote copied to clipboard! Paste and send to admin.", "success");
-        } catch(err) {
-            showVoterMessage("Failed to copy. Manual copy below.", "error");
-        }
-    });
-    
-    // Print vote slip
-    document.getElementById("printVoteBtn").addEventListener("click", () => {
-        const voteObj = buildVoteObject();
-        if (voteObj.error) { showVoterMessage(voteObj.error, "error"); return; }
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
-            <html><head><title>Vote Slip - ${voteObj.voter}</title>
-            <style>
-                body { font-family: 'Inter', sans-serif; padding: 2rem; background: white; color: black; }
-                .vote-card { border: 2px solid #cc0000; border-radius: 24px; padding: 24px; max-width: 500px; margin: auto; }
-                h1 { color: #cc0000; }
-                hr { border-color: #cc0000; }
-            </style>
-            </head><body>
-            <div class="vote-card">
-                <h1>⚽ Monday Night Soccer - Vote</h1>
-                <p><strong>Voter:</strong> ${escapeHtml(voteObj.voter)}</p>
-                <p><strong>Game Week:</strong> ${escapeHtml(voteObj.gameLabel)} (${voteObj.gameDate})</p>
-                <hr>
-                <p><strong>🏆 3 points:</strong> ${escapeHtml(voteObj.first)}</p>
-                <p><strong>🥈 2 points:</strong> ${escapeHtml(voteObj.second)}</p>
-                <p><strong>🥉 1 point:</strong> ${escapeHtml(voteObj.third)}</p>
-                <hr>
-                <p><em>Submitted: ${new Date().toLocaleString()}</em></p>
-            </div>
-            </body></html>
-        `);
-        printWindow.document.close();
-        printWindow.print();
-    });
-
-    // ---------- ADMIN SIDE ----------
-    let compiledVotes = [];
-
-    function loadCompiledFromStorage() {
-        const stored = localStorage.getItem("soccer_compiled_votes");
-        compiledVotes = stored ? JSON.parse(stored) : [];
-    }
-    function saveCompiledToStorage() {
-        localStorage.setItem("soccer_compiled_votes", JSON.stringify(compiledVotes));
-    }
-    
-    function addVoteToCompiled(vote) {
-        const exists = compiledVotes.some(v => v.voter === vote.voter && v.gameDate === vote.gameDate);
-        if (exists) return { success: false, reason: `${vote.voter} already voted for ${vote.gameDate}` };
-        compiledVotes.push({ ...vote });
-        saveCompiledToStorage();
-        return { success: true };
-    }
-    
-    function computeLeaderboard() {
-        const points = new Map();
-        const allPlayers = new Set([...BASE_ROSTER, ...compiledVotes.flatMap(v => [v.first, v.second, v.third])]);
-        allPlayers.forEach(name => points.set(name, 0));
-        for (let v of compiledVotes) {
-            points.set(v.first, (points.get(v.first) || 0) + 3);
-            points.set(v.second, (points.get(v.second) || 0) + 2);
-            points.set(v.third, (points.get(v.third) || 0) + 1);
-        }
-        let ranking = Array.from(points.entries()).map(([name, pts]) => ({ name, points: pts }));
-        ranking.sort((a,b) => b.points - a.points);
-        return ranking;
-    }
-    
-    function renderAdminLeaderboard() {
-        const container = document.getElementById("leaderboardContainer");
-        const ranking = computeLeaderboard();
-        if (compiledVotes.length === 0) {
-            container.innerHTML = "<div class='alert'>No votes imported yet. Import files or paste votes.</div>";
-            return;
-        }
-        let html = `<table class="leaderboard-table"><thead><tr><th>#</th><th>Player</th><th>Total Points</th></tr></thead><tbody>`;
-        ranking.forEach((p, idx) => {
-            let medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : "";
-            html += `<tr><td>${idx+1} ${medal}</td><td><strong>${escapeHtml(p.name)}</strong></td><td style="color:#ff4d4d; font-weight:700;">${p.points}</td></tr>`;
-        });
-        html += `</tbody></table>`;
-        container.innerHTML = html;
-    }
-    
-    function renderVoteHistory() {
-        const container = document.getElementById("voteHistory");
-        if (compiledVotes.length === 0) {
-            container.innerHTML = "<div class='alert'>No votes imported.</div>";
-            return;
-        }
+    // ---------- PLAYER MANAGEMENT ----------
+    function renderPlayersList() {
+        const container = document.getElementById("playersList");
+        if (!container) return;
         let html = "";
-        compiledVotes.slice(-50).forEach(v => {
-            html += `<div class="vote-history-item">📅 ${v.gameDate} | 👤 ${escapeHtml(v.voter)} | 3:${escapeHtml(v.first)} | 2:${escapeHtml(v.second)} | 1:${escapeHtml(v.third)}</div>`;
+        players.forEach(p => {
+            html += `<div class="team-row"><span>${escapeHtml(p)}</span>
+                     <button class="deletePlayerBtn" data-name="${escapeHtml(p)}" style="background:#5a3e1a;">Delete</button></div>`;
         });
         container.innerHTML = html;
-    }
-    
-    async function importVoteFiles(files) {
-        let added = 0, duplicates = 0, errors = 0;
-        for (let file of files) {
-            try {
-                const text = await file.text();
-                const data = JSON.parse(text);
-                if (!data.voter || !data.gameDate || !data.first || !data.second || !data.third) throw new Error("Missing fields");
-                const result = addVoteToCompiled({
-                    voter: data.voter, gameDate: data.gameDate,
-                    first: data.first, second: data.second, third: data.third
-                });
-                if (result.success) added++;
-                else duplicates++;
-            } catch(e) { errors++; }
-        }
-        renderAdminLeaderboard();
-        renderVoteHistory();
-        document.getElementById("adminMessage").innerHTML = `<div class="alert success">✅ Imported ${added} new votes. Duplicates: ${duplicates}, Errors: ${errors}.</div>`;
-    }
-    
-    function importVoteFromText(text) {
-        try {
-            const data = JSON.parse(text);
-            if (!data.voter || !data.gameDate || !data.first || !data.second || !data.third) throw new Error("Invalid format");
-            const result = addVoteToCompiled(data);
-            if (result.success) {
-                renderAdminLeaderboard();
-                renderVoteHistory();
-                document.getElementById("adminMessage").innerHTML = `<div class="alert success">✅ Vote added for ${data.voter} (${data.gameDate}).</div>`;
-            } else {
-                document.getElementById("adminMessage").innerHTML = `<div class="alert error">❌ ${result.reason}</div>`;
-            }
-        } catch(e) {
-            document.getElementById("adminMessage").innerHTML = `<div class="alert error">❌ Invalid vote text format.</div>`;
-        }
-    }
-    
-    function resetCompiled() {
-        if (confirm("⚠️ DELETE ALL COMPILED VOTES? This cannot be undone.")) {
-            compiledVotes = [];
-            saveCompiledToStorage();
-            renderAdminLeaderboard();
-            renderVoteHistory();
-            document.getElementById("adminMessage").innerHTML = "<div class='alert success'>All votes cleared.</div>";
-        }
-    }
-    
-    function printLeaderboard() {
-        const ranking = computeLeaderboard();
-        const printWindow = window.open('', '_blank');
-        let html = `<html><head><title>Best & Fairest Final</title><style>body{font-family:Inter;padding:2rem;} th{background:#cc0000;color:white;} td,th{padding:10px;}</style></head><body><h1>🏆 Best & Fairest - Final Standings</h1><table border="1" cellpadding="8"><tr><th>#</th><th>Player</th><th>Points</th></tr>`;
-        ranking.forEach((p,i) => { html += `<tr><td>${i+1}</td><td>${escapeHtml(p.name)}</td><td>${p.points}</td></tr>`; });
-        html += `</table><p>Generated: ${new Date().toLocaleString()}</p></body></html>`;
-        printWindow.document.write(html);
-        printWindow.document.close();
-        printWindow.print();
-    }
-    
-    function exportMaster() {
-        const data = { exportedAt: new Date().toISOString(), votes: compiledVotes };
-        const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = `soccer_master_${new Date().toISOString().slice(0,19)}.json`;
-        a.click();
-        URL.revokeObjectURL(blob);
-        document.getElementById("adminMessage").innerHTML = "<div class='alert success'>Master data exported.</div>";
-    }
-    
-    function importMaster(file) {
-        const reader = new FileReader();
-        reader.onload = e => {
-            try {
-                const data = JSON.parse(e.target.result);
-                if (data.votes && Array.isArray(data.votes)) {
-                    compiledVotes = data.votes;
-                    saveCompiledToStorage();
-                    renderAdminLeaderboard();
-                    renderVoteHistory();
-                    document.getElementById("adminMessage").innerHTML = "<div class='alert success'>Master data restored.</div>";
-                } else throw new Error();
-            } catch(err) {
-                document.getElementById("adminMessage").innerHTML = "<div class='alert error'>Invalid backup file.</div>";
-            }
-        };
-        reader.readAsText(file);
-    }
-    
-    // Event listeners for admin
-    document.getElementById("importVotesBtn").addEventListener("click", () => document.getElementById("fileInput").click());
-    document.getElementById("fileInput").addEventListener("change", (e) => {
-        if (e.target.files.length) importVoteFiles(e.target.files);
-        e.target.value = "";
-    });
-    document.getElementById("pasteVoteBtn").addEventListener("click", () => {
-        const area = document.getElementById("pasteArea");
-        area.style.display = "block";
-        document.getElementById("confirmPasteBtn").style.display = "inline-block";
-    });
-    document.getElementById("confirmPasteBtn").addEventListener("click", () => {
-        const text = document.getElementById("pasteArea").value;
-        if (text.trim()) importVoteFromText(text);
-        document.getElementById("pasteArea").style.display = "none";
-        document.getElementById("confirmPasteBtn").style.display = "none";
-        document.getElementById("pasteArea").value = "";
-    });
-    document.getElementById("resetLeaderboardBtn").addEventListener("click", resetCompiled);
-    document.getElementById("printLeaderboardBtn").addEventListener("click", printLeaderboard);
-    document.getElementById("exportMasterBtn").addEventListener("click", exportMaster);
-    document.getElementById("importMasterBtn").addEventListener("click", () => document.getElementById("masterFileInput").click());
-    document.getElementById("masterFileInput").addEventListener("change", (e) => {
-        if (e.target.files.length) importMaster(e.target.files[0]);
-        e.target.value = "";
-    });
-    
-    // Guest buttons
-    document.getElementById("addGuestBtn").addEventListener("click", addGuestPlayer);
-    document.getElementById("resetGuestsBtn").addEventListener("click", resetGuests);
-    
-    // When voter name changes, update vote dropdowns to exclude self
-    document.getElementById("voterName").addEventListener("change", updateVoteDropdowns);
-    
-    // Tab switching
-    function initTabs() {
-        const btns = document.querySelectorAll(".tab-btn");
-        btns.forEach(btn => {
+        document.querySelectorAll(".deletePlayerBtn").forEach(btn => {
             btn.addEventListener("click", () => {
-                const tab = btn.getAttribute("data-tab");
-                document.querySelectorAll(".panel").forEach(p => p.classList.remove("active-panel"));
-                document.getElementById(`${tab}Panel`).classList.add("active-panel");
-                btns.forEach(b => b.classList.remove("active"));
-                btn.classList.add("active");
-                if (tab === "admin") {
-                    renderAdminLeaderboard();
-                    renderVoteHistory();
+                const name = btn.getAttribute("data-name");
+                if (confirm(`Delete ${name}?`)) {
+                    players = players.filter(p => p !== name);
+                    // also remove from assignments
+                    for (let date in teamAssignments) delete teamAssignments[date][name];
+                    saveAll();
+                    renderPlayersList();
+                    refreshAllDropdowns();
+                    renderTeamAssignmentUI();
                 }
             });
         });
     }
-    
+
+    function addPlayer(name) {
+        name = name.trim();
+        if (name && !players.includes(name)) {
+            players.push(name);
+            players.sort();
+            saveAll();
+            renderPlayersList();
+            refreshAllDropdowns();
+            renderTeamAssignmentUI();
+        }
+    }
+
+    function resetPlayers() {
+        if (confirm("Reset to default player list? Current assignments will be lost for removed players.")) {
+            players = [...DEFAULT_PLAYERS];
+            saveAll();
+            renderPlayersList();
+            refreshAllDropdowns();
+            renderTeamAssignmentUI();
+        }
+    }
+
+    // ---------- TEAM ASSIGNMENT UI ----------
+    function renderTeamAssignmentUI() {
+        const gameDate = document.getElementById("adminGameWeekSelect").value;
+        const container = document.getElementById("teamAssignmentArea");
+        if (!gameDate) { container.innerHTML = "<div class='alert'>Select a game week</div>"; return; }
+        if (!teamAssignments[gameDate]) teamAssignments[gameDate] = {};
+        let html = `<p><strong>Assign teams for ${gameDate}</strong></p>`;
+        players.forEach(p => {
+            const currentTeam = teamAssignments[gameDate][p] || "";
+            html += `
+                <div class="team-row">
+                    <span>${escapeHtml(p)}</span>
+                    <select class="team-select" data-player="${escapeHtml(p)}">
+                        <option value="">-- Not playing --</option>
+                        <option value="yellow" ${currentTeam === "yellow" ? "selected" : ""}>🟡 Yellow</option>
+                        <option value="orange" ${currentTeam === "orange" ? "selected" : ""}>🟠 Orange</option>
+                    </select>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+        document.querySelectorAll(".team-select").forEach(sel => {
+            sel.addEventListener("change", (e) => {
+                const player = sel.getAttribute("data-player");
+                const team = sel.value;
+                if (team) teamAssignments[gameDate][player] = team;
+                else delete teamAssignments[gameDate][player];
+                saveAll();
+            });
+        });
+    }
+
+    // ---------- MATCH RESULT UI ----------
+    function renderMatchResultUI() {
+        const gameDate = document.getElementById("adminGameWeekSelect").value;
+        const container = document.getElementById("matchResultArea");
+        if (!gameDate) { container.innerHTML = "<div class='alert'>Select a game week</div>"; return; }
+        if (!matchResults[gameDate]) matchResults[gameDate] = { yellowScore: 0, orangeScore: 0, goals: {} };
+        const match = matchResults[gameDate];
+        let html = `
+            <div class="flex-btns">
+                <div><label>🟡 Yellow score</label><input type="number" id="yellowScore" value="${match.yellowScore}" min="0"></div>
+                <div><label>🟠 Orange score</label><input type="number" id="orangeScore" value="${match.orangeScore}" min="0"></div>
+            </div>
+            <h3>Goal scorers</h3>
+        `;
+        // Only players who played in this match
+        const playersInMatch = Object.keys(teamAssignments[gameDate] || {});
+        if (playersInMatch.length === 0) html += "<div class='alert'>Assign teams first</div>";
+        playersInMatch.forEach(player => {
+            const goals = match.goals[player] || 0;
+            html += `
+                <div class="goal-row">
+                    <span>${escapeHtml(player)}</span>
+                    <select class="goal-select" data-player="${escapeHtml(player)}">
+                        ${[0,1,2,3,4,5].map(n => `<option value="${n}" ${goals===n ? "selected":""}>${n} goal${n!==1?'s':''}</option>`).join('')}
+                    </select>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+        document.querySelectorAll(".goal-select").forEach(sel => {
+            sel.addEventListener("change", () => {
+                const player = sel.getAttribute("data-player");
+                const goals = parseInt(sel.value);
+                matchResults[gameDate].goals[player] = goals;
+                saveAll();
+            });
+        });
+    }
+
+    function saveMatchResult() {
+        const gameDate = document.getElementById("adminGameWeekSelect").value;
+        if (!gameDate) return;
+        const yellowScore = parseInt(document.getElementById("yellowScore")?.value || 0);
+        const orangeScore = parseInt(document.getElementById("orangeScore")?.value || 0);
+        if (!matchResults[gameDate]) matchResults[gameDate] = { goals: {} };
+        matchResults[gameDate].yellowScore = yellowScore;
+        matchResults[gameDate].orangeScore = orangeScore;
+        saveAll();
+        document.getElementById("adminMessage").innerHTML = "<div class='alert'>Match result saved</div>";
+        setTimeout(() => document.getElementById("adminMessage").innerHTML = "", 2000);
+        renderFixtureDisplay();
+        renderSeasonStats();
+    }
+
+    // ---------- VOTING (3-2-1) ----------
+    function getAvailablePlayersForVote(voter) {
+        return players.filter(p => p !== voter);
+    }
+
+    function addVote(voter, gameDate, first, second, third) {
+        const existing = votes.find(v => v.voter === voter && v.gameDate === gameDate);
+        if (existing) return { success: false, msg: `${voter} already voted for ${gameDate}` };
+        votes.push({ voter, gameDate, first, second, third });
+        saveAll();
+        return { success: true };
+    }
+
+    function computeLeaderboard() {
+        const points = new Map();
+        players.forEach(p => points.set(p, 0));
+        votes.forEach(v => {
+            points.set(v.first, (points.get(v.first) || 0) + 3);
+            points.set(v.second, (points.get(v.second) || 0) + 2);
+            points.set(v.third, (points.get(v.third) || 0) + 1);
+        });
+        let ranking = Array.from(points.entries()).map(([n,p]) => ({ name: n, points: p }));
+        ranking.sort((a,b) => b.points - a.points);
+        return ranking;
+    }
+
+    function renderLeaderboard() {
+        const ranking = computeLeaderboard();
+        const container = document.getElementById("leaderboardContainer");
+        if (votes.length === 0) { container.innerHTML = "<div class='alert'>No votes yet</div>"; return; }
+        let html = `<table class="leaderboard-table"><thead><tr><th>#</th><th>Player</th><th>Points</th></tr></thead><tbody>`;
+        ranking.forEach((p,i) => {
+            html += `<tr><td>${i+1}</td><td>${escapeHtml(p.name)}</td><td>${p.points}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+    }
+
+    // ---------- SEASON STATS (team performance) ----------
+    function renderSeasonStats() {
+        let yellowWins = 0, orangeWins = 0, draws = 0;
+        let yellowGoalsFor = 0, yellowGoalsAgainst = 0;
+        let orangeGoalsFor = 0, orangeGoalsAgainst = 0;
+        let topScorers = new Map(); // player -> total goals
+        for (let [date, match] of Object.entries(matchResults)) {
+            if (match.yellowScore !== undefined) {
+                yellowGoalsFor += match.yellowScore;
+                orangeGoalsFor += match.orangeScore;
+                yellowGoalsAgainst += match.orangeScore;
+                orangeGoalsAgainst += match.yellowScore;
+                if (match.yellowScore > match.orangeScore) yellowWins++;
+                else if (match.orangeScore > match.yellowScore) orangeWins++;
+                else draws++;
+            }
+            if (match.goals) {
+                for (let [player, goals] of Object.entries(match.goals)) {
+                    topScorers.set(player, (topScorers.get(player) || 0) + goals);
+                }
+            }
+        }
+        const sortedScorers = Array.from(topScorers.entries()).sort((a,b) => b[1] - a[1]).slice(0,10);
+        let html = `<div class="card"><h3>🏆 Team standings</h3>
+                    <p>🟡 Yellow: ${yellowWins} wins, ${draws} draws, ${orangeWins} losses (GF:${yellowGoalsFor}, GA:${yellowGoalsAgainst})</p>
+                    <p>🟠 Orange: ${orangeWins} wins, ${draws} draws, ${yellowWins} losses (GF:${orangeGoalsFor}, GA:${orangeGoalsAgainst})</p>
+                    <h3>⚽ Top goal scorers (all matches)</h3><ul>`;
+        sortedScorers.forEach(([player, goals]) => { html += `<li>${escapeHtml(player)} – ${goals} goals</li>`; });
+        html += `</ul></div>`;
+        document.getElementById("seasonStats").innerHTML = html;
+    }
+
+    // ---------- PLAYER VIEW ----------
+    function refreshPlayerDropdowns() {
+        const playerSelect = document.getElementById("playerNameSelect");
+        const currentPlayer = playerSelect.value;
+        playerSelect.innerHTML = '<option value="">-- Select your name --</option>' + players.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+        if (players.includes(currentPlayer)) playerSelect.value = currentPlayer;
+        
+        const weekSelect = document.getElementById("playerWeekSelect");
+        weekSelect.innerHTML = gameWeeks.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
+        if (gameWeeks.length) weekSelect.value = gameWeeks[0].dateStr;
+        
+        function updateVoteDropdowns() {
+            const voter = playerSelect.value;
+            let available = players.filter(p => p !== voter);
+            const options = '<option value="">-- Select --</option>' + available.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+            document.getElementById("vote3").innerHTML = options;
+            document.getElementById("vote2").innerHTML = options;
+            document.getElementById("vote1").innerHTML = options;
+        }
+        playerSelect.addEventListener("change", updateVoteDropdowns);
+        updateVoteDropdowns();
+        weekSelect.addEventListener("change", () => renderFixtureDisplay());
+        renderFixtureDisplay();
+    }
+
+    function renderFixtureDisplay() {
+        const gameDate = document.getElementById("playerWeekSelect").value;
+        const teams = teamAssignments[gameDate] || {};
+        const playerName = document.getElementById("playerNameSelect").value;
+        const myTeam = teams[playerName];
+        const match = matchResults[gameDate] || {};
+        const yellowScore = match.yellowScore ?? "?";
+        const orangeScore = match.orangeScore ?? "?";
+        let teamHtml = `<div class="alert"><strong>Your team:</strong> ${myTeam ? (myTeam === 'yellow' ? '🟡 Yellow' : '🟠 Orange') : 'Not assigned for this week'}</div>`;
+        let fixtureHtml = `<div><strong>Match:</strong> 🟡 Yellow ${yellowScore} - ${orangeScore} 🟠 Orange</div>`;
+        let goalsHtml = "<div><strong>Goal scorers:</strong><ul>";
+        if (match.goals) {
+            for (let [player, goals] of Object.entries(match.goals)) {
+                if (goals > 0) goalsHtml += `<li>${escapeHtml(player)} – ${goals} goal${goals!==1?'s':''}</li>`;
+            }
+        } else { goalsHtml += "<li>No goals recorded yet</li>"; }
+        goalsHtml += "</ul></div>";
+        document.getElementById("playerTeamDisplay").innerHTML = teamHtml;
+        document.getElementById("fixtureDisplay").innerHTML = fixtureHtml + goalsHtml;
+    }
+
+    function sendVote() {
+        const voter = document.getElementById("playerNameSelect").value;
+        const gameDate = document.getElementById("playerWeekSelect").value;
+        const first = document.getElementById("vote3").value;
+        const second = document.getElementById("vote2").value;
+        const third = document.getElementById("vote1").value;
+        if (!voter || !gameDate || !first || !second || !third) {
+            document.getElementById("voterMessage").innerHTML = "<div class='alert error'>Please fill all fields</div>";
+            return;
+        }
+        if (first === second || first === third || second === third) {
+            document.getElementById("voterMessage").innerHTML = "<div class='alert error'>Players must be different</div>";
+            return;
+        }
+        if (first === voter || second === voter || third === voter) {
+            document.getElementById("voterMessage").innerHTML = "<div class='alert error'>Cannot vote for yourself</div>";
+            return;
+        }
+        const voteObj = { voter, gameDate, first, second, third, timestamp: new Date().toISOString() };
+        const jsonStr = JSON.stringify(voteObj, null, 2);
+        // Download PDF
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html><head><title>Vote Slip - ${voter}</title>
+            <style>body{font-family:Inter;padding:2rem;}</style>
+            </head><body>
+            <h1>⚽ Monday Soccer Vote</h1>
+            <p><strong>Voter:</strong> ${escapeHtml(voter)}</p>
+            <p><strong>Game:</strong> ${gameDate}</p>
+            <p><strong>3 points:</strong> ${escapeHtml(first)}</p>
+            <p><strong>2 points:</strong> ${escapeHtml(second)}</p>
+            <p><strong>1 point:</strong> ${escapeHtml(third)}</p>
+            <p>Submitted: ${new Date().toLocaleString()}</p>
+            </body></html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+        // WhatsApp
+        const adminPhone = "YOUR_ADMIN_NUMBER_HERE"; // <-- REPLACE WITH REAL NUMBER
+        const whatsappUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(jsonStr)}`;
+        window.open(whatsappUrl, '_blank');
+        document.getElementById("voterMessage").innerHTML = "<div class='alert success'>Vote sent! PDF downloaded and WhatsApp opened.</div>";
+    }
+
+    // ---------- ADMIN VOTE IMPORT ----------
+    function importVoteText() {
+        const text = document.getElementById("pasteVoteArea").value;
+        try {
+            const data = JSON.parse(text);
+            if (!data.voter || !data.gameDate || !data.first || !data.second || !data.third) throw new Error("Invalid");
+            const result = addVote(data.voter, data.gameDate, data.first, data.second, data.third);
+            if (result.success) {
+                document.getElementById("adminMessage").innerHTML = `<div class='alert success'>Vote added for ${data.voter}</div>`;
+                renderLeaderboard();
+                document.getElementById("pasteVoteArea").value = "";
+            } else {
+                document.getElementById("adminMessage").innerHTML = `<div class='alert error'>${result.msg}</div>`;
+            }
+        } catch(e) {
+            document.getElementById("adminMessage").innerHTML = "<div class='alert error'>Invalid vote format</div>";
+        }
+    }
+
+    // ---------- EXPORT/IMPORT ----------
+    function exportAll() {
+        const data = { players, teamAssignments, matchResults, votes, version: "1.0" };
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `soccer_backup_${new Date().toISOString().slice(0,19)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+    function importAll(file) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (data.players) players = data.players;
+                if (data.teamAssignments) teamAssignments = data.teamAssignments;
+                if (data.matchResults) matchResults = data.matchResults;
+                if (data.votes) votes = data.votes;
+                saveAll();
+                location.reload(); // refresh everything
+            } catch(err) { alert("Invalid backup file"); }
+        };
+        reader.readAsText(file);
+    }
+
+    function refreshAllDropdowns() { refreshPlayerDropdowns(); renderTeamAssignmentUI(); renderMatchResultUI(); renderLeaderboard(); renderSeasonStats(); renderPlayersList(); }
+
+    // ---------- INIT & EVENT LISTENERS ----------
+    document.addEventListener("DOMContentLoaded", () => {
+        loadAll();
+        renderPlayersList();
+        refreshPlayerDropdowns();
+        renderTeamAssignmentUI();
+        renderMatchResultUI();
+        renderLeaderboard();
+        renderSeasonStats();
+        document.getElementById("adminGameWeekSelect").innerHTML = gameWeeks.map(w => `<option value="${w.dateStr}">${w.label}</option>`).join('');
+        document.getElementById("adminGameWeekSelect").addEventListener("change", () => { renderTeamAssignmentUI(); renderMatchResultUI(); });
+        document.getElementById("saveTeamsBtn").addEventListener("click", () => { saveAll(); renderTeamAssignmentUI(); renderFixtureDisplay(); });
+        document.getElementById("saveResultBtn").addEventListener("click", saveMatchResult);
+        document.getElementById("addPlayerBtn").addEventListener("click", () => addPlayer(document.getElementById("newPlayerName").value));
+        document.getElementById("resetPlayersBtn").addEventListener("click", resetPlayers);
+        document.getElementById("sendVoteBtn").addEventListener("click", sendVote);
+        document.getElementById("addVoteBtn").addEventListener("click", importVoteText);
+        document.getElementById("refreshLeaderboardBtn").addEventListener("click", renderLeaderboard);
+        document.getElementById("exportAllBtn").addEventListener("click", exportAll);
+        document.getElementById("importAllBtn").addEventListener("click", () => document.getElementById("importFileInput").click());
+        document.getElementById("importFileInput").addEventListener("change", e => { if(e.target.files.length) importAll(e.target.files[0]); e.target.value=""; });
+        // Tab switching
+        document.querySelectorAll(".tab-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const tab = btn.getAttribute("data-tab");
+                document.querySelectorAll(".panel").forEach(p => p.classList.remove("active-panel"));
+                document.getElementById(`${tab}Panel`).classList.add("active-panel");
+                document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                if (tab === "admin") { renderLeaderboard(); renderSeasonStats(); renderTeamAssignmentUI(); renderMatchResultUI(); }
+                if (tab === "voter") { renderFixtureDisplay(); }
+            });
+        });
+    });
+
     function escapeHtml(str) { return String(str).replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
-    
-    // Bootstrap
-    updateAllDropdowns();
-    loadCompiledFromStorage();
-    renderAdminLeaderboard();
-    renderVoteHistory();
-    initTabs();
 </script>
 </body>
 </html>
