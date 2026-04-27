@@ -6,68 +6,70 @@
     <title>Monday Night Soccer – Complete Hub</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: linear-gradient(135deg, #f0f2f5 0%, #e0e5ec 100%); font-family: 'Inter', sans-serif; padding: 20px; min-height: 100vh; }
+        body { background: linear-gradient(135deg, #f0f2f5 0%, #e0e5ec 100%); font-family: 'Inter', sans-serif; padding: 16px; min-height: 100vh; }
         .container { max-width: 1400px; margin: 0 auto; }
-        .header { text-align: center; margin-bottom: 32px; }
-        .header h1 { font-family: 'Poppins', sans-serif; font-size: 2.8rem; font-weight: 900; background: linear-gradient(135deg, #cc0000, #ff4444, #cc0000); background-size: 200% auto; background-clip: text; -webkit-background-clip: text; color: transparent; text-shadow: 2px 2px 0 rgba(0,0,0,0.05); }
-        .tabs { display: flex; gap: 15px; justify-content: center; margin-bottom: 32px; flex-wrap: wrap; }
-        .tab-btn { background: white; border: none; padding: 12px 28px; border-radius: 60px; font-weight: 700; cursor: pointer; color: #cc0000; font-size: 0.9rem; min-width: 130px; text-align: center; box-shadow: 0 5px 0 #999; transition: all 0.08s linear; font-family: 'Poppins', sans-serif; }
-        .tab-btn.active { background: #cc0000; color: white; box-shadow: 0 5px 0 #8b0000; }
-        .tab-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #666; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { font-family: 'Poppins', sans-serif; font-size: 1.8rem; font-weight: 700; background: linear-gradient(135deg, #cc0000, #ff4444); background-clip: text; -webkit-background-clip: text; color: transparent; }
+        .header p { color: #555; font-size: 0.8rem; }
+        .tabs { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn { background: white; border: none; padding: 10px 24px; border-radius: 60px; font-weight: 600; cursor: pointer; color: #cc0000; font-size: 0.85rem; min-width: 110px; text-align: center; box-shadow: 0 4px 0 #999; transition: all 0.08s linear; font-family: 'Poppins', sans-serif; }
+        .tab-btn.active { background: #cc0000; color: white; box-shadow: 0 4px 0 #8b0000; }
+        .tab-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #8b0000; }
         .panel { display: none; animation: fade 0.2s; }
         .panel.active-panel { display: block; }
         @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-        .card { background: white; border-radius: 28px; padding: 24px; margin-bottom: 28px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
-        .card h2, .card h3 { font-family: 'Poppins', sans-serif; font-weight: 700; margin-bottom: 18px; color: #cc0000; border-left: 5px solid #cc0000; padding-left: 16px; }
-        label { font-weight: 600; display: block; margin-top: 16px; margin-bottom: 8px; color: #333; }
-        select, input, button, textarea { padding: 12px 18px; border-radius: 60px; border: 1px solid #ddd; font-size: 0.95rem; background: white; width: 100%; margin: 6px 0; font-family: 'Inter', sans-serif; }
-        button { background: #cc0000; color: white; font-weight: 700; border: none; cursor: pointer; width: auto; min-width: 160px; padding: 12px 28px; box-shadow: 0 5px 0 #8b0000; transition: all 0.08s linear; font-family: 'Poppins', sans-serif; }
+        .card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 8px 20px -5px rgba(0,0,0,0.1); }
+        .card h2, .card h3 { font-family: 'Poppins', sans-serif; font-weight: 700; margin-bottom: 16px; color: #cc0000; border-left: 4px solid #cc0000; padding-left: 14px; font-size: 1.2rem; }
+        label { font-weight: 600; display: block; margin-top: 14px; margin-bottom: 6px; color: #333; font-size: 0.85rem; }
+        select, input, button, textarea { padding: 10px 16px; border-radius: 60px; border: 1px solid #ddd; font-size: 0.9rem; background: white; width: 100%; margin: 5px 0; font-family: 'Inter', sans-serif; }
+        button { background: #cc0000; color: white; font-weight: 600; border: none; cursor: pointer; width: auto; min-width: 140px; padding: 10px 24px; box-shadow: 0 4px 0 #8b0000; transition: all 0.08s linear; font-family: 'Poppins', sans-serif; font-size: 0.85rem; }
         button:active { transform: translateY(2px); box-shadow: 0 2px 0 #8b0000; }
         button:hover { background: #dd2222; }
-        .login-card { max-width: 420px; margin: 60px auto; background: white; border-radius: 48px; padding: 40px 32px; text-align: center; box-shadow: 0 20px 35px -10px rgba(0,0,0,0.2); }
-        .pitch { background: linear-gradient(145deg, #2e7d32, #1b5e20); border-radius: 32px; border: 3px solid white; padding: 20px; position: relative; box-shadow: 0 0 0 3px #cc0000; }
+        .login-card { max-width: 380px; margin: 40px auto; background: white; border-radius: 40px; padding: 32px 24px; text-align: center; box-shadow: 0 20px 35px -10px rgba(0,0,0,0.2); }
+        .pitch { background: linear-gradient(145deg, #2e7d32, #1b5e20); border-radius: 28px; border: 3px solid white; padding: 16px; position: relative; box-shadow: 0 0 0 3px #cc0000; }
         .pitch::before { content: ""; position: absolute; top: 0; left: 50%; width: 2px; height: 100%; background: white; transform: translateX(-50%); opacity: 0.7; }
-        .pitch::after { content: ""; position: absolute; top: 50%; left: 50%; width: 70px; height: 70px; border: 2px solid white; border-radius: 50%; transform: translate(-50%, -50%); opacity: 0.7; }
-        .teams-row { display: flex; flex-wrap: wrap; gap: 20px; position: relative; z-index: 2; }
-        .team-box { flex: 1; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); border-radius: 24px; padding: 16px; color: white; }
-        .team-title { font-size: 1.4rem; font-weight: 800; text-align: center; margin-bottom: 12px; font-family: 'Poppins', sans-serif; }
+        .pitch::after { content: ""; position: absolute; top: 50%; left: 50%; width: 60px; height: 60px; border: 2px solid white; border-radius: 50%; transform: translate(-50%, -50%); opacity: 0.7; }
+        .teams-row { display: flex; flex-wrap: wrap; gap: 16px; position: relative; z-index: 2; }
+        .team-box { flex: 1; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); border-radius: 20px; padding: 14px; color: white; }
+        .team-title { font-size: 1.2rem; font-weight: 800; text-align: center; margin-bottom: 10px; font-family: 'Poppins', sans-serif; }
         .yellow-title { color: #ffea00; }
         .orange-title { color: #ff9800; }
-        .player-list { display: flex; flex-direction: column; gap: 8px; max-height: 350px; overflow-y: auto; }
-        .player-badge { background: rgba(0,0,0,0.7); border-radius: 40px; padding: 8px 12px; text-align: center; font-size: 0.85rem; }
-        .match-result { margin-top: 16px; text-align: center; background: rgba(0,0,0,0.7); border-radius: 40px; padding: 10px; color: white; font-weight: 600; }
-        .alert { background: #ffe6e6; border-left: 4px solid #cc0000; padding: 12px 18px; border-radius: 40px; margin: 12px 0; color: #990000; }
-        .goal-row { background: #f9f9f9; border-radius: 60px; padding: 12px 18px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-        .count-box { background: #2c3e50; color: white; border-radius: 40px; padding: 12px 20px; display: inline-block; margin: 8px; min-width: 150px; text-align: center; box-shadow: 0 4px 0 #1a2a3a; }
-        .count-number { font-size: 1.6rem; font-weight: 800; }
-        footer { text-align: center; margin-top: 40px; font-size: 0.75rem; color: #777; }
-        .flex-btns { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 20px; justify-content: center; }
-        .attending-in { background: #2e7d5e; color: white; box-shadow: 0 4px 0 #1a4a3a; }
-        .attending-out { background: #cc0000; color: white; box-shadow: 0 4px 0 #8b0000; }
-        .payment-table, .attendance-table, .topscorer-table, .pastgames-table { width: 100%; border-collapse: collapse; background: white; border-radius: 20px; overflow: hidden; margin-top: 12px; }
-        .payment-table th, .payment-table td, .attendance-table th, .attendance-table td, .topscorer-table th, .topscorer-table td, .pastgames-table th, .pastgames-table td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+        .player-list { display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; }
+        .player-badge { background: rgba(0,0,0,0.7); border-radius: 40px; padding: 6px 10px; text-align: center; font-size: 0.75rem; }
+        .match-result { margin-top: 14px; text-align: center; background: rgba(0,0,0,0.7); border-radius: 40px; padding: 8px; color: white; font-weight: 600; font-size: 0.8rem; }
+        .alert { background: #ffe6e6; border-left: 4px solid #cc0000; padding: 10px 14px; border-radius: 40px; margin: 10px 0; color: #990000; font-size: 0.8rem; }
+        .goal-row { background: #f9f9f9; border-radius: 40px; padding: 10px 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .count-box { background: #2c3e50; color: white; border-radius: 40px; padding: 10px 16px; display: inline-block; margin: 6px; min-width: 130px; text-align: center; box-shadow: 0 3px 0 #1a2a3a; }
+        .count-number { font-size: 1.4rem; font-weight: 800; }
+        footer { text-align: center; margin-top: 30px; font-size: 0.7rem; color: #777; }
+        .flex-btns { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; justify-content: center; }
+        .attending-in { background: #2e7d5e; color: white; box-shadow: 0 3px 0 #1a4a3a; }
+        .attending-out { background: #cc0000; color: white; box-shadow: 0 3px 0 #8b0000; }
+        .payment-table, .attendance-table, .topscorer-table, .pastgames-table { width: 100%; border-collapse: collapse; background: white; border-radius: 16px; overflow: hidden; margin-top: 10px; }
+        .payment-table th, .payment-table td, .attendance-table th, .attendance-table td, .topscorer-table th, .topscorer-table td, .pastgames-table th, .pastgames-table td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #f0f0f0; font-size: 0.85rem; }
         .payment-table th, .attendance-table th, .topscorer-table th, .pastgames-table th { background: #fafafa; color: #cc0000; font-weight: 700; }
-        .chat-container { background: #f5f5f5; border-radius: 24px; overflow: hidden; margin-top: 16px; display: flex; flex-direction: column; height: 500px; }
-        .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; background: #e5ddd5; }
+        .chat-container { background: #f5f5f5; border-radius: 20px; overflow: hidden; margin-top: 14px; display: flex; flex-direction: column; height: 450px; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; background: #e5ddd5; }
         .chat-message { display: flex; flex-direction: column; max-width: 70%; }
         .chat-message.sent { align-self: flex-end; }
         .chat-message.received { align-self: flex-start; }
-        .chat-bubble { padding: 10px 14px; border-radius: 18px; word-wrap: break-word; }
-        .chat-message.sent .chat-bubble { background: #dcf8c5; color: #1a1a1a; border-bottom-right-radius: 4px; }
-        .chat-message.received .chat-bubble { background: white; color: #1a1a1a; border-bottom-left-radius: 4px; }
-        .chat-name { font-weight: 700; font-size: 0.8rem; margin-bottom: 4px; color: #cc0000; }
-        .chat-time { font-size: 0.65rem; color: #888; margin-top: 4px; text-align: right; }
-        .chat-footer { padding: 12px 16px; background: white; border-top: 1px solid #e0e0e0; display: flex; gap: 12px; align-items: center; }
+        .chat-bubble { padding: 8px 12px; border-radius: 16px; word-wrap: break-word; }
+        .chat-message.sent .chat-bubble { background: #dcf8c5; color: #1a1a1a; border-bottom-right-radius: 3px; }
+        .chat-message.received .chat-bubble { background: white; color: #1a1a1a; border-bottom-left-radius: 3px; }
+        .chat-name { font-weight: 700; font-size: 0.75rem; margin-bottom: 3px; color: #cc0000; }
+        .chat-time { font-size: 0.6rem; color: #888; margin-top: 3px; text-align: right; }
+        .chat-footer { padding: 10px 12px; background: white; border-top: 1px solid #e0e0e0; display: flex; gap: 10px; align-items: center; }
         .chat-footer input { flex: 1; margin: 0; border-radius: 30px; background: #fafafa; }
-        .chat-footer button { min-width: 80px; margin: 0; }
-        .like-btn { background: none; border: none; cursor: pointer; font-size: 0.9rem; padding: 0 4px; margin-left: 8px; box-shadow: none; min-width: auto; color: #888; }
+        .chat-footer button { min-width: 70px; margin: 0; padding: 8px 16px; }
+        .like-btn { background: none; border: none; cursor: pointer; font-size: 0.8rem; padding: 0 3px; margin-left: 6px; box-shadow: none; min-width: auto; color: #888; }
         .like-btn:hover { transform: scale(1.1); background: none; }
         .like-btn.active { color: #cc0000; }
-        .like-count { font-size: 0.7rem; margin-left: 2px; color: #666; }
-        @media (max-width: 700px) { .teams-row { flex-direction: column; } .chat-message { max-width: 85%; } .chat-container { height: 450px; } }
+        .like-count { font-size: 0.65rem; margin-left: 2px; color: #666; }
+        .admin-tag { background: #cc0000; color: white; font-size: 0.6rem; border-radius: 10px; padding: 2px 6px; margin-left: 6px; display: inline-block; }
+        @media (max-width: 700px) { .teams-row { flex-direction: column; } .chat-message { max-width: 85%; } .chat-container { height: 400px; } .tab-btn { padding: 8px 16px; min-width: 90px; } }
     </style>
 </head>
 <body>
@@ -168,15 +170,15 @@
         await loadData();
         document.getElementById("appContainer").innerHTML = `
             <div class="login-card">
-                <h1 style="font-family:'Poppins'; font-size:2rem; color:#cc0000;">★ MONDAY NIGHT SOCCER ★</h1>
-                <p style="margin-bottom:24px;">Select your name or login as admin</p>
+                <h1 style="font-family:'Poppins'; font-size:1.8rem; color:#cc0000;">★ MONDAY NIGHT SOCCER ★</h1>
+                <p style="margin-bottom:20px;">Select your name or login as admin</p>
                 <label>👤 YOUR NAME</label>
                 <select id="playerNameSelect">
                     <option value="">-- Select your name --</option>
                     ${FULL_PLAYER_LIST.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('')}
                 </select>
                 <button id="playerLoginBtn">Enter as Player</button>
-                <hr style="margin: 24px 0;">
+                <hr style="margin: 20px 0;">
                 <label>🔐 ADMIN LOGIN</label>
                 <input type="password" id="adminPassword" placeholder="Admin password">
                 <button id="adminLoginBtn">Admin Login</button>
@@ -201,7 +203,7 @@
             <div class="header">
                 <h1>⚽ MONDAY NIGHT SOCCER ⚽</h1>
                 <p>${currentUser.role === "admin" ? "ADMIN MODE" : "Player: " + currentUser.name}</p>
-                <button id="logoutBtn" style="margin-top:12px; background:#cc0000; padding:8px 20px;">Logout</button>
+                <button id="logoutBtn" style="margin-top:8px; padding:6px 16px; min-width:80px;">Logout</button>
             </div>
             <div class="tabs" id="tabs"></div>
             <div id="panelContainer"></div>
@@ -209,7 +211,13 @@
         `;
         document.getElementById("logoutBtn").onclick = logout;
 
-        const tabs = [{ id: "attendance", label: "📋 ATTENDANCE" }, { id: "chat", label: "💬 LIVE CHAT" }, { id: "pastgames", label: "📆 PAST GAMES" }, { id: "topscorer", label: "⚽ TOP SCORER" }, { id: "rules", label: "📜 RULES" }];
+        const tabs = [
+            { id: "attendance", label: "📋 ATTENDANCE" },
+            { id: "chat", label: "💬 CHAT" },
+            { id: "pastgames", label: "📆 PAST GAMES" },
+            { id: "topscorer", label: "⚽ TOP SCORER" },
+            { id: "rules", label: "📜 RULES" }
+        ];
         if (isAdminLoggedIn) tabs.push({ id: "admin", label: "👑 ADMIN" });
         document.getElementById("tabs").innerHTML = tabs.map(t => `<button class="tab-btn" data-tab="${t.id}">${t.label}</button>`).join('');
         document.getElementById("panelContainer").innerHTML = tabs.map(t => `<div id="${t.id}Panel" class="panel"></div>`).join('');
@@ -362,7 +370,7 @@
                         <div class="chat-bubble">
                             <div class="chat-name">${escapeHtml(displayName)}</div>
                             <div>${escapeHtml(data.message)}</div>
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 3px;">
                                 <div class="chat-time">${time}</div>
                                 <div><button class="like-btn ${userLiked ? 'active' : ''}" data-id="${doc.id}">❤️</button><span class="like-count">${likes.length > 0 ? likes.length : ''}</span></div>
                             </div>
@@ -392,22 +400,34 @@
             const orange = Object.keys(assignments).filter(p => assignments[p] === "orange").sort();
             const match = matchResults[week.dateStr] || { yellowScore: 0, orangeScore: 0, goals: {} };
             const goalsText = Object.entries(match.goals || {}).filter(([_,g]) => g>0).map(([p,g]) => `${p} (${g})`).join(", ");
-            html += `<tr>}<strong>${week.label}</strong>${yellow.join(', ') || '—'}${orange.join(', ') || '—'}🟡 ${match.yellowScore} - ${match.orangeScore} 🟠${goalsText || '—'}</tr>`;
+            html += `<tr>}<strong>${week.label}</strong>${yellow.join(', ') || '—'}${orange.join(', ') || '—'}🟡 ${match.yellowScore} - ${match.orangeScore} 🟠${goalsText || '—'}<tr>`;
         }
         html += `</tbody></table></div>`;
         document.getElementById("pastgamesPanel").innerHTML = html;
     }
 
+    // FIXED: Top goal scorer – correctly sums goals from all match results
     async function renderTopScorerPanel() {
         const goals = new Map();
         for (let match of Object.values(matchResults)) {
-            if (match.goals) for (let [p, g] of Object.entries(match.goals)) goals.set(p, (goals.get(p) || 0) + g);
+            if (match.goals) {
+                for (let [player, goalCount] of Object.entries(match.goals)) {
+                    goals.set(player, (goals.get(player) || 0) + goalCount);
+                }
+            }
         }
-        let sorted = Array.from(goals.entries()).map(([n,t]) => ({ name: n, total: t }));
+        let sorted = Array.from(goals.entries()).map(([name, total]) => ({ name, total }));
         sorted.sort((a,b) => b.total - a.total);
-        if (!sorted.length) { document.getElementById("topscorerPanel").innerHTML = `<div class="card"><div class="alert">No goals recorded yet.</div></div>`; return; }
-        document.getElementById("topscorerPanel").innerHTML = `<div class="card"><h2>⚽ TOP GOAL SCORERS</h2><table class="topscorer-table"><thead><tr><th>#</th><th>Player</th><th>Goals</th></tr></thead><tbody>${sorted.map((p,i)=>`<tr><td style="color:#cc0000;">${p.total}?</td></tr>`).join('')}</tbody></table></div>`;
-        document.getElementById("topscorerPanel").innerHTML = `<div class="card"><h2>⚽ TOP GOAL SCORERS</h2><table class="topscorer-table"><thead><tr><th>#</th><th>Player</th><th>Goals</th></tr></thead><tbody>${sorted.map((p,i)=>`<tr><td style="color:#cc0000;">${p.total}?</td></tr>`).join('')}</tbody></table></div>`;
+        if (!sorted.length) {
+            document.getElementById("topscorerPanel").innerHTML = `<div class="card"><div class="alert">No goals recorded yet.</div></div>`;
+            return;
+        }
+        let html = `<div class="card"><h2>⚽ TOP GOAL SCORERS</h2><table class="topscorer-table"><thead><tr><th>#</th><th>Player</th><th>Goals</th></tr></thead><tbody>`;
+        sorted.forEach((p, i) => {
+            html += `<tr><td>${i+1}</td><td><strong>${escapeHtml(p.name)}</strong></td><td style="color:#cc0000;">${p.total}</td></tr>`;
+        });
+        html += `</tbody></table></div>`;
+        document.getElementById("topscorerPanel").innerHTML = html;
     }
 
     function renderRulesPanel() {
@@ -498,7 +518,7 @@
         let html = `<table class="attendance-table"><thead><tr><th>Week</th><th>Player</th><th>Status</th></tr></thead><tbody>`;
         for (let week of weeks) {
             const label = ALL_GAME_WEEKS.find(w => w.dateStr === week)?.label || week;
-            for (let a of attendance.filter(a => a.gameDate === week)) html += `<tr>}<td>${escapeHtml(label)}</td><td>${escapeHtml(a.player)}</td><td>${a.status === 'in' ? '✅ Attending' : '❌ Not'}</td></tr>`;
+            for (let a of attendance.filter(a => a.gameDate === week)) html += `<tr>}。【${escapeHtml(label)}】{${escapeHtml(a.player)}】{${a.status === 'in' ? '✅ Attending' : '❌ Not'}</tr>`;
         }
         if (!weeks.length) html += `<tr><td colspan="3">No records</td></tr>`;
         html += `</tbody></table>`;
@@ -511,9 +531,9 @@
         for (let week of weeks) {
             const label = ALL_GAME_WEEKS.find(w => w.dateStr === week)?.label || week;
             const paid = payments.filter(p => p.gameDate === week).map(p => p.player);
-            html += `<tr>}<td>${escapeHtml(label)}</td><td>${paid.join(', ') || 'none'}</td><td>$${paid.length * 5}</td></tr>`;
+            html += `<tr>}。【${escapeHtml(label)}】{${paid.join(', ') || 'none'}】{$${paid.length * 5}</td><tr>`;
         }
-        if (!weeks.length) html += `<tr><td colspan="3">No payments</td></tr>`;
+        if (!weeks.length) html += `<td><td colspan="3">No payments</td></tr>`;
         html += `</tbody></table><div class="alert">💰 Total collected: $${payments.length * 5}</div>`;
         document.getElementById("paymentLedger").innerHTML = html;
     }
