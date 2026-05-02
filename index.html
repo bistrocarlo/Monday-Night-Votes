@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Monday Night Soccer | Full Feature App</title>
+    <title>Monday Night Soccer | Full Feature + Financial Ledger</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
@@ -62,6 +62,10 @@
         .attendee-tag { display: inline-flex; align-items: center; gap: 6px; background: #e2e8f0; padding: 6px 12px; border-radius: 40px; font-size: 13px; margin: 4px; }
         .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .data-table th, .data-table td { padding: 10px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        .badge-paid { background: #28a745; color: white; border-radius: 40px; padding: 4px 12px; font-size: 11px; display: inline-block; }
+        .badge-owing { background: #dc3545; color: white; border-radius: 40px; padding: 4px 12px; font-size: 11px; display: inline-block; }
+        .finance-summary { background: linear-gradient(135deg, #1a73e8, #0d5bbf); color: white; border-radius: 20px; padding: 16px; margin-bottom: 16px; text-align: center; }
+        .finance-summary .amount { font-size: 32px; font-weight: 800; }
         .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .modal-content { background: white; border-radius: 32px; padding: 24px; max-width: 340px; width: 90%; max-height: 80vh; overflow-y: auto; }
         .login-box { background: white; border-radius: 48px; padding: 40px 28px; margin: 40px 20px; text-align: center; }
@@ -101,6 +105,7 @@
     let matchResults = {};
     let attendance = [];
     let guests = [];
+    let payments = [];  // Financial ledger: { player, gameDate, amount, timestamp }
     let matchComments = {};
     let isAdminLoggedIn = false, currentUser = null;
     let weeklyCaptain = "Carlo";
@@ -108,6 +113,7 @@
     let rulesText = "• ⏰ 8:00pm SHARP kickoff at Clifton Park\n• 💰 $5 weekly fee - Admin collects\n• 👑 Captain rotates based on attendance\n• ✅ RSVP is mandatory\n• 🎭 Guests can play and be assigned to teams\n• 💬 Use chat to communicate with teammates!";
     const POSITIONS = ["Goalkeeper","Defender","Midfielder","Striker","Winger"];
     let chatUnsubscribe = null;
+    const WEEKLY_FEE = 5;
     
     function escapeHtml(str) { return String(str).replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
     function getInitials(name) { return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0,2); }
@@ -192,13 +198,14 @@
     async function loadData() {
         if(!firebaseReady || !db) return;
         try {
-            const [pDoc, profileDoc, tDoc, rDoc, attSnap, guestSnap, commentsSnap, rulesDoc] = await Promise.all([
+            const [pDoc, profileDoc, tDoc, rDoc, attSnap, guestSnap, paySnap, commentsSnap, rulesDoc] = await Promise.all([
                 db.collection("config").doc("players").get().catch(()=>null),
                 db.collection("config").doc("playerProfiles").get().catch(()=>null),
                 db.collection("config").doc("teamAssignments").get().catch(()=>null),
                 db.collection("config").doc("matchResults").get().catch(()=>null),
                 db.collection("attendance").get().catch(()=>({docs:[]})),
                 db.collection("guests").get().catch(()=>({docs:[]})),
+                db.collection("payments").get().catch(()=>({docs:[]})),
                 db.collection("matchComments").get().catch(()=>({docs:[]})),
                 db.collection("config").doc("rules").get().catch(()=>null)
             ]);
@@ -208,6 +215,7 @@
             if(rDoc?.exists) matchResults = rDoc.data();
             attendance = attSnap.docs.map(d => d.data());
             guests = guestSnap.docs.map(d => d.data());
+            payments = paySnap.docs.map(d => d.data());
             matchComments = {};
             commentsSnap.docs.forEach(doc => { const data=doc.data(); if(!matchComments[data.gameDate]) matchComments[data.gameDate]=[]; matchComments[data.gameDate].push(data); });
             if(rulesDoc?.exists && rulesDoc.data().text) rulesText = rulesDoc.data().text;
@@ -225,6 +233,13 @@
         else playerProfiles[a.player] = { age:'—', position:'—', yearJoined:'—', gamesPlayed: gamesFromAttendance + opening, openingBalanceGames:0 };
         if(firebaseReady && db) await db.collection("config").doc("playerProfiles").set(playerProfiles);
         renderHomePage(); renderThisWeeksTeamsPage(); renderHistoryPage(); renderProfilesPage(); renderScoreboardPage(); if(isAdminLoggedIn) renderAdminPage();
+    }
+    
+    async function savePayment(payment) {
+        if(firebaseReady && db) await db.collection("payments").doc(`${payment.player}_${payment.gameDate}`).set(payment);
+        const idx = payments.findIndex(p => p.player === payment.player && p.gameDate === payment.gameDate);
+        if(idx !== -1) payments[idx] = payment; else payments.push(payment);
+        if(isAdminLoggedIn) renderAdminPage();
     }
     
     async function saveGuest(g) {
@@ -296,6 +311,14 @@
         if(!nextWeek) return;
         if(guests.some(g => g.gameDate === nextWeek.dateStr && g.guestName === guestName.trim())) { alert("Guest already exists"); return; }
         await saveGuest({ guestName: guestName.trim(), gameDate: nextWeek.dateStr, addedBy: currentUser?.name || "Admin" });
+        const input = document.getElementById("guestNameInput");
+        if(input) input.value = "";
+    }
+    
+    async function markPayment(player, gameDate) {
+        await savePayment({ player, gameDate, amount: WEEKLY_FEE, timestamp: Date.now() });
+        alert(`$${WEEKLY_FEE} recorded for ${player}`);
+        renderAdminPage();
     }
     
     function showEditProfileModal(playerName) {
@@ -326,7 +349,7 @@
         if(firebaseReady && db) await db.collection("config").doc("playerProfiles").set(playerProfiles);
     }
     
-    // ==================== CHAT RENDER WITH REAL-TIME LISTENER ====================
+    // ==================== CHAT RENDER ====================
     function renderChatPage() {
         const container = document.getElementById("page-chat");
         if(!container) return;
@@ -335,7 +358,6 @@
             <div style="display: flex; gap: 8px;"><input type="text" id="chatInput" placeholder="Type your message..." style="flex:1;"><button id="chatSendBtn">Send</button></div>
         </div>`;
         
-        // Set up real-time listener
         if(firebaseReady && db) {
             if(chatUnsubscribe) chatUnsubscribe();
             chatUnsubscribe = db.collection("chatMessages").orderBy("timestamp", "asc").onSnapshot(snapshot => {
@@ -492,24 +514,57 @@
         const allList = [...participants.players.map(p=>({name:p,isGuest:false})), ...participants.guests.map(g=>({name:g.name,isGuest:true,addedBy:g.addedBy}))];
         const currentAssignments = teamAssignments[nextWeek.dateStr] || {};
         
-        let html = `<div class="card"><h2>✍️ Manual Attendance (Verbal Confirmation)</h2><select id="manualPlayerSelect"><option value="">-- Select Player --</option>${players.map(p=>`<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('')}</select>
-            <button id="manualAddBtn" class="admin-action-btn" style="background:#28a745;">➕ Add to Playing List</button></div>
-            <div class="card"><h2>🎭 Manage Guests</h2>`;
-        for(let g of participants.guests) {
-            html += `<div class="admin-team-item"><span><i class="fas fa-user-friends"></i> <strong>${escapeHtml(g.name)}</strong> (by ${escapeHtml(g.addedBy)})</span><button class="remove-guest-btn" data-guest="${escapeHtml(g.name)}" data-date="${nextWeek.dateStr}" style="background:#dc3545; padding:6px 14px;">Remove</button></div>`;
+        // Financial calculations
+        const totalCollected = payments.reduce((sum, p) => sum + p.amount, 0);
+        let debts = [];
+        for(let player of players) {
+            let unpaidWeeks = 0;
+            const playerGames = attendance.filter(a => a.player === player && a.status === 'in');
+            for(let game of playerGames) {
+                if(!payments.some(p => p.player === player && p.gameDate === game.gameDate)) {
+                    unpaidWeeks++;
+                }
+            }
+            if(unpaidWeeks > 0) debts.push({ player, debt: unpaidWeeks * WEEKLY_FEE });
         }
-        html += `<div style="margin-top:12px;"><input type="text" id="adminGuestName" placeholder="New guest name"><button id="adminAddGuestBtn" style="margin-top:8px;">+ Add Guest</button></div></div>
-            <div class="card"><h2>⚽ Assign Teams</h2>`;
+        debts.sort((a,b) => b.debt - a.debt);
+        
+        let financeHtml = `<div class="card"><h2>💰 Financial Ledger</h2>
+            <div class="finance-summary"><div class="amount">$${totalCollected}</div><p>Total Treasury Collected</p></div>
+            <h3>📅 ${nextWeek.label} - Payment Status</h3><table class="data-table"><thead><tr><th>Player</th><th>Status</th><th>Action</th></tr></thead><tbody>`;
+        for(let player of participants.players) {
+            const isPaid = payments.some(p => p.player === player && p.gameDate === nextWeek.dateStr);
+            financeHtml += `<tr><td>${renderMiniAvatar(player,24)} ${escapeHtml(player)}</td><td>${isPaid ? '<span class="badge-paid">✓ PAID</span>' : '<span class="badge-owing">❌ OWING</span>'}</td>
+                <td>${!isPaid ? `<button class="markPaidBtn" data-player="${escapeHtml(player)}" data-date="${nextWeek.dateStr}" style="padding:6px 12px; font-size:12px;">Record $${WEEKLY_FEE}</button>` : '—'}</td></tr>`;
+        }
+        financeHtml += `</tbody></table><h3 style="margin-top:16px;">📜 Outstanding Debts (All Time)</h3><table class="data-table"><thead><tr><th>Player</th><th>Amount Owed</th></tr></thead><tbody>`;
+        if(debts.length > 0) for(let d of debts) financeHtml += `<tr><td>${renderMiniAvatar(d.player,24)} ${escapeHtml(d.player)}</td><td class="badge-owing">$${d.debt}</td></tr>`;
+        else financeHtml += `<tr><td colspan="2" style="text-align:center;">✨ No outstanding debts ✨</td></tr>`;
+        financeHtml += `</tbody></table></div>`;
+        
+        let manualHtml = `<div class="card"><h2>✍️ Manual Attendance (Verbal Confirmation)</h2><select id="manualPlayerSelect"><option value="">-- Select Player --</option>${players.map(p=>`<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('')}</select>
+            <button id="manualAddBtn" class="admin-action-btn" style="background:#28a745;">➕ Add to Playing List</button></div>`;
+        
+        let guestHtml = `<div class="card"><h2>🎭 Manage Guests</h2>`;
+        for(let g of participants.guests) {
+            guestHtml += `<div class="admin-team-item"><span><i class="fas fa-user-friends"></i> <strong>${escapeHtml(g.name)}</strong> (by ${escapeHtml(g.addedBy)})</span><button class="remove-guest-btn" data-guest="${escapeHtml(g.name)}" data-date="${nextWeek.dateStr}" style="background:#dc3545; padding:6px 14px;">Remove</button></div>`;
+        }
+        guestHtml += `<div style="margin-top:12px;"><input type="text" id="adminGuestName" placeholder="New guest name"><button id="adminAddGuestBtn" style="margin-top:8px;">+ Add Guest</button></div></div>`;
+        
+        let teamHtml = `<div class="card"><h2>⚽ Assign Teams</h2>`;
         for(let p of allList) {
             const currentTeam = currentAssignments[p.name] || currentAssignments[`guest_${p.name}`] || "";
-            html += `<div class="admin-team-item"><div><strong>${renderMiniAvatar(p.name,28)} ${escapeHtml(p.name)}</strong> ${p.isGuest ? '<span style="background:#28a745; color:white; padding:2px 8px; border-radius:20px;">GUEST</span>' : ''}</div>
+            teamHtml += `<div class="admin-team-item"><div><strong>${renderMiniAvatar(p.name,28)} ${escapeHtml(p.name)}</strong> ${p.isGuest ? '<span style="background:#28a745; color:white; padding:2px 8px; border-radius:20px;">GUEST</span>' : ''}</div>
                 <select class="team-select" data-name="${escapeHtml(p.name)}" data-isguest="${p.isGuest}"><option value="">— Team —</option><option value="yellow" ${currentTeam==="yellow"?"selected":""}>🟡 Yellow</option><option value="orange" ${currentTeam==="orange"?"selected":""}>🟠 Orange</option></select></div>`;
         }
-        html += `<div class="flex-btns"><button id="autoBalanceBtn" class="btn-outline">🎲 Auto-Balance</button><button id="saveTeamsBtn">💾 Save Teams</button></div></div>
-            <div class="card"><h2>🏆 Record Match Result</h2><select id="pastWeekSelect"><option value="">-- Select Past Week --</option>${getPastWeeks().map(w=>`<option value="${w.dateStr}">${w.label}</option>`).join('')}</select>
-            <div id="resultForm" style="display:none; margin-top:12px;"><input type="number" id="yellowScore" placeholder="Yellow Score" style="width:48%; display:inline-block; margin-right:4%;"><input type="number" id="orangeScore" placeholder="Orange Score" style="width:48%; display:inline-block;"><button id="saveResultBtn" style="margin-top:12px;">Save Result</button></div></div>`;
-        document.getElementById("page-admin").innerHTML = html;
+        teamHtml += `<div class="flex-btns"><button id="autoBalanceBtn" class="btn-outline">🎲 Auto-Balance</button><button id="saveTeamsBtn">💾 Save Teams</button></div></div>`;
         
+        let resultHtml = `<div class="card"><h2>🏆 Record Match Result</h2><select id="pastWeekSelect"><option value="">-- Select Past Week --</option>${getPastWeeks().map(w=>`<option value="${w.dateStr}">${w.label}</option>`).join('')}</select>
+            <div id="resultForm" style="display:none; margin-top:12px;"><input type="number" id="yellowScore" placeholder="Yellow Score" style="width:48%; display:inline-block; margin-right:4%;"><input type="number" id="orangeScore" placeholder="Orange Score" style="width:48%; display:inline-block;"><button id="saveResultBtn" style="margin-top:12px;">Save Result</button></div></div>`;
+        
+        document.getElementById("page-admin").innerHTML = financeHtml + manualHtml + guestHtml + teamHtml + resultHtml;
+        
+        document.querySelectorAll(".markPaidBtn").forEach(btn => btn.addEventListener("click", () => markPayment(btn.dataset.player, btn.dataset.date)));
         document.getElementById("manualAddBtn")?.addEventListener("click", () => { const p = document.getElementById("manualPlayerSelect")?.value; if(p) adminAddManualAttendance(p); });
         document.getElementById("adminAddGuestBtn")?.addEventListener("click", async () => { const gn = document.getElementById("adminGuestName")?.value.trim(); if(gn) await addGuest(gn); document.getElementById("adminGuestName").value=""; renderAdminPage(); });
         document.querySelectorAll(".remove-guest-btn").forEach(btn => btn.addEventListener("click", () => removeGuest(btn.dataset.guest, btn.dataset.date)));
