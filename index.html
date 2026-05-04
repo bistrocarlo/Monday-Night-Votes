@@ -80,6 +80,7 @@
         .chat-bubble { background: #f1f5f9; padding: 10px 14px; border-radius: 18px; font-size: 14px; word-wrap: break-word; }
         .chat-time { font-size: 10px; color: #94a3b8; margin-top: 2px; }
         .loading { text-align: center; padding: 40px; color: #64748b; }
+        .info-bar { background: #e8f0fe; border-radius: 16px; padding: 10px; font-size: 12px; margin-bottom: 16px; text-align: center; color: #1a73e8; font-weight: 500; }
         @media (max-width: 450px) { .nav-module { padding: 6px 10px; font-size: 10px; } }
     </style>
 </head>
@@ -127,53 +128,41 @@
         for(let i=0;i<name.length;i++) hash = ((hash<<5)-hash)+name.charCodeAt(i);
         return colors[Math.abs(hash)%colors.length];
     }
-    function renderAvatar(name, size=50) {
-        return `<div class="profile-avatar" style="background:${getAvatarColor(name)}; width:${size}px; height:${size}px; font-size:${size/2.5}px;">${getInitials(name)}</div>`;
-    }
-    function renderMiniAvatar(name, size=28) {
-        return `<div class="player-avatar-small" style="background:${getAvatarColor(name)}; width:${size}px; height:${size}px; font-size:${size/2}px;">${getInitials(name)}</div>`;
-    }
+    function renderAvatar(name, size=50) { return `<div class="profile-avatar" style="background:${getAvatarColor(name)}; width:${size}px; height:${size}px; font-size:${size/2.5}px;">${getInitials(name)}</div>`; }
+    function renderMiniAvatar(name, size=28) { return `<div class="player-avatar-small" style="background:${getAvatarColor(name)}; width:${size}px; height:${size}px; font-size:${size/2}px;">${getInitials(name)}</div>`; }
     
-    // ============================================================
-    // CRITICAL FIX: Get current game week with 9:30pm AEST cutoff
-    // ============================================================
-    function getCurrentAESTDateTime() {
+    // ========== AEST TIMEZONE WITH 9:30PM MONDAY CUTOFF ==========
+    function getAESTNow() {
         const now = new Date();
         const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-        return new Date(utc + (10 * 3600000)); // AEST = UTC+10
+        return new Date(utc + (10 * 3600000));
     }
     
     function getCurrentGameWeek() {
-        const aestNow = getCurrentAESTDateTime();
-        const day = aestNow.getDay(); // 0=Sunday, 1=Monday, 2=Tuesday...
+        const aestNow = getAESTNow();
+        const day = aestNow.getDay();      // 1 = Monday
         const hour = aestNow.getHours();
         const minute = aestNow.getMinutes();
         
-        // Start with the current date
+        // Start with today's date
         let gameMonday = new Date(aestNow);
         
         if (day !== 1) {
             // Not Monday: go back to the most recent Monday
-            const daysToSubtract = day === 0 ? 6 : day - 1;
+            const daysToSubtract = (day === 0) ? 6 : (day - 1);
             gameMonday.setDate(aestNow.getDate() - daysToSubtract);
         }
-        // else day === 1 (it's Monday) - keep as is (today's Monday)
-        
-        // Check if we need to roll to NEXT Monday
-        // Only roll forward if it's Monday AND time is 9:30pm or later
+        // If it's Monday AND time is 9:30pm or later, move to NEXT Monday
         if (day === 1 && (hour > 21 || (hour === 21 && minute >= 30))) {
-            // After 9:30pm on Monday - show next Monday's game
             gameMonday.setDate(gameMonday.getDate() + 7);
         }
-        
-        // Set to 8pm for consistent display
-        gameMonday.setHours(20, 0, 0, 0);
+        gameMonday.setHours(0, 0, 0, 0);
         return gameMonday.toISOString().split('T')[0];
     }
     
-    function getCurrentAESTDate() { 
-        const aestNow = getCurrentAESTDateTime();
-        return aestNow.toISOString().split('T')[0];
+    function getGameLabelFromDateStr(dateStr) {
+        const d = new Date(dateStr + "T00:00:00+10:00");
+        return `Mon ${d.toLocaleDateString('en-AU', {day:'numeric', month:'short'})}`;
     }
     
     function generateAllGameWeeks() {
@@ -187,18 +176,16 @@
         let secondLast = new Date(lastMonday);
         secondLast.setDate(secondLast.getDate() - 7);
         while(cur <= secondLast) {
-            weeks.push({ 
-                dateStr: cur.toISOString().split('T')[0], 
-                label: `Mon ${cur.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}` 
-            });
+            weeks.push({ dateStr: cur.toISOString().split('T')[0], label: getGameLabelFromDateStr(cur.toISOString().split('T')[0]) });
             cur.setDate(cur.getDate() + 7);
         }
         return weeks;
     }
     
     const ALL_WEEKS = generateAllGameWeeks();
-    const getFutureWeeks = () => ALL_WEEKS.filter(w => w.dateStr >= getCurrentGameWeek());
-    const getPastWeeks = () => ALL_WEEKS.filter(w => w.dateStr < getCurrentGameWeek()).reverse();
+    const CURRENT_GAME_STR = getCurrentGameWeek();
+    const getFutureWeeks = () => ALL_WEEKS.filter(w => w.dateStr >= CURRENT_GAME_STR);
+    const getPastWeeks = () => ALL_WEEKS.filter(w => w.dateStr < CURRENT_GAME_STR).reverse();
     
     function getAllParticipants(gameDate) {
         const playersIn = attendance.filter(a => a.gameDate === gameDate && a.status === 'in').map(a => a.player);
@@ -211,9 +198,7 @@
         try {
             const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=-37.77&longitude=144.97&hourly=temperature_2m,precipitation_probability,weathercode&timezone=Australia/Melbourne&forecast_days=1');
             const data = await response.json();
-            const nextMonday = new Date(); 
-            nextMonday.setDate(nextMonday.getDate() + ((1 + 7 - nextMonday.getDay()) % 7)); 
-            nextMonday.setHours(20,0,0,0);
+            const nextMonday = new Date(); nextMonday.setDate(nextMonday.getDate() + ((1 + 7 - nextMonday.getDay()) % 7)); nextMonday.setHours(20,0,0,0);
             const mondayDateStr = nextMonday.toISOString().split('T')[0];
             for(let i=0;i<data.hourly.time.length;i++) {
                 const hourDate = data.hourly.time[i].split('T')[0];
@@ -341,16 +326,12 @@
     
     async function setAttendance(status) {
         if(!currentUser) { alert("Login required"); return; }
-        const nextWeek = getFutureWeeks()[0];
-        if(!nextWeek) return;
-        await saveAttendance({ player: currentUser.name, gameDate: nextWeek.dateStr, status: status });
+        await saveAttendance({ player: currentUser.name, gameDate: CURRENT_GAME_STR, status: status });
     }
     
     async function addGuest(guestName) {
-        const nextWeek = getFutureWeeks()[0];
-        if(!nextWeek) return;
-        if(guests.some(g => g.gameDate === nextWeek.dateStr && g.guestName === guestName.trim())) { alert("Guest already exists"); return; }
-        await saveGuest({ guestName: guestName.trim(), gameDate: nextWeek.dateStr, addedBy: currentUser?.name || "Admin" });
+        if(guests.some(g => g.gameDate === CURRENT_GAME_STR && g.guestName === guestName.trim())) { alert("Guest already exists"); return; }
+        await saveGuest({ guestName: guestName.trim(), gameDate: CURRENT_GAME_STR, addedBy: currentUser?.name || "Admin" });
         const input = document.getElementById("guestNameInput");
         if(input) input.value = "";
     }
@@ -398,7 +379,6 @@
             <div id="chatMessagesList" style="height: 400px; overflow-y: auto; background: #f8fafc; border-radius: 20px; padding: 12px; margin-bottom: 12px; display: flex; flex-direction: column;"></div>
             <div style="display: flex; gap: 8px;"><input type="text" id="chatInput" placeholder="Type your message..." style="flex:1;"><button id="chatSendBtn">Send</button></div>
         </div>`;
-        
         if(firebaseReady && db) {
             if(chatUnsubscribe) chatUnsubscribe();
             chatUnsubscribe = db.collection("chatMessages").orderBy("timestamp", "asc").onSnapshot(snapshot => {
@@ -408,16 +388,12 @@
                 snapshot.forEach(doc => {
                     const msg = doc.data();
                     const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "";
-                    html += `<div class="chat-message">
-                        <div class="chat-name"><i class="fas fa-user-circle"></i> ${escapeHtml(msg.name)} <span class="chat-time">${time}</span></div>
-                        <div class="chat-bubble">${escapeHtml(msg.message)}</div>
-                    </div>`;
+                    html += `<div class="chat-message"><div class="chat-name"><i class="fas fa-user-circle"></i> ${escapeHtml(msg.name)} <span class="chat-time">${time}</span></div><div class="chat-bubble">${escapeHtml(msg.message)}</div></div>`;
                 });
                 chatDiv.innerHTML = html || "<div style='text-align:center; color:#94a3b8; padding:20px;'>No messages yet. Start the conversation!</div>";
                 chatDiv.scrollTop = chatDiv.scrollHeight;
             });
         }
-        
         document.getElementById("chatSendBtn")?.addEventListener("click", async () => {
             const input = document.getElementById("chatInput");
             if(input?.value.trim()) {
@@ -428,14 +404,19 @@
         document.getElementById("chatInput")?.addEventListener("keypress", (e) => { if(e.key === "Enter") document.getElementById("chatSendBtn")?.click(); });
     }
     
+    // All render functions
     function renderHomePage() {
         const container = document.getElementById("homeContainer");
         if(!container) return;
         const nextWeek = getFutureWeeks()[0];
-        const currentStatus = nextWeek ? attendance.find(a => a.gameDate === nextWeek.dateStr && a.player === currentUser?.name)?.status : null;
-        const participants = nextWeek ? getAllParticipants(nextWeek.dateStr) : { players: [], guests: [] };
+        const currentStatus = attendance.find(a => a.gameDate === CURRENT_GAME_STR && a.player === currentUser?.name)?.status;
+        const participants = getAllParticipants(CURRENT_GAME_STR);
+        const aestNow = getAESTNow();
+        const cutoffInfo = `AEST: ${aestNow.toLocaleString('en-AU')} | ${aestNow.getDay() === 1 && (aestNow.getHours() > 21 || (aestNow.getHours() === 21 && aestNow.getMinutes() >= 30)) ? 'After 9:30pm → Showing NEXT Monday' : 'Before 9:30pm → Showing TONIGHT\'S Monday'}`;
+        
         container.innerHTML = `
-            <div class="attendance-card"><h2><i class="fas fa-futbol"></i> ${nextWeek?.label || "This Monday"} • 8pm</h2><div>Clifton Park, Brunswick</div>
+            <div class="info-bar"><i class="fas fa-clock"></i> ${cutoffInfo}</div>
+            <div class="attendance-card"><h2><i class="fas fa-futbol"></i> ${nextWeek?.label || getGameLabelFromDateStr(CURRENT_GAME_STR)} • 8pm</h2><div>Clifton Park, Brunswick</div>
             <div class="big-buttons"><button id="homePlayBtn" class="btn-play-big">✅ I'M PLAYING</button><button id="homeSitBtn" class="btn-sit-big">❌ CAN'T PLAY</button></div>
             <div class="status-text">${currentStatus === 'in' ? '✓ You are PLAYING' : (currentStatus === 'out' ? '✗ You are NOT PLAYING' : 'Tap above to set your attendance')}</div></div>
             <div class="playing-list"><div class="playing-title">🟢 Playing (${participants.players.length})</div><div class="attendee-tags">${participants.players.map(p => `<span class="attendee-tag">${renderMiniAvatar(p,28)} ${escapeHtml(p)}</span>`).join('') || '<span>No players yet</span>'}</div></div>
@@ -489,15 +470,16 @@
         if(!container) return;
         const nextWeek = getFutureWeeks()[0];
         if(!nextWeek) { container.innerHTML = `<div class="card"><h2>⚽ Teams</h2><p>No upcoming games.</p></div>`; return; }
-        const participants = getAllParticipants(nextWeek.dateStr);
+        const participants = getAllParticipants(CURRENT_GAME_STR);
         const allList = [...participants.players.map(p=>({name:p,isGuest:false})), ...participants.guests.map(g=>({name:g.name,isGuest:true}))];
-        const assignments = teamAssignments[nextWeek.dateStr] || {};
+        const assignments = teamAssignments[CURRENT_GAME_STR] || {};
         const yellow=[], orange=[];
         for(let p of allList) {
             const team = assignments[p.name] || assignments[`guest_${p.name}`];
             if(team==="yellow") yellow.push(p); else if(team==="orange") orange.push(p);
         }
-        container.innerHTML = `<div class="card" style="background:linear-gradient(135deg,#1a73e8,#0d5bbf); color:white; text-align:center;"><h2>${nextWeek.label}</h2><p>👑 Captain: ${weeklyCaptain}</p></div>
+        container.innerHTML = `<div class="info-bar"><i class="fas fa-info-circle"></i> Showing teams for: ${nextWeek.label} (${CURRENT_GAME_STR})</div>
+            <div class="card" style="background:linear-gradient(135deg,#1a73e8,#0d5bbf); color:white; text-align:center;"><h2>${nextWeek.label}</h2><p>👑 Captain: ${weeklyCaptain}</p></div>
             <div class="card"><div class="team-row"><div class="team-box"><div class="team-yellow">🟡 YELLOW (${yellow.length})</div><div class="player-list">${yellow.map(p=>`<div class="player-tag">${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}${p.isGuest?'<span style="background:#28a745; font-size:9px; padding:2px 6px; border-radius:20px; margin-left:4px;">Guest</span>':''}</div>`).join('')||'<span class="player-tag">—</span>'}</div></div>
             <div class="team-box"><div class="team-orange">🟠 ORANGE (${orange.length})</div><div class="player-list">${orange.map(p=>`<div class="player-tag">${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}${p.isGuest?'<span style="background:#28a745; font-size:9px; padding:2px 6px; border-radius:20px; margin-left:4px;">Guest</span>':''}</div>`).join('')||'<span class="player-tag">—</span>'}</div></div></div></div>
             <div class="playing-list"><div class="playing-title">📋 All Participants (${allList.length})</div><div class="attendee-tags">${allList.map(p=>`<span class="attendee-tag">${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}${p.isGuest?' 🎭':''}</span>`).join('')}</div></div>`;
@@ -561,9 +543,9 @@
             if(container) container.innerHTML = `<div class="card"><h2>No upcoming games</h2></div>`; 
             return; 
         }
-        const participants = getAllParticipants(nextWeek.dateStr);
+        const participants = getAllParticipants(CURRENT_GAME_STR);
         const allList = [...participants.players.map(p=>({name:p,isGuest:false})), ...participants.guests.map(g=>({name:g.name,isGuest:true,addedBy:g.addedBy}))];
-        const currentAssignments = teamAssignments[nextWeek.dateStr] || {};
+        const currentAssignments = teamAssignments[CURRENT_GAME_STR] || {};
         
         const totalCollected = payments.reduce((sum, p) => sum + p.amount, 0);
         let debts = [];
@@ -581,9 +563,9 @@
         let financeHtml = `<div class="card"><h2>💰 Financial Ledger</h2><div class="finance-summary"><div class="amount">$${totalCollected}</div><p>Total Treasury Balance</p></div>
             <h3>📅 ${nextWeek.label} - Payment Status</h3><table class="data-table"><thead><tr><th>Player</th><th>Status</th><th>Action</th></tr></thead><tbody>`;
         for(let player of participants.players) {
-            const isPaid = payments.some(p => p.player === player && p.gameDate === nextWeek.dateStr);
+            const isPaid = payments.some(p => p.player === player && p.gameDate === CURRENT_GAME_STR);
             financeHtml += `<tr><td>${renderMiniAvatar(player,24)} ${escapeHtml(player)}</td><td>${isPaid ? '<span class="badge-paid">✓ PAID</span>' : '<span class="badge-owing">❌ OWING</span>'}</td>
-                <td>${!isPaid ? `<button class="markPaidBtn" data-player="${escapeHtml(player)}" data-date="${nextWeek.dateStr}" style="padding:6px 12px;">Record $${WEEKLY_FEE}</button>` : '—'}</td></tr>`;
+                <td>${!isPaid ? `<button class="markPaidBtn" data-player="${escapeHtml(player)}" data-date="${CURRENT_GAME_STR}" style="padding:6px 12px;">Record $${WEEKLY_FEE}</button>` : '—'}</td></tr>`;
         }
         financeHtml += `</tbody></table><h3 style="margin-top:16px;">📜 Outstanding Debts</h3><table class="data-table"><thead><tr><th>Player</th><th>Amount Owed</th></tr></thead><tbody>`;
         if(debts.length > 0) for(let d of debts) financeHtml += `<tr><td>${renderMiniAvatar(d.player,24)} ${escapeHtml(d.player)}</td><td class="badge-owing">$${d.debt}</td></tr>`;
@@ -595,7 +577,7 @@
         
         let guestHtml = `<div class="card"><h2>🎭 Manage Guests</h2>`;
         for(let g of participants.guests) {
-            guestHtml += `<div class="admin-team-item"><span><i class="fas fa-user-friends"></i> <strong>${escapeHtml(g.name)}</strong> (by ${escapeHtml(g.addedBy)})</span><button class="remove-guest-btn" data-guest="${escapeHtml(g.name)}" data-date="${nextWeek.dateStr}" style="background:#dc3545; padding:6px 14px;">Remove</button></div>`;
+            guestHtml += `<div class="admin-team-item"><span><i class="fas fa-user-friends"></i> <strong>${escapeHtml(g.name)}</strong> (by ${escapeHtml(g.addedBy)})</span><button class="remove-guest-btn" data-guest="${escapeHtml(g.name)}" data-date="${CURRENT_GAME_STR}" style="background:#dc3545; padding:6px 14px;">Remove</button></div>`;
         }
         guestHtml += `<div><input type="text" id="adminGuestName" placeholder="New guest name"><button id="adminAddGuestBtn">+ Add Guest</button></div></div>`;
         
@@ -625,16 +607,16 @@
             const newAssign={};
             shuffled.slice(0,mid).forEach(p=>{newAssign[p.isGuest?`guest_${p.name}`:p.name]="yellow";});
             shuffled.slice(mid).forEach(p=>{newAssign[p.isGuest?`guest_${p.name}`:p.name]="orange";});
-            teamAssignments[nextWeek.dateStr]=newAssign;
-            saveTeamAssignments(nextWeek.dateStr, teamAssignments[nextWeek.dateStr]);
+            teamAssignments[CURRENT_GAME_STR]=newAssign;
+            saveTeamAssignments(CURRENT_GAME_STR, teamAssignments[CURRENT_GAME_STR]);
             renderAdminPage(); renderThisWeeksTeamsPage();
         });
         document.getElementById("saveTeamsBtn")?.addEventListener("click", async () => {
             const selects = document.querySelectorAll(".team-select");
             const newAssign={};
             selects.forEach(sel=>{const name=sel.dataset.name, isGuest=sel.dataset.isguest==="true", team=sel.value; if(team) newAssign[isGuest?`guest_${name}`:name]=team;});
-            teamAssignments[nextWeek.dateStr]=newAssign;
-            await saveTeamAssignments(nextWeek.dateStr, teamAssignments[nextWeek.dateStr]);
+            teamAssignments[CURRENT_GAME_STR]=newAssign;
+            await saveTeamAssignments(CURRENT_GAME_STR, teamAssignments[CURRENT_GAME_STR]);
             alert("Teams saved!");
         });
         document.getElementById("pastWeekSelect")?.addEventListener("change", (e) => { const form = document.getElementById("resultForm"); if(form) form.style.display = e.target.value ? "block" : "none"; });
