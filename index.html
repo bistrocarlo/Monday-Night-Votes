@@ -80,15 +80,15 @@
         .chat-bubble { background: #f1f5f9; padding: 10px 14px; border-radius: 18px; font-size: 14px; word-wrap: break-word; }
         .chat-time { font-size: 10px; color: #94a3b8; margin-top: 2px; }
         .loading { text-align: center; padding: 40px; color: #64748b; }
-        .info-bar { background: #e8f0fe; border-radius: 16px; padding: 10px; font-size: 12px; margin-bottom: 16px; text-align: center; color: #1a73e8; font-weight: 500; }
         @media (max-width: 450px) { .nav-module { padding: 6px 10px; font-size: 10px; } }
+        .info-note { background: #e8f0fe; border-radius: 16px; padding: 10px; font-size: 12px; text-align: center; margin-bottom: 16px; color: #1a73e8; }
     </style>
 </head>
 <body>
 <div class="app" id="app"><div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div></div>
 
 <script>
-    // Default player list
+    // Default player list (hardcoded for immediate display)
     const DEFAULT_PLAYERS = ["Alex Rowe","Ali Mekawy","Carlo","Charlie","Chris Del Monaco","Chris M","Chris S","Danny","Dante","David","Dimitri","Enzo","Farid","Faros","Frank","George B","George T","Ivan","James Zoumis","James","Joe T","Joey","Kia","Leo","Manoli","Marco","Mario","Maurice","Nector","Paul","Perri","Peter","Ralph","Rocco","Stav","Stevan","Theo","Tony EH","Vasilis"].sort();
     
     const firebaseConfig = {
@@ -128,40 +128,41 @@
         for(let i=0;i<name.length;i++) hash = ((hash<<5)-hash)+name.charCodeAt(i);
         return colors[Math.abs(hash)%colors.length];
     }
-    function renderAvatar(name, size=50) { return `<div class="profile-avatar" style="background:${getAvatarColor(name)}; width:${size}px; height:${size}px; font-size:${size/2.5}px;">${getInitials(name)}</div>`; }
-    function renderMiniAvatar(name, size=28) { return `<div class="player-avatar-small" style="background:${getAvatarColor(name)}; width:${size}px; height:${size}px; font-size:${size/2}px;">${getInitials(name)}</div>`; }
+    function renderAvatar(name, size=50) {
+        return `<div class="profile-avatar" style="background:${getAvatarColor(name)}; width:${size}px; height:${size}px; font-size:${size/2.5}px;">${getInitials(name)}</div>`;
+    }
+    function renderMiniAvatar(name, size=28) {
+        return `<div class="player-avatar-small" style="background:${getAvatarColor(name)}; width:${size}px; height:${size}px; font-size:${size/2}px;">${getInitials(name)}</div>`;
+    }
     
-    // ========== AEST TIMEZONE WITH 9:30PM MONDAY CUTOFF ==========
-    function getAESTNow() {
+    // Date helpers - MODIFIED: cutoff changed from 8:00pm to 9:30pm AEST
+    function getCurrentAESTDateTime() {
         const now = new Date();
         const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
         return new Date(utc + (10 * 3600000));
     }
     
     function getCurrentGameWeek() {
-        const aestNow = getAESTNow();
-        const day = aestNow.getDay();      // 1 = Monday
+        const aestNow = getCurrentAESTDateTime();
+        const day = aestNow.getDay();
         const hour = aestNow.getHours();
         const minute = aestNow.getMinutes();
         
-        // Start with today's date
-        let gameMonday = new Date(aestNow);
-        
+        let targetMonday = new Date(aestNow);
         if (day !== 1) {
-            // Not Monday: go back to the most recent Monday
-            const daysToSubtract = (day === 0) ? 6 : (day - 1);
-            gameMonday.setDate(aestNow.getDate() - daysToSubtract);
+            const daysToSubtract = day === 0 ? 6 : day - 1;
+            targetMonday.setDate(aestNow.getDate() - daysToSubtract);
         }
-        // If it's Monday AND time is 9:30pm or later, move to NEXT Monday
+        // MODIFIED: 9:30pm cutoff instead of 8:00pm
         if (day === 1 && (hour > 21 || (hour === 21 && minute >= 30))) {
-            gameMonday.setDate(gameMonday.getDate() + 7);
+            targetMonday.setDate(targetMonday.getDate() + 7);
         }
-        gameMonday.setHours(0, 0, 0, 0);
-        return gameMonday.toISOString().split('T')[0];
+        targetMonday.setHours(20, 0, 0, 0);
+        return targetMonday.toISOString().split('T')[0];
     }
     
-    function getGameLabelFromDateStr(dateStr) {
-        const d = new Date(dateStr + "T00:00:00+10:00");
+    function formatDateLabel(dateStr) {
+        const d = new Date(dateStr + "T12:00:00+10:00");
         return `Mon ${d.toLocaleDateString('en-AU', {day:'numeric', month:'short'})}`;
     }
     
@@ -176,12 +177,11 @@
         let secondLast = new Date(lastMonday);
         secondLast.setDate(secondLast.getDate() - 7);
         while(cur <= secondLast) {
-            weeks.push({ dateStr: cur.toISOString().split('T')[0], label: getGameLabelFromDateStr(cur.toISOString().split('T')[0]) });
+            weeks.push({ dateStr: cur.toISOString().split('T')[0], label: formatDateLabel(cur.toISOString().split('T')[0]) });
             cur.setDate(cur.getDate() + 7);
         }
         return weeks;
     }
-    
     const ALL_WEEKS = generateAllGameWeeks();
     const CURRENT_GAME_STR = getCurrentGameWeek();
     const getFutureWeeks = () => ALL_WEEKS.filter(w => w.dateStr >= CURRENT_GAME_STR);
@@ -326,12 +326,16 @@
     
     async function setAttendance(status) {
         if(!currentUser) { alert("Login required"); return; }
-        await saveAttendance({ player: currentUser.name, gameDate: CURRENT_GAME_STR, status: status });
+        const nextWeek = getFutureWeeks()[0];
+        if(!nextWeek) return;
+        await saveAttendance({ player: currentUser.name, gameDate: nextWeek.dateStr, status: status });
     }
     
     async function addGuest(guestName) {
-        if(guests.some(g => g.gameDate === CURRENT_GAME_STR && g.guestName === guestName.trim())) { alert("Guest already exists"); return; }
-        await saveGuest({ guestName: guestName.trim(), gameDate: CURRENT_GAME_STR, addedBy: currentUser?.name || "Admin" });
+        const nextWeek = getFutureWeeks()[0];
+        if(!nextWeek) return;
+        if(guests.some(g => g.gameDate === nextWeek.dateStr && g.guestName === guestName.trim())) { alert("Guest already exists"); return; }
+        await saveGuest({ guestName: guestName.trim(), gameDate: nextWeek.dateStr, addedBy: currentUser?.name || "Admin" });
         const input = document.getElementById("guestNameInput");
         if(input) input.value = "";
     }
@@ -371,7 +375,7 @@
         if(isAdminLoggedIn) renderAdminPage();
     }
     
-    // Chat render
+    // Chat render with real-time listener
     function renderChatPage() {
         const container = document.getElementById("page-chat");
         if(!container) return;
@@ -379,6 +383,7 @@
             <div id="chatMessagesList" style="height: 400px; overflow-y: auto; background: #f8fafc; border-radius: 20px; padding: 12px; margin-bottom: 12px; display: flex; flex-direction: column;"></div>
             <div style="display: flex; gap: 8px;"><input type="text" id="chatInput" placeholder="Type your message..." style="flex:1;"><button id="chatSendBtn">Send</button></div>
         </div>`;
+        
         if(firebaseReady && db) {
             if(chatUnsubscribe) chatUnsubscribe();
             chatUnsubscribe = db.collection("chatMessages").orderBy("timestamp", "asc").onSnapshot(snapshot => {
@@ -388,12 +393,16 @@
                 snapshot.forEach(doc => {
                     const msg = doc.data();
                     const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "";
-                    html += `<div class="chat-message"><div class="chat-name"><i class="fas fa-user-circle"></i> ${escapeHtml(msg.name)} <span class="chat-time">${time}</span></div><div class="chat-bubble">${escapeHtml(msg.message)}</div></div>`;
+                    html += `<div class="chat-message">
+                        <div class="chat-name"><i class="fas fa-user-circle"></i> ${escapeHtml(msg.name)} <span class="chat-time">${time}</span></div>
+                        <div class="chat-bubble">${escapeHtml(msg.message)}</div>
+                    </div>`;
                 });
                 chatDiv.innerHTML = html || "<div style='text-align:center; color:#94a3b8; padding:20px;'>No messages yet. Start the conversation!</div>";
                 chatDiv.scrollTop = chatDiv.scrollHeight;
             });
         }
+        
         document.getElementById("chatSendBtn")?.addEventListener("click", async () => {
             const input = document.getElementById("chatInput");
             if(input?.value.trim()) {
@@ -409,14 +418,14 @@
         const container = document.getElementById("homeContainer");
         if(!container) return;
         const nextWeek = getFutureWeeks()[0];
-        const currentStatus = attendance.find(a => a.gameDate === CURRENT_GAME_STR && a.player === currentUser?.name)?.status;
-        const participants = getAllParticipants(CURRENT_GAME_STR);
-        const aestNow = getAESTNow();
-        const cutoffInfo = `AEST: ${aestNow.toLocaleString('en-AU')} | ${aestNow.getDay() === 1 && (aestNow.getHours() > 21 || (aestNow.getHours() === 21 && aestNow.getMinutes() >= 30)) ? 'After 9:30pm → Showing NEXT Monday' : 'Before 9:30pm → Showing TONIGHT\'S Monday'}`;
+        const currentStatus = nextWeek ? attendance.find(a => a.gameDate === nextWeek.dateStr && a.player === currentUser?.name)?.status : null;
+        const participants = nextWeek ? getAllParticipants(nextWeek.dateStr) : { players: [], guests: [] };
+        const aestNow = getCurrentAESTDateTime();
+        const isPastCutoff = (aestNow.getDay() === 1 && (aestNow.getHours() > 21 || (aestNow.getHours() === 21 && aestNow.getMinutes() >= 30)));
         
         container.innerHTML = `
-            <div class="info-bar"><i class="fas fa-clock"></i> ${cutoffInfo}</div>
-            <div class="attendance-card"><h2><i class="fas fa-futbol"></i> ${nextWeek?.label || getGameLabelFromDateStr(CURRENT_GAME_STR)} • 8pm</h2><div>Clifton Park, Brunswick</div>
+            <div class="info-note"><i class="fas fa-clock"></i> AEST: ${aestNow.toLocaleString('en-AU')}<br>${isPastCutoff ? '⚠️ After 9:30pm - Showing NEXT Monday' : '✅ Before 9:30pm - Showing TONIGHT\'S Monday'}</div>
+            <div class="attendance-card"><h2><i class="fas fa-futbol"></i> ${nextWeek?.label || "This Monday"} • 8pm</h2><div>Clifton Park, Brunswick</div>
             <div class="big-buttons"><button id="homePlayBtn" class="btn-play-big">✅ I'M PLAYING</button><button id="homeSitBtn" class="btn-sit-big">❌ CAN'T PLAY</button></div>
             <div class="status-text">${currentStatus === 'in' ? '✓ You are PLAYING' : (currentStatus === 'out' ? '✗ You are NOT PLAYING' : 'Tap above to set your attendance')}</div></div>
             <div class="playing-list"><div class="playing-title">🟢 Playing (${participants.players.length})</div><div class="attendee-tags">${participants.players.map(p => `<span class="attendee-tag">${renderMiniAvatar(p,28)} ${escapeHtml(p)}</span>`).join('') || '<span>No players yet</span>'}</div></div>
@@ -460,7 +469,7 @@
             return bTotal - aTotal;
         }).slice(0,10);
         container.innerHTML = `<div class="card"><h2>🏆 All-Time Leaderboard</h2>
-            <div><h3>⚽ Top Goal Scorers</h3><table class="data-table">${topGoals.map((p,i)=>`<tr><td style="width:40px;"><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td style="font-weight:700;">${p.goals} goals</td></tr>`).join('')}</table></div>
+            <div><h3>⚽ Top Goal Scorers</h3><table class="data-table">${topGoals.map((p,i)=>`<td><td style="width:40px;"><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td style="font-weight:700;">${p.goals} goals</td></tr>`).join('')}</table></div>
             <div style="margin-top:16px;"><h3>🏃 Most Games Played</h3><table class="data-table">${topApps.map((p,i)=>`<tr><td style="width:40px;"><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td style="font-weight:700;">${p.appearances + (playerProfiles[p.name]?.openingBalanceGames || 0)} games</td></tr>`).join('')}</table></div>
         </div>`;
     }
@@ -470,16 +479,15 @@
         if(!container) return;
         const nextWeek = getFutureWeeks()[0];
         if(!nextWeek) { container.innerHTML = `<div class="card"><h2>⚽ Teams</h2><p>No upcoming games.</p></div>`; return; }
-        const participants = getAllParticipants(CURRENT_GAME_STR);
+        const participants = getAllParticipants(nextWeek.dateStr);
         const allList = [...participants.players.map(p=>({name:p,isGuest:false})), ...participants.guests.map(g=>({name:g.name,isGuest:true}))];
-        const assignments = teamAssignments[CURRENT_GAME_STR] || {};
+        const assignments = teamAssignments[nextWeek.dateStr] || {};
         const yellow=[], orange=[];
         for(let p of allList) {
             const team = assignments[p.name] || assignments[`guest_${p.name}`];
             if(team==="yellow") yellow.push(p); else if(team==="orange") orange.push(p);
         }
-        container.innerHTML = `<div class="info-bar"><i class="fas fa-info-circle"></i> Showing teams for: ${nextWeek.label} (${CURRENT_GAME_STR})</div>
-            <div class="card" style="background:linear-gradient(135deg,#1a73e8,#0d5bbf); color:white; text-align:center;"><h2>${nextWeek.label}</h2><p>👑 Captain: ${weeklyCaptain}</p></div>
+        container.innerHTML = `<div class="card" style="background:linear-gradient(135deg,#1a73e8,#0d5bbf); color:white; text-align:center;"><h2>${nextWeek.label}</h2><p>👑 Captain: ${weeklyCaptain}</p></div>
             <div class="card"><div class="team-row"><div class="team-box"><div class="team-yellow">🟡 YELLOW (${yellow.length})</div><div class="player-list">${yellow.map(p=>`<div class="player-tag">${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}${p.isGuest?'<span style="background:#28a745; font-size:9px; padding:2px 6px; border-radius:20px; margin-left:4px;">Guest</span>':''}</div>`).join('')||'<span class="player-tag">—</span>'}</div></div>
             <div class="team-box"><div class="team-orange">🟠 ORANGE (${orange.length})</div><div class="player-list">${orange.map(p=>`<div class="player-tag">${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}${p.isGuest?'<span style="background:#28a745; font-size:9px; padding:2px 6px; border-radius:20px; margin-left:4px;">Guest</span>':''}</div>`).join('')||'<span class="player-tag">—</span>'}</div></div></div></div>
             <div class="playing-list"><div class="playing-title">📋 All Participants (${allList.length})</div><div class="attendee-tags">${allList.map(p=>`<span class="attendee-tag">${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}${p.isGuest?' 🎭':''}</span>`).join('')}</div></div>`;
@@ -543,9 +551,9 @@
             if(container) container.innerHTML = `<div class="card"><h2>No upcoming games</h2></div>`; 
             return; 
         }
-        const participants = getAllParticipants(CURRENT_GAME_STR);
+        const participants = getAllParticipants(nextWeek.dateStr);
         const allList = [...participants.players.map(p=>({name:p,isGuest:false})), ...participants.guests.map(g=>({name:g.name,isGuest:true,addedBy:g.addedBy}))];
-        const currentAssignments = teamAssignments[CURRENT_GAME_STR] || {};
+        const currentAssignments = teamAssignments[nextWeek.dateStr] || {};
         
         const totalCollected = payments.reduce((sum, p) => sum + p.amount, 0);
         let debts = [];
@@ -559,15 +567,15 @@
         }
         debts.sort((a,b) => b.debt - a.debt);
         
-        // FIXED: Changed "Total Treasury Collected" to "Total Treasury Balance"
+        // MODIFIED: Changed "Total Treasury Collected" to "Total Treasury Balance"
         let financeHtml = `<div class="card"><h2>💰 Financial Ledger</h2><div class="finance-summary"><div class="amount">$${totalCollected}</div><p>Total Treasury Balance</p></div>
             <h3>📅 ${nextWeek.label} - Payment Status</h3><table class="data-table"><thead><tr><th>Player</th><th>Status</th><th>Action</th></tr></thead><tbody>`;
         for(let player of participants.players) {
-            const isPaid = payments.some(p => p.player === player && p.gameDate === CURRENT_GAME_STR);
+            const isPaid = payments.some(p => p.player === player && p.gameDate === nextWeek.dateStr);
             financeHtml += `<tr><td>${renderMiniAvatar(player,24)} ${escapeHtml(player)}</td><td>${isPaid ? '<span class="badge-paid">✓ PAID</span>' : '<span class="badge-owing">❌ OWING</span>'}</td>
-                <td>${!isPaid ? `<button class="markPaidBtn" data-player="${escapeHtml(player)}" data-date="${CURRENT_GAME_STR}" style="padding:6px 12px;">Record $${WEEKLY_FEE}</button>` : '—'}</td></tr>`;
+                <td>${!isPaid ? `<button class="markPaidBtn" data-player="${escapeHtml(player)}" data-date="${nextWeek.dateStr}" style="padding:6px 12px;">Record $${WEEKLY_FEE}</button>` : '—'}</td></tr>`;
         }
-        financeHtml += `</tbody></table><h3 style="margin-top:16px;">📜 Outstanding Debts</h3><table class="data-table"><thead><tr><th>Player</th><th>Amount Owed</th></tr></thead><tbody>`;
+        financeHtml += `</tbody></table><h3 style="margin-top:16px;">📜 Outstanding Debts</h3><table class="data-table"><thead><td><th>Player</th><th>Amount Owed</th></tr></thead><tbody>`;
         if(debts.length > 0) for(let d of debts) financeHtml += `<tr><td>${renderMiniAvatar(d.player,24)} ${escapeHtml(d.player)}</td><td class="badge-owing">$${d.debt}</td></tr>`;
         else financeHtml += `<tr><td colspan="2" style="text-align:center;">✨ No outstanding debts ✨</td></tr>`;
         financeHtml += `</tbody></table></div>`;
@@ -577,7 +585,7 @@
         
         let guestHtml = `<div class="card"><h2>🎭 Manage Guests</h2>`;
         for(let g of participants.guests) {
-            guestHtml += `<div class="admin-team-item"><span><i class="fas fa-user-friends"></i> <strong>${escapeHtml(g.name)}</strong> (by ${escapeHtml(g.addedBy)})</span><button class="remove-guest-btn" data-guest="${escapeHtml(g.name)}" data-date="${CURRENT_GAME_STR}" style="background:#dc3545; padding:6px 14px;">Remove</button></div>`;
+            guestHtml += `<div class="admin-team-item"><span><i class="fas fa-user-friends"></i> <strong>${escapeHtml(g.name)}</strong> (by ${escapeHtml(g.addedBy)})</span><button class="remove-guest-btn" data-guest="${escapeHtml(g.name)}" data-date="${nextWeek.dateStr}" style="background:#dc3545; padding:6px 14px;">Remove</button></div>`;
         }
         guestHtml += `<div><input type="text" id="adminGuestName" placeholder="New guest name"><button id="adminAddGuestBtn">+ Add Guest</button></div></div>`;
         
@@ -607,16 +615,16 @@
             const newAssign={};
             shuffled.slice(0,mid).forEach(p=>{newAssign[p.isGuest?`guest_${p.name}`:p.name]="yellow";});
             shuffled.slice(mid).forEach(p=>{newAssign[p.isGuest?`guest_${p.name}`:p.name]="orange";});
-            teamAssignments[CURRENT_GAME_STR]=newAssign;
-            saveTeamAssignments(CURRENT_GAME_STR, teamAssignments[CURRENT_GAME_STR]);
+            teamAssignments[nextWeek.dateStr]=newAssign;
+            saveTeamAssignments(nextWeek.dateStr, teamAssignments[nextWeek.dateStr]);
             renderAdminPage(); renderThisWeeksTeamsPage();
         });
         document.getElementById("saveTeamsBtn")?.addEventListener("click", async () => {
             const selects = document.querySelectorAll(".team-select");
             const newAssign={};
             selects.forEach(sel=>{const name=sel.dataset.name, isGuest=sel.dataset.isguest==="true", team=sel.value; if(team) newAssign[isGuest?`guest_${name}`:name]=team;});
-            teamAssignments[CURRENT_GAME_STR]=newAssign;
-            await saveTeamAssignments(CURRENT_GAME_STR, teamAssignments[CURRENT_GAME_STR]);
+            teamAssignments[nextWeek.dateStr]=newAssign;
+            await saveTeamAssignments(nextWeek.dateStr, teamAssignments[nextWeek.dateStr]);
             alert("Teams saved!");
         });
         document.getElementById("pastWeekSelect")?.addEventListener("change", (e) => { const form = document.getElementById("resultForm"); if(form) form.style.display = e.target.value ? "block" : "none"; });
