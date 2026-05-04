@@ -157,7 +157,7 @@
         if (day === 1 && (hour > 21 || (hour === 21 && minute >= 30))) {
             targetMonday.setDate(targetMonday.getDate() + 7);
         }
-        targetMonday.setHours(20, 0, 0, 0);
+        targetMonday.setHours(21, 0, 0, 0);
         return targetMonday.toISOString().split('T')[0];
     }
     
