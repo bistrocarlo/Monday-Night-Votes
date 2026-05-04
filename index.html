@@ -198,7 +198,7 @@
         try {
             const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=-37.77&longitude=144.97&hourly=temperature_2m,precipitation_probability,weathercode&timezone=Australia/Melbourne&forecast_days=1');
             const data = await response.json();
-            const nextMonday = new Date(); nextMonday.setDate(nextMonday.getDate() + ((1 + 7 - nextMonday.getDay()) % 7)); nextMonday.setHours(20,0,0,0);
+            const nextMonday = new Date(); nextMonday.setDate(nextMonday.getDate() + ((1 + 7 - nextMonday.getDay()) % 7)); nextMonday.setHours(21,0,0,0);
             const mondayDateStr = nextMonday.toISOString().split('T')[0];
             for(let i=0;i<data.hourly.time.length;i++) {
                 const hourDate = data.hourly.time[i].split('T')[0];
