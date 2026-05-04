@@ -134,13 +134,14 @@
         return `<div class="player-avatar-small" style="background:${getAvatarColor(name)}; width:${size}px; height:${size}px; font-size:${size/2}px;">${getInitials(name)}</div>`;
     }
     
-    // Date helpers
+    // Date helpers - MODIFIED: cutoff changed from 8:00pm to 9:30pm AEST
     function getCurrentAESTDate() { const now=new Date(); const utc=now.getTime()+(now.getTimezoneOffset()*60000); return new Date(utc+(10*3600000)).toISOString().split('T')[0]; }
     function getCurrentGameWeek() {
         const now=new Date(); const utc=now.getTime()+(now.getTimezoneOffset()*60000);
         const aestNow=new Date(utc+(10*3600000)); const day=aestNow.getDay();
         const currentMonday=new Date(aestNow);
-        if(day===1 && aestNow.getHours()>=20) currentMonday.setDate(aestNow.getDate()+7);
+        // MODIFIED: 9:30pm cutoff instead of 8:00pm
+        if(day===1 && aestNow.getHours()>=21 && aestNow.getMinutes()>=30) currentMonday.setDate(aestNow.getDate()+7);
         else if(day!==1) currentMonday.setDate(aestNow.getDate()+((8-day)%7));
         currentMonday.setHours(20,0,0,0);
         return currentMonday.toISOString().split('T')[0];
@@ -162,8 +163,8 @@
         return weeks;
     }
     const ALL_WEEKS = generateAllGameWeeks();
-    const getFutureWeeks = () => ALL_WEEKS.filter(w => w.dateStr >= getCurrentAESTDate());
-    const getPastWeeks = () => ALL_WEEKS.filter(w => w.dateStr < getCurrentAESTDate()).reverse();
+    const getFutureWeeks = () => ALL_WEEKS.filter(w => w.dateStr >= getCurrentGameWeek());
+    const getPastWeeks = () => ALL_WEEKS.filter(w => w.dateStr < getCurrentGameWeek()).reverse();
     
     function getAllParticipants(gameDate) {
         const playersIn = attendance.filter(a => a.gameDate === gameDate && a.status === 'in').map(a => a.player);
@@ -541,7 +542,8 @@
         }
         debts.sort((a,b) => b.debt - a.debt);
         
-        let financeHtml = `<div class="card"><h2>💰 Financial Ledger</h2><div class="finance-summary"><div class="amount">$${totalCollected}</div><p>Total Treasury Collected</p></div>
+        // MODIFIED: Changed "Total Treasury Collected" to "Total Treasury Balance" - everything else identical
+        let financeHtml = `<div class="card"><h2>💰 Financial Ledger</h2><div class="finance-summary"><div class="amount">$${totalCollected}</div><p>Total Treasury Balance</p></div>
             <h3>📅 ${nextWeek.label} - Payment Status</h3><table class="data-table"><thead><tr><th>Player</th><th>Status</th><th>Action</th></tr></thead><tbody>`;
         for(let player of participants.players) {
             const isPaid = payments.some(p => p.player === player && p.gameDate === nextWeek.dateStr);
