@@ -465,6 +465,24 @@ ${injuryText}
         return true;
     }
     
+    async function removePlayerFromWeek(playerName, gameDate){
+        if(!isAdminLoggedIn){
+            alert("Admin access required.");
+            return false;
+        }
+        if(!confirm(`Remove ${playerName} from ${gameDate}?`)) return false;
+        
+        if(firebaseReady && db){
+            await db.collection("attendance").doc(`${playerName}_${gameDate}`).delete();
+        }
+        attendance = attendance.filter(a => !(a.player === playerName && a.gameDate === gameDate));
+        
+        alert(`✅ ${playerName} removed from ${gameDate}!`);
+        refreshAll();
+        if(isAdminLoggedIn) renderAdminPage();
+        return true;
+    }
+    
     function showEditProfile(name){
         if(!isAdminLoggedIn && currentUser?.name !== name){ alert("You can only edit your own profile"); return; }
         const ex = playerProfiles[name] || { age:'', position:POSITIONS[0], yearJoined:'', openingBalanceGames:0 };
@@ -550,7 +568,7 @@ ${injuryText}
     
     function renderProfilesPage(){ const c=document.getElementById("page-profiles"); if(!c) return; let h=`<div class="card"><h2>👤 Player Profiles</h2>`; for(let p of players){ const prof=playerProfiles[p]||{ age:'—', position:'—', yearJoined:'—', gamesPlayed:0 }; const canEdit=(currentUser?.name===p)||isAdminLoggedIn; h+=`<div class="profile-item">${renderAvatar(p,50)}<div><div>⚽ ${escapeHtml(p)} ${canEdit?`<button class="edit-profile-btn" data-player="${escapeHtml(p)}">Edit</button>`:''}</div><div><span class="profile-badge">🎂 ${escapeHtml(prof.age)}</span><span class="profile-badge">⚽ ${escapeHtml(prof.position)}</span><span class="profile-badge">📅 ${escapeHtml(prof.yearJoined)}</span><span class="profile-badge">🏆 ${prof.gamesPlayed||0} games</span></div></div></div>`; } c.innerHTML=h; document.querySelectorAll(".edit-profile-btn").forEach(btn=>btn.addEventListener("click",()=>showEditProfile(btn.dataset.player))); }
     
-    function renderScoreboardPage(){ const c=document.getElementById("page-scoreboard"); if(!c) return; let stats = new Map(); for(let p of players) stats.set(p, { goals:0, gamesPlayed:0, assists:0 }); attendance.forEach(a => { if(a.status === 'in' && stats.has(a.player)) stats.get(a.player).gamesPlayed++; }); for(let p of players){ const opening = playerProfiles[p]?.openingBalanceGames || 0; if(stats.has(p)) stats.get(p).gamesPlayed += opening; } for(let match of Object.values(matchResults)){ if(match.goals){ for(let [scorer, count] of Object.entries(match.goals)){ if(stats.has(scorer)) stats.get(scorer).goals += count; } } if(match.assists){ for(let [assister, count] of Object.entries(match.assists)){ if(stats.has(assister)) stats.get(assister).assists += count; } } } const allStats = Array.from(stats.entries()).map(([name, s]) => ({ name, goals: s.goals, gamesPlayed: s.gamesPlayed, assists: s.assists })); const topGoals = [...allStats].sort((a,b) => b.goals - a.goals).slice(0,15); const topGames = [...allStats].sort((a,b) => b.gamesPlayed - a.gamesPlayed).slice(0,15); const topAssists = [...allStats].sort((a,b) => b.assists - a.assists).slice(0,15); c.innerHTML = `<div class="card"><h2>🏆 ALL-TIME LEADERBOARD</h2><p style="font-size:11px; color:#6c757d; margin-bottom:16px;">Career totals including opening balance games</p><div style="margin-bottom:24px;"><h3>⚽ TOP GOAL SCORERS</h3><table class="data-table"><thead><tr><th>#</th><th>Player</th><th>Goals</th></tr></thead><tbody>${topGoals.map((p,i)=>`<tr><td style="width:40px;"><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td><strong>${p.goals}</strong></td>`).join('')}</tbody></table></div><div style="margin-bottom:24px;"><h3>🏃 MOST GAMES PLAYED</h3><table class="data-table"><thead><tr><th>#</th><th>Player</th><th>Games</th></tr></thead><tbody>${topGames.map((p,i)=>`<tr><td><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td><strong>${p.gamesPlayed}</strong></td></tr>`).join('')}</tbody><table></div><div><h3>🎯 MOST ASSISTS</h3><table class="data-table"><thead><tr><th>#</th><th>Player</th><th>Assists</th></tr></thead><tbody>${topAssists.map((p,i)=>`<tr><td><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td><strong>${p.assists}</strong></td></tr>`).join('')}</tbody></table></div></div>`; }
+    function renderScoreboardPage(){ const c=document.getElementById("page-scoreboard"); if(!c) return; let stats = new Map(); for(let p of players) stats.set(p, { goals:0, gamesPlayed:0, assists:0 }); attendance.forEach(a => { if(a.status === 'in' && stats.has(a.player)) stats.get(a.player).gamesPlayed++; }); for(let p of players){ const opening = playerProfiles[p]?.openingBalanceGames || 0; if(stats.has(p)) stats.get(p).gamesPlayed += opening; } for(let match of Object.values(matchResults)){ if(match.goals){ for(let [scorer, count] of Object.entries(match.goals)){ if(stats.has(scorer)) stats.get(scorer).goals += count; } } if(match.assists){ for(let [assister, count] of Object.entries(match.assists)){ if(stats.has(assister)) stats.get(assister).assists += count; } } } const allStats = Array.from(stats.entries()).map(([name, s]) => ({ name, goals: s.goals, gamesPlayed: s.gamesPlayed, assists: s.assists })); const topGoals = [...allStats].sort((a,b) => b.goals - a.goals).slice(0,15); const topGames = [...allStats].sort((a,b) => b.gamesPlayed - a.gamesPlayed).slice(0,15); const topAssists = [...allStats].sort((a,b) => b.assists - a.assists).slice(0,15); c.innerHTML = `<div class="card"><h2>🏆 ALL-TIME LEADERBOARD</h2><p style="font-size:11px; color:#6c757d; margin-bottom:16px;">Career totals including opening balance games</p><div style="margin-bottom:24px;"><h3>⚽ TOP GOAL SCORERS</h3><table class="data-table"><thead><tr><th>#</th><th>Player</th><th>Goals</th></tr></thead><tbody>${topGoals.map((p,i)=>`<tr><td style="width:40px;"><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td><strong>${p.goals}</strong></td>`).join('')}</tbody></table></div><div style="margin-bottom:24px;"><h3>🏃 MOST GAMES PLAYED</h3><table class="data-table"><thead><tr><th>#</th><th>Player</th><th>Games</th></tr></thead><tbody>${topGames.map((p,i)=>`<tr><td style="width:40px;"><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td><strong>${p.gamesPlayed}</strong></td>`).join('')}</tbody></table></div><div><h3>🎯 MOST ASSISTS</h3><table class="data-table"><thead><tr><th>#</th><th>Player</th><th>Assists</th></tr></thead><tbody>${topAssists.map((p,i)=>`<tr><td style="width:40px;"><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td><strong>${p.assists}</strong></td>`).join('')}</tbody></table></div></div>`; }
     
     function renderTimerPage(){ const c=document.getElementById("page-timer"); if(!c) return; c.innerHTML=`<div class="timer-container"><div class="timer-display" id="timerDisplay">45:00</div><div class="flex-btns"><button class="timer-btn start" id="timerStartBtn">▶ Start</button><button class="timer-btn pause" id="timerPauseBtn">⏸ Pause</button><button class="timer-btn reset" id="timerResetBtn">⟳ Reset</button></div><div class="half-status"><span id="currentHalf">FIRST HALF</span></div></div>`; updateTimerDisplay(); document.getElementById("timerStartBtn")?.addEventListener("click",startTimer); document.getElementById("timerPauseBtn")?.addEventListener("click",pauseTimer); document.getElementById("timerResetBtn")?.addEventListener("click",resetTimer); }
     function renderChatPage(){ const c=document.getElementById("page-chat"); if(!c) return; c.innerHTML=`<div class="card"><h2>💬 Team Chat</h2><div id="chatMessagesList" style="height:400px;overflow-y:auto;background:#f8f9fa;border-radius:20px;padding:12px;margin-bottom:12px;"></div><div style="display:flex;gap:8px;"><input id="chatInput" placeholder="Type message..." style="flex:1;"><button id="chatSendBtn">Send</button></div></div>`; if(firebaseReady&&db){ if(chatUnsubscribe) chatUnsubscribe(); chatUnsubscribe = db.collection("chatMessages").orderBy("timestamp","asc").onSnapshot(snap=>{ const div=document.getElementById("chatMessagesList"); if(!div) return; let h=""; snap.forEach(doc=>{ const m=doc.data(); const t=m.timestamp?new Date(m.timestamp.toDate()).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):""; h+=`<div class="chat-message"><strong>${escapeHtml(m.name)}</strong> <span style="font-size:10px;color:#6c757d;">${t}</span><br><div style="background:#e9ecef;border-radius:12px;padding:8px;margin-top:4px;">${escapeHtml(m.message)}</div></div>`; }); div.innerHTML=h||"<div style='text-align:center;padding:20px;'>No messages</div>"; div.scrollTop=div.scrollHeight; }); } document.getElementById("chatSendBtn")?.addEventListener("click",async()=>{ const inp=document.getElementById("chatInput"); if(inp?.value.trim()){ await saveChatMessage(inp.value.trim()); inp.value=""; } }); }
@@ -567,18 +585,15 @@ ${injuryText}
         
         const playerDropdownOptions = FIXED_PLAYERS_LIST.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
         
-        // Store added players for each week
-        let weeklyAddedPlayers = {};
-        
         let html = `<div class="info-bar">🔐 Admin Mode - Managing: ${gameLabel}</div>
         
-        <div class="card"><h2>📅 ADD PLAYERS TO ANY PAST WEEK</h2>
-        <div class="info-bar" style="background:#fff3cd;color:#856404;"><i class="fas fa-history"></i> Select a week, then add players who played. They will be saved and appear in goal scorer dropdowns.</div>
+        <div class="card"><h2>📅 MANAGE PLAYERS FOR ANY PAST WEEK</h2>
+        <div class="info-bar" style="background:#fff3cd;color:#856404;"><i class="fas fa-history"></i> Select a week, then add or remove players. Players added here will appear in goal scorer dropdowns.</div>
         <select id="pastWeekSelect"><option value="">-- Select Past Week --</option>${pastWeeks.map(w=>`<option value="${w.dateStr}">${w.label}</option>`).join('')}</select>
-        <select id="playerToAddSelect"><option value="">-- Select Player --</option>${playerDropdownOptions}</select>
+        <select id="playerToAddSelect"><option value="">-- Select Player to Add --</option>${playerDropdownOptions}</select>
         <button id="addPlayerToPastWeekBtn" style="background:#28a745; margin-bottom:10px;">➕ Add Player to Selected Week</button>
         <div id="addedPlayersList" style="margin-top:10px; padding:10px; background:#f8f9fa; border-radius:12px; display:none;">
-            <strong>📋 Players added to this week:</strong>
+            <strong>📋 Players currently in this week:</strong>
             <div id="addedPlayersContainer"></div>
         </div>
         </div>
@@ -593,7 +608,7 @@ ${injuryText}
         <div class="card"><h2>🎭 Manage Guests (Current Week)</h2>${parts.guests.map(g=>`<div class="admin-team-item"><span><strong>${escapeHtml(g.name)}</strong> (by ${escapeHtml(g.addedBy)})</span><button class="remove-guest-btn" data-guest="${escapeHtml(g.name)}" data-date="${gameDate}" style="background:#dc3545;">Remove</button></div>`).join('')}<div><input id="adminGuestName" placeholder="New guest"><button id="adminAddGuestBtn">+ Add Guest to Current Week</button></div></div>
         <div class="card"><h2>⚽ Assign Teams (Current Week)</h2>${allList.map(p=>{ const ct=currAssign[p.name] || currAssign[`guest_${p.name}`] || ""; return `<div class="admin-team-item"><div>${renderMiniAvatar(p.name,28)} ${escapeHtml(p.name)} ${p.isGuest?'<span style="background:#28a745;color:white;padding:2px 8px;border-radius:20px;">GUEST</span>':''}</div><select class="team-select" data-name="${escapeHtml(p.name)}"><option value="">— Team —</option><option value="yellow" ${ct==="yellow"?"selected":""}>🟡 Yellow</option><option value="orange" ${ct==="orange"?"selected":""}>🟠 Orange</option></select></div>`; }).join('')}<div class="flex-btns"><button id="autoBalanceBtn">🎲 Auto-Balance</button><button id="saveTeamsBtn">💾 Save Teams</button></div></div>
         <div class="card"><h2>📝 Match Report & AI Generation</h2>
-        <div class="info-bar" style="margin-bottom:12px;"><i class="fas fa-info-circle"></i> Select a week below. All ${FIXED_PLAYERS_LIST.length} players are available in the dropdowns.</div>
+        <div class="info-bar" style="margin-bottom:12px;"><i class="fas fa-info-circle"></i> Select a week below, then add goal scorers. Players you added above will appear in dropdowns.</div>
         <select id="reportWeekSelect"><option value="">-- Select Match Week --</option>${pastWeeks.map(w=>`<option value="${w.dateStr}">${w.label}</option>`).join('')}<option value="${CURRENT_GAME_STR}">${gameLabel} (Current Week)</option></select>
         <div id="matchReportForm" style="display:none;margin-top:12px;">
             <div style="display:flex;gap:12px;margin-bottom:12px;">
@@ -601,7 +616,7 @@ ${injuryText}
                 <input type="number" id="reportOrangeScore" placeholder="Orange Score" style="flex:1;">
             </div>
             <div style="margin-bottom:12px;">
-                <label><strong>⚽ Goal Scorers</strong></label>
+                <label><strong>⚽ Goal Scorers</strong> <span style="font-size:11px;color:#28a745;">(now shows ALL players you added!)</span></label>
                 <div id="goalsList" style="margin-top:8px;"></div>
                 <button id="addGoalBtn" type="button" style="margin-top:8px;">+ Add Goal Scorer</button>
             </div>
@@ -627,18 +642,36 @@ ${injuryText}
         
         const container=document.getElementById("page-admin"); if(container) container.innerHTML=html;
         
-        // Function to update the displayed list of added players for a week
+        // Function to update the displayed list of players for a week with delete buttons
         async function updateAddedPlayersList(week){
             const playersForWeek = attendance.filter(a => a.gameDate === week && a.status === 'in').map(a => a.player);
-            const guestsForWeek = guests.filter(g => g.gameDate === week).map(g => g.name);
-            const allAdded = [...playersForWeek, ...guestsForWeek];
             
             const addedListDiv = document.getElementById("addedPlayersList");
             const addedContainer = document.getElementById("addedPlayersContainer");
             
-            if(allAdded.length > 0){
+            if(playersForWeek.length > 0){
                 addedListDiv.style.display = "block";
-                addedContainer.innerHTML = allAdded.map(p => `<div style="padding:4px 0;">• ${escapeHtml(p)}</div>`).join('');
+                addedContainer.innerHTML = playersForWeek.map(p => `
+                    <div class="player-list-item">
+                        <span>${renderMiniAvatar(p,24)} ${escapeHtml(p)}</span>
+                        <button class="remove-player-from-week-btn" data-player="${escapeHtml(p)}" data-week="${week}" style="background:#dc3545; border:none; color:white; border-radius:40px; padding:4px 12px; font-size:11px; cursor:pointer;">✖ Remove</button>
+                    </div>
+                `).join('');
+                
+                // Add event listeners to remove buttons
+                document.querySelectorAll(".remove-player-from-week-btn").forEach(btn => {
+                    btn.addEventListener("click", async (e) => {
+                        const player = btn.dataset.player;
+                        const weekDate = btn.dataset.week;
+                        await removePlayerFromWeek(player, weekDate);
+                        await updateAddedPlayersList(weekDate);
+                        // Refresh the match report form if this week is selected
+                        const reportWeekSelect = document.getElementById("reportWeekSelect");
+                        if(reportWeekSelect && reportWeekSelect.value === weekDate){
+                            reportWeekSelect.dispatchEvent(new Event('change'));
+                        }
+                    });
+                });
             } else {
                 addedListDiv.style.display = "none";
             }
@@ -660,7 +693,6 @@ ${injuryText}
             // Refresh the match report form if this week is currently selected
             const reportWeekSelect = document.getElementById("reportWeekSelect");
             if(reportWeekSelect && reportWeekSelect.value === week){
-                // Trigger change event to refresh
                 reportWeekSelect.dispatchEvent(new Event('change'));
             }
         });
@@ -697,15 +729,31 @@ ${injuryText}
         let currentGoals = [], currentAssists = [];
         let currentWeekForForm = null;
         
+        // Get players for the selected week (including those added via the admin panel)
+        function getPlayersForWeek(week){
+            const playersFromAttendance = attendance.filter(a => a.gameDate === week && a.status === 'in').map(a => a.player);
+            const guestsFromWeek = guests.filter(g => g.gameDate === week).map(g => g.name);
+            const allPlayersSet = new Set([...playersFromAttendance, ...guestsFromWeek]);
+            
+            // If no players found, fall back to full list
+            if(allPlayersSet.size === 0){
+                return [...FIXED_PLAYERS_LIST];
+            }
+            return Array.from(allPlayersSet).sort();
+        }
+        
         function rebuildPlayerDropdowns(){
-            const fullPlayerOptions = FIXED_PLAYERS_LIST.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+            if(!currentWeekForForm) return;
+            
+            const availablePlayers = getPlayersForWeek(currentWeekForForm);
+            const playerOptions = availablePlayers.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
             
             const goalsDiv = document.getElementById("goalsList");
             if(goalsDiv){
                 if(currentGoals.length === 0){
                     goalsDiv.innerHTML = '<div style="color:#6c757d; padding:10px; text-align:center;">No goal scorers added yet. Click "+ Add Goal Scorer" to add.</div>';
                 } else {
-                    goalsDiv.innerHTML = currentGoals.map((g,idx)=>`<div class="stats-row"><select class="goal-select" data-idx="${idx}" style="flex:2; margin:0;">${fullPlayerOptions}</select><input type="number" class="goal-count" data-idx="${idx}" placeholder="Goals" value="${g.count}" style="width:80px; margin:0;"><button class="remove-goal" data-idx="${idx}" style="background:#dc3545; margin:0; padding:10px 16px;">✖</button></div>`).join('');
+                    goalsDiv.innerHTML = currentGoals.map((g,idx)=>`<div class="stats-row"><select class="goal-select" data-idx="${idx}" style="flex:2; margin:0;">${playerOptions}</select><input type="number" class="goal-count" data-idx="${idx}" placeholder="Goals" value="${g.count}" style="width:80px; margin:0;"><button class="remove-goal" data-idx="${idx}" style="background:#dc3545; margin:0; padding:10px 16px;">✖</button></div>`).join('');
                     currentGoals.forEach((g, idx) => {
                         const sel = document.querySelector(`.goal-select[data-idx="${idx}"]`);
                         if(sel && g.player) sel.value = g.player;
@@ -718,17 +766,27 @@ ${injuryText}
                 if(currentAssists.length === 0){
                     assistsDiv.innerHTML = '<div style="color:#6c757d; padding:10px; text-align:center;">No assists added yet. Click "+ Add Assist Provider" to add.</div>';
                 } else {
-                    assistsDiv.innerHTML = currentAssists.map((a,idx)=>`<div class="stats-row"><select class="assist-select" data-idx="${idx}" style="flex:2; margin:0;">${fullPlayerOptions}</select><input type="number" class="assist-count" data-idx="${idx}" placeholder="Assists" value="${a.count}" style="width:80px; margin:0;"><button class="remove-assist" data-idx="${idx}" style="background:#dc3545; margin:0; padding:10px 16px;">✖</button></div>`).join('');
+                    assistsDiv.innerHTML = currentAssists.map((a,idx)=>`<div class="stats-row"><select class="assist-select" data-idx="${idx}" style="flex:2; margin:0;">${playerOptions}</select><input type="number" class="assist-count" data-idx="${idx}" placeholder="Assists" value="${a.count}" style="width:80px; margin:0;"><button class="remove-assist" data-idx="${idx}" style="background:#dc3545; margin:0; padding:10px 16px;">✖</button></div>`).join('');
                     currentAssists.forEach((a, idx) => {
                         const sel = document.querySelector(`.assist-select[data-idx="${idx}"]`);
                         if(sel && a.player) sel.value = a.player;
                     });
                 }
             }
+            
+            // Update MVP dropdown too
+            const mvpSel = document.getElementById("mvpSelect");
+            if(mvpSel){
+                const currentMvp = mvpSel.value;
+                mvpSel.innerHTML = `<option value="">-- Select MVP --</option>${availablePlayers.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('')}`;
+                if(currentMvp && availablePlayers.includes(currentMvp)){
+                    mvpSel.value = currentMvp;
+                }
+            }
         }
         
         const weekSelect = document.getElementById("reportWeekSelect");
-        weekSelect?.addEventListener("change", (e) => {
+        weekSelect?.addEventListener("change", async (e) => {
             currentWeekForForm = e.target.value;
             const form = document.getElementById("matchReportForm");
             if(currentWeekForForm){
@@ -737,10 +795,7 @@ ${injuryText}
                 document.getElementById("reportYellowScore").value = existing.yellowScore || 0;
                 document.getElementById("reportOrangeScore").value = existing.orangeScore || 0;
                 document.getElementById("injuriesInput").value = (existing.injuries || []).join(', ');
-                if(existing.mvp){
-                    const mvpSel = document.getElementById("mvpSelect");
-                    if(mvpSel) mvpSel.value = existing.mvp;
-                }
+                
                 currentGoals = [];
                 if(existing.goals){
                     currentGoals = Object.entries(existing.goals).map(([player, count]) => ({ player, count }));
