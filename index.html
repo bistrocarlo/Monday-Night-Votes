@@ -13,7 +13,7 @@
         body{background:#f0f2f5;font-family:'Inter',sans-serif;}
         .app{max-width:500px;margin:0 auto;background:#f0f2f5;min-height:100vh;}
         
-        .header{background:white;padding:14px 20px;text-align:center;border-bottom:1px solid #e9ecef;position:sticky;top:0;z-index:20;box-shadow:0 1px 3px rgba(0,0,0,0.05);}
+        .header{background:white;padding:14px 20px;text-align:center;border-bottom:1px solid #e9ecef;position:sticky;top:0;z-index:20;}
         .logo-icon{width:52px;height:52px;background:#1a73e8;border-radius:16px;display:inline-flex;align-items:center;justify-content:center;margin:0 auto 6px;}
         .logo-icon i{font-size:26px;color:white;}
         .header h1{font-size:18px;font-weight:700;color:#1a1a2e;}
@@ -84,13 +84,16 @@
         .timer-btn.reset{background:#dc3545;color:white;}
         
         .whatsapp-share{background:#25D366;color:white;border:none;margin-top:8px;width:100%;}
-        .stats-row{display:flex;gap:8px;margin-bottom:8px;align-items:center;flex-wrap:wrap;}
+        .stats-row{display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap;}
+        .stats-row select{flex:2; margin:0;}
+        .stats-row input{width:80px; margin:0;}
+        .stats-row button{margin:0; padding:10px 16px;}
         .half-status{font-size:13px;color:#6c757d;margin-top:10px;}
         .loading{text-align:center;padding:40px;color:#6c757d;}
         .data-table{width:100%;border-collapse:collapse;font-size:13px;}
         .data-table th,.data-table td{padding:10px;text-align:left;border-bottom:1px solid #e9ecef;}
         
-        .newspaper-report{background:#fefefe;border-radius:16px;padding:20px;border-left:6px solid #1a73e8;font-family:'Georgia',serif;line-height:1.5;}
+        .newspaper-report{background:#fefefe;border-radius:16px;padding:20px;border-left:6px solid #1a73e8;font-family:'Georgia',serif;line-height:1.5; white-space:pre-wrap;}
         
         @media (max-width:450px){.team-row{flex-direction:column;}}
     </style>
@@ -113,6 +116,7 @@
         firebase.initializeApp(firebaseConfig); 
         db = firebase.firestore(); 
         firebaseReady = true; 
+        console.log("Firebase connected");
     } catch(e) { console.warn("Demo mode", e); }
     
     let players = ["Alex Rowe","Ali Mekawy","Carlo Pavia","Charlie Pavia","Chris Del Monaco","Chris Margelis","Chris Sophocli","Danny Sammartino","Dante Sammartino","David","Dimitri","Enzo","Farid","Faros","Frank Marcaccio","George Babatsikos","George Theodoropoulos","Ivan","James Zoumis","James Martino","Joe Trimboli","Joseph","Kiarash Piani","Leo","Manoli","Marco Mercuri","Mario","Morris Del Monte","Nector Laskaris","Paul Hardalas","Perri Theodorlis","Peter Disensi","Ralph Risoli","Rocco Mammoliti","Paul Salustro","Stevan Brankovic","Theo","Tony El Hajj","Vasilis"].sort();
@@ -211,7 +215,7 @@
         return { players: playersIn, guests: guestsIn };
     }
     
-    // Get ALL players who played on a specific week (including guests)
+    // CRITICAL FIX: Get ALL players who played on a specific week
     function getAllPlayersForWeek(gameDate){
         const participants = getAllParticipants(gameDate);
         const teamAssign = teamAssignments[gameDate] || {};
@@ -223,11 +227,16 @@
         // Add guests
         participants.guests.forEach(g => allPlayersSet.add(g.name));
         
-        // Also add anyone assigned to a team (in case attendance missing)
+        // Add anyone assigned to a team
         Object.keys(teamAssign).forEach(name => {
             let cleanName = name.replace(/^guest_/, '');
             allPlayersSet.add(cleanName);
         });
+        
+        // Also add all registered players who have ever played (fallback)
+        if(allPlayersSet.size === 0 && players.length > 0){
+            players.forEach(p => allPlayersSet.add(p));
+        }
         
         return Array.from(allPlayersSet).sort();
     }
@@ -276,38 +285,38 @@
         return `📰 *MONDAY NIGHT SOCCER - MATCH REPORT* 📰
 *${weekLabel.toUpperCase()} | Clifton Park, Brunswick*
 
-━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 *MATCH SUMMARY*
-━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 In ${matchDesc}, Yellow and Orange delivered an entertaining contest under the lights.
 
 *FINAL SCORE*
 🟡 YELLOW ${yellowScore} - ${orangeScore} 🟠
 
-━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 *GOAL SCORERS*
-━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${goalScorersText}
 
-━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 *ASSISTS*
-━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${assistText}
 
-━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 *MAN OF THE MATCH*
-━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🏆 ${mvpText}
 
-━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 *INJURY REPORT*
-━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${injuryText}
 
-━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 *NEXT FIXTURE*
-━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📅 Next Monday | 8:00pm | Clifton Park
 
 #MondayNightSoccer #CliftonPark #MatchReport`;
@@ -524,11 +533,11 @@ ${injuryText}
     
     function renderProfilesPage(){ const c=document.getElementById("page-profiles"); if(!c) return; let h=`<div class="card"><h2>👤 Player Profiles</h2>`; for(let p of players){ const prof=playerProfiles[p]||{ age:'—', position:'—', yearJoined:'—', gamesPlayed:0 }; const canEdit=(currentUser?.name===p)||isAdminLoggedIn; h+=`<div class="profile-item">${renderAvatar(p,50)}<div><div>⚽ ${escapeHtml(p)} ${canEdit?`<button class="edit-profile-btn" data-player="${escapeHtml(p)}">Edit</button>`:''}</div><div><span class="profile-badge">🎂 ${escapeHtml(prof.age)}</span><span class="profile-badge">⚽ ${escapeHtml(prof.position)}</span><span class="profile-badge">📅 ${escapeHtml(prof.yearJoined)}</span><span class="profile-badge">🏆 ${prof.gamesPlayed||0} games</span></div></div></div>`; } c.innerHTML=h; document.querySelectorAll(".edit-profile-btn").forEach(btn=>btn.addEventListener("click",()=>showEditProfile(btn.dataset.player))); }
     
-    function renderScoreboardPage(){ const c=document.getElementById("page-scoreboard"); if(!c) return; let stats = new Map(); for(let p of players) stats.set(p, { goals:0, gamesPlayed:0, assists:0 }); attendance.forEach(a => { if(a.status === 'in' && stats.has(a.player)) stats.get(a.player).gamesPlayed++; }); for(let p of players){ const opening = playerProfiles[p]?.openingBalanceGames || 0; if(stats.has(p)) stats.get(p).gamesPlayed += opening; } for(let match of Object.values(matchResults)){ if(match.goals){ for(let [scorer, count] of Object.entries(match.goals)){ if(stats.has(scorer)) stats.get(scorer).goals += count; } } if(match.assists){ for(let [assister, count] of Object.entries(match.assists)){ if(stats.has(assister)) stats.get(assister).assists += count; } } } const allStats = Array.from(stats.entries()).map(([name, s]) => ({ name, goals: s.goals, gamesPlayed: s.gamesPlayed, assists: s.assists })); const topGoals = [...allStats].sort((a,b) => b.goals - a.goals).slice(0,15); const topGames = [...allStats].sort((a,b) => b.gamesPlayed - a.gamesPlayed).slice(0,15); const topAssists = [...allStats].sort((a,b) => b.assists - a.assists).slice(0,15); c.innerHTML = `<div class="card"><h2>🏆 ALL-TIME LEADERBOARD</h2><p style="font-size:11px; color:#6c757d; margin-bottom:16px;">Career totals including opening balance games</p><div style="margin-bottom:24px;"><h3>⚽ TOP GOAL SCORERS</h3><table class="data-table"><thead><tr><th>#</th><th>Player</th><th>Goals</th></tr></thead><tbody>${topGoals.map((p,i)=>`<tr><td style="width:40px;"><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td style="font-weight:700;">${p.goals}</td></tr>`).join('')}</tbody></table></div><div style="margin-bottom:24px;"><h3>🏃 MOST GAMES PLAYED</h3><table class="data-table"><thead><tr><th>#</th><th>Player</th><th>Games</th></tr></thead><tbody>${topGames.map((p,i)=>`<tr><td style="width:40px;"><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td style="font-weight:700;">${p.gamesPlayed}</td></tr>`).join('')}</tbody></table></div><div><h3>🎯 MOST ASSISTS</h3><table class="data-table"><thead></table><th>#</th><th>Player</th><th>Assists</th></tr></thead><tbody>${topAssists.map((p,i)=>`<tr><td style="width:40px;"><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td style="font-weight:700;">${p.assists}</td></tr>`).join('')}</tbody></table></div></div>`; }
+    function renderScoreboardPage(){ const c=document.getElementById("page-scoreboard"); if(!c) return; let stats = new Map(); for(let p of players) stats.set(p, { goals:0, gamesPlayed:0, assists:0 }); attendance.forEach(a => { if(a.status === 'in' && stats.has(a.player)) stats.get(a.player).gamesPlayed++; }); for(let p of players){ const opening = playerProfiles[p]?.openingBalanceGames || 0; if(stats.has(p)) stats.get(p).gamesPlayed += opening; } for(let match of Object.values(matchResults)){ if(match.goals){ for(let [scorer, count] of Object.entries(match.goals)){ if(stats.has(scorer)) stats.get(scorer).goals += count; } } if(match.assists){ for(let [assister, count] of Object.entries(match.assists)){ if(stats.has(assister)) stats.get(assister).assists += count; } } } const allStats = Array.from(stats.entries()).map(([name, s]) => ({ name, goals: s.goals, gamesPlayed: s.gamesPlayed, assists: s.assists })); const topGoals = [...allStats].sort((a,b) => b.goals - a.goals).slice(0,15); const topGames = [...allStats].sort((a,b) => b.gamesPlayed - a.gamesPlayed).slice(0,15); const topAssists = [...allStats].sort((a,b) => b.assists - a.assists).slice(0,15); c.innerHTML = `<div class="card"><h2>🏆 ALL-TIME LEADERBOARD</h2><p style="font-size:11px; color:#6c757d; margin-bottom:16px;">Career totals including opening balance games</p><div style="margin-bottom:24px;"><h3>⚽ TOP GOAL SCORERS</h3><table><thead><tr><th>#</th><th>Player</th><th>Goals</th></tr></thead><tbody>${topGoals.map((p,i)=>`<tr><td><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td><strong>${p.goals}</strong></td></tr>`).join('')}</tbody></table></div><div style="margin-bottom:24px;"><h3>🏃 MOST GAMES PLAYED</h3><table><thead><tr><th>#</th><th>Player</th><th>Games</th></tr></thead><tbody>${topGames.map((p,i)=>`<tr><td><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td><strong>${p.gamesPlayed}</strong></td></tr>`).join('')}</tbody></table></div><div><h3>🎯 MOST ASSISTS</h3><table><thead><tr><th>#</th><th>Player</th><th>Assists</th></tr></thead><tbody>${topAssists.map((p,i)=>`<tr><td><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td><strong>${p.assists}</strong></td></tr>`).join('')}</tbody></table></div></div>`; }
     
     function renderTimerPage(){ const c=document.getElementById("page-timer"); if(!c) return; c.innerHTML=`<div class="timer-container"><div class="timer-display" id="timerDisplay">45:00</div><div class="flex-btns"><button class="timer-btn start" id="timerStartBtn">▶ Start</button><button class="timer-btn pause" id="timerPauseBtn">⏸ Pause</button><button class="timer-btn reset" id="timerResetBtn">⟳ Reset</button></div><div class="half-status"><span id="currentHalf">FIRST HALF</span></div></div>`; updateTimerDisplay(); document.getElementById("timerStartBtn")?.addEventListener("click",startTimer); document.getElementById("timerPauseBtn")?.addEventListener("click",pauseTimer); document.getElementById("timerResetBtn")?.addEventListener("click",resetTimer); }
-    function renderChatPage(){ const c=document.getElementById("page-chat"); if(!c) return; c.innerHTML=`<div class="card"><h2>💬 Team Chat</h2><div id="chatMessagesList" style="height:400px;overflow-y:auto;background:#f8f9fa;border-radius:20px;padding:12px;margin-bottom:12px;"></div><div style="display:flex;gap:8px;"><input id="chatInput" placeholder="Type message..." style="flex:1;"><button id="chatSendBtn">Send</button></div></div>`; if(firebaseReady&&db){ if(chatUnsubscribe) chatUnsubscribe(); chatUnsubscribe = db.collection("chatMessages").orderBy("timestamp","asc").onSnapshot(snap=>{ const div=document.getElementById("chatMessagesList"); if(!div) return; let h=""; snap.forEach(doc=>{ const m=doc.data(); const t=m.timestamp?new Date(m.timestamp.toDate()).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):""; h+=`<div class="chat-message"><div class="chat-name">${escapeHtml(m.name)} <span style="font-size:10px;">${t}</span></div><div class="chat-bubble">${escapeHtml(m.message)}</div></div>`; }); div.innerHTML=h||"<div style='text-align:center;padding:20px;'>No messages</div>"; div.scrollTop=div.scrollHeight; }); } document.getElementById("chatSendBtn")?.addEventListener("click",async()=>{ const inp=document.getElementById("chatInput"); if(inp?.value.trim()){ await saveChatMessage(inp.value.trim()); inp.value=""; } }); }
-    function renderWeatherPage(){ const c=document.getElementById("page-weather"); if(c) c.innerHTML=`<div class="card"><h2>🌤️ Forecast ${getCurrentGameLabel()}</h2><div class="weather-card" style="background:#e8f0fe;border-radius:20px;padding:20px;text-align:center;"><i class="fas ${weatherData.icon}" style="font-size:48px;color:#1a73e8;"></i><h3>${weatherData.condition}</h3><h1 style="font-size:48px;">${weatherData.temp}</h1><p>Rain: ${weatherData.rainChance}%</p></div></div>`; }
+    function renderChatPage(){ const c=document.getElementById("page-chat"); if(!c) return; c.innerHTML=`<div class="card"><h2>💬 Team Chat</h2><div id="chatMessagesList" style="height:400px;overflow-y:auto;background:#f8f9fa;border-radius:20px;padding:12px;margin-bottom:12px;"></div><div style="display:flex;gap:8px;"><input id="chatInput" placeholder="Type message..." style="flex:1;"><button id="chatSendBtn">Send</button></div></div>`; if(firebaseReady&&db){ if(chatUnsubscribe) chatUnsubscribe(); chatUnsubscribe = db.collection("chatMessages").orderBy("timestamp","asc").onSnapshot(snap=>{ const div=document.getElementById("chatMessagesList"); if(!div) return; let h=""; snap.forEach(doc=>{ const m=doc.data(); const t=m.timestamp?new Date(m.timestamp.toDate()).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):""; h+=`<div class="chat-message"><strong>${escapeHtml(m.name)}</strong> <span style="font-size:10px;color:#6c757d;">${t}</span><br><div style="background:#e9ecef;border-radius:12px;padding:8px;margin-top:4px;">${escapeHtml(m.message)}</div></div>`; }); div.innerHTML=h||"<div style='text-align:center;padding:20px;'>No messages</div>"; div.scrollTop=div.scrollHeight; }); } document.getElementById("chatSendBtn")?.addEventListener("click",async()=>{ const inp=document.getElementById("chatInput"); if(inp?.value.trim()){ await saveChatMessage(inp.value.trim()); inp.value=""; } }); }
+    function renderWeatherPage(){ const c=document.getElementById("page-weather"); if(c) c.innerHTML=`<div class="card"><h2>🌤️ Forecast ${getCurrentGameLabel()}</h2><div style="background:#e8f0fe;border-radius:20px;padding:20px;text-align:center;"><i class="fas ${weatherData.icon}" style="font-size:48px;color:#1a73e8;"></i><h3>${weatherData.condition}</h3><h1 style="font-size:48px;">${weatherData.temp}</h1><p>Rain: ${weatherData.rainChance}%</p></div></div>`; }
     function renderRulesPage(){ const c=document.getElementById("page-rules"); if(c) c.innerHTML=`<div class="card"><h2>📜 League Rules</h2><div style="line-height:1.7;">• ⏰ 8:00pm SHARP kickoff at Clifton Park<br>• 👑 Captain rotates weekly<br>• ✅ RSVP is mandatory<br>• 🎭 Guests welcome!<br>• 📝 Match reports generated after each game<br>• 📱 Share team sheets & reports via WhatsApp</div></div>`; }
     
     function renderAdminPage(){
@@ -540,214 +549,245 @@ ${injuryText}
         const pastWeeks=getPastWeeks();
         
         let html = `<div class="info-bar">🔐 Admin Mode - Managing: ${gameLabel}</div>
-        <div class="card"><h2>✍️ Manual Attendance</h2><select id="manualPlayerSelect"><option value="">-- Select Player --</option>${players.map(p=>`<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('')}</select><button id="manualAddBtn" class="admin-action-btn" style="background:#28a745;">➕ Add to Playing List</button></div>
+        <div class="card"><h2>✍️ Manual Attendance</h2><select id="manualPlayerSelect"><option value="">-- Select Player --</option>${players.map(p=>`<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('')}</select><button id="manualAddBtn" style="background:#28a745;">➕ Add to Playing List</button></div>
         <div class="card"><h2>🎭 Manage Guests</h2>${parts.guests.map(g=>`<div class="admin-team-item"><span><strong>${escapeHtml(g.name)}</strong> (by ${escapeHtml(g.addedBy)})</span><button class="remove-guest-btn" data-guest="${escapeHtml(g.name)}" data-date="${gameDate}" style="background:#dc3545;">Remove</button></div>`).join('')}<div><input id="adminGuestName" placeholder="New guest"><button id="adminAddGuestBtn">+ Add Guest</button></div></div>
-        <div class="card"><h2>⚽ Assign Teams</h2>${allList.map(p=>{ const ct=currAssign[p.name] || currAssign[`guest_${p.name}`] || ""; return `<div class="admin-team-item"><div>${renderMiniAvatar(p.name,28)} ${escapeHtml(p.name)} ${p.isGuest?'<span style="background:#28a745;color:white;padding:2px 8px;border-radius:20px;">GUEST</span>':''}</div><select class="team-select" data-name="${escapeHtml(p.name)}" data-isguest="${p.isGuest}"><option value="">— Team —</option><option value="yellow" ${ct==="yellow"?"selected":""}>🟡 Yellow</option><option value="orange" ${ct==="orange"?"selected":""}>🟠 Orange</option></select></div>`; }).join('')}<div class="flex-btns"><button id="autoBalanceBtn" class="btn-outline">🎲 Auto-Balance</button><button id="saveTeamsBtn">💾 Save Teams</button></div></div>
-        <div class="card"><h2>📝 Match Report & AI Generation</h2><select id="reportWeekSelect"><option value="">-- Select Match Week --</option>${pastWeeks.map(w=>`<option value="${w.dateStr}">${w.label}</option>`).join('')}<option value="${CURRENT_GAME_STR}">${gameLabel} (Current Week)</option></select><div id="matchReportForm" style="display:none;margin-top:12px;"><div style="display:flex;gap:12px;"><input type="number" id="reportYellowScore" placeholder="Yellow Score" style="flex:1;"><input type="number" id="reportOrangeScore" placeholder="Orange Score" style="flex:1;"></div><div><label>⚽ Goal Scorers</label><div id="goalsList"></div><button id="addGoalBtn" type="button">+ Add Goal</button></div><div><label>🎯 Assists</label><div id="assistsList"></div><button id="addAssistBtn" type="button">+ Add Assist</button></div><div><label>🏆 MVP</label><select id="mvpSelect"></select></div><div><label>🩺 Injuries (comma separated)</label><input id="injuriesInput"></div><button id="submitMatchReportBtn">💾 Save & Generate AI Report</button><div id="generatedReport" style="margin-top:16px;background:#f8f9fa;border-radius:16px;padding:16px;display:none;"><div id="reportText" class="newspaper-report" style="white-space:pre-wrap;font-family:monospace;font-size:12px;"></div><button id="whatsappShareBtn" class="whatsapp-share" style="margin-top:12px;"><i class="fab fa-whatsapp"></i> Share AI Report on WhatsApp</button></div></div></div>`;
+        <div class="card"><h2>⚽ Assign Teams</h2>${allList.map(p=>{ const ct=currAssign[p.name] || currAssign[`guest_${p.name}`] || ""; return `<div class="admin-team-item"><div>${renderMiniAvatar(p.name,28)} ${escapeHtml(p.name)} ${p.isGuest?'<span style="background:#28a745;color:white;padding:2px 8px;border-radius:20px;">GUEST</span>':''}</div><select class="team-select" data-name="${escapeHtml(p.name)}"><option value="">— Team —</option><option value="yellow" ${ct==="yellow"?"selected":""}>🟡 Yellow</option><option value="orange" ${ct==="orange"?"selected":""}>🟠 Orange</option></select></div>`; }).join('')}<div class="flex-btns"><button id="autoBalanceBtn">🎲 Auto-Balance</button><button id="saveTeamsBtn">💾 Save Teams</button></div></div>
+        <div class="card"><h2>📝 Match Report & AI Generation</h2><select id="reportWeekSelect"><option value="">-- Select Match Week --</option>${pastWeeks.map(w=>`<option value="${w.dateStr}">${w.label}</option>`).join('')}<option value="${CURRENT_GAME_STR}">${gameLabel} (Current Week)</option></select>
+        <div id="matchReportForm" style="display:none;margin-top:12px;">
+            <div style="display:flex;gap:12px;margin-bottom:12px;">
+                <input type="number" id="reportYellowScore" placeholder="Yellow Score" style="flex:1;">
+                <input type="number" id="reportOrangeScore" placeholder="Orange Score" style="flex:1;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label><strong>⚽ Goal Scorers</strong></label>
+                <div id="goalsList" style="margin-top:8px;"></div>
+                <button id="addGoalBtn" type="button" style="margin-top:8px;">+ Add Goal Scorer</button>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label><strong>🎯 Assists</strong></label>
+                <div id="assistsList" style="margin-top:8px;"></div>
+                <button id="addAssistBtn" type="button" style="margin-top:8px;">+ Add Assist Provider</button>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label><strong>🏆 MVP</strong></label>
+                <select id="mvpSelect"></select>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label><strong>🩺 Injuries (comma separated)</strong></label>
+                <input id="injuriesInput" placeholder="e.g., John Smith, Bob Wilson">
+            </div>
+            <button id="submitMatchReportBtn">💾 Save & Generate AI Report</button>
+            <div id="generatedReport" style="margin-top:16px;background:#f8f9fa;border-radius:16px;padding:16px;display:none;">
+                <div id="reportText" class="newspaper-report"></div>
+                <button id="whatsappShareBtn" class="whatsapp-share" style="margin-top:12px;"><i class="fab fa-whatsapp"></i> Share AI Report on WhatsApp</button>
+            </div>
+        </div></div>`;
         
         const container=document.getElementById("page-admin"); if(container) container.innerHTML=html;
         
-        let goals = [], assists = [];
+        let currentGoals = [], currentAssists = [];
+        let currentWeekForForm = null;
         
-        // FIXED: Function to get ALL players for the selected week
-        function updateFormFields(week){
-            // Get ALL players who played this week (from attendance + guests + team assignments)
+        function rebuildPlayerDropdowns(week){
             const allPlayers = getAllPlayersForWeek(week);
+            console.log("Building dropdowns for week:", week, "Players found:", allPlayers);
             
-            console.log("Players for week", week, ":", allPlayers);
+            if(allPlayers.length === 0){
+                // Fallback to all registered players
+                console.warn("No players found for week, using all registered players");
+                allPlayers.push(...players);
+            }
             
             const mvpSel = document.getElementById("mvpSelect");
-            if(mvpSel) {
+            if(mvpSel){
                 mvpSel.innerHTML = `<option value="">-- Select MVP --</option>${allPlayers.map(p=>`<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('')}`;
+                if(matchResults[week] && matchResults[week].mvp){
+                    mvpSel.value = matchResults[week].mvp;
+                }
             }
             
             const goalsDiv = document.getElementById("goalsList");
-            if(goalsDiv) {
-                goalsDiv.innerHTML = goals.map((g,idx)=>`<div class="stats-row"><select class="goal-select" data-idx="${idx}" style="flex:2;"><option value="">-- Select Player --</option>${allPlayers.map(p=>`<option value="${escapeHtml(p)}" ${g.player===p?'selected':''}>${escapeHtml(p)}</option>`).join('')}</select><input type="number" class="goal-count" data-idx="${idx}" placeholder="Goals" value="${g.count||1}" style="width:80px;"><button class="remove-goal" data-idx="${idx}" style="background:#dc3545;padding:8px 12px;">✖</button></div>`).join('');
-                if(goals.length === 0) {
-                    goalsDiv.innerHTML = '<div style="color:#6c757d; padding:8px;">No goals added yet. Click "+ Add Goal" to add scorers.</div>';
+            if(goalsDiv){
+                if(currentGoals.length === 0){
+                    goalsDiv.innerHTML = '<div style="color:#6c757d; padding:10px; text-align:center;">No goal scorers added yet. Click "+ Add Goal Scorer" to add.</div>';
+                } else {
+                    goalsDiv.innerHTML = currentGoals.map((g,idx)=>`<div class="stats-row"><select class="goal-select" data-idx="${idx}" style="flex:2; margin:0;">${allPlayers.map(p=>`<option value="${escapeHtml(p)}" ${g.player===p ? 'selected' : ''}>${escapeHtml(p)}</option>`).join('')}</select><input type="number" class="goal-count" data-idx="${idx}" placeholder="Goals" value="${g.count}" style="width:80px; margin:0;"><button class="remove-goal" data-idx="${idx}" style="background:#dc3545; margin:0; padding:10px 16px;">✖</button></div>`).join('');
                 }
             }
             
             const assistsDiv = document.getElementById("assistsList");
-            if(assistsDiv) {
-                assistsDiv.innerHTML = assists.map((a,idx)=>`<div class="stats-row"><select class="assist-select" data-idx="${idx}" style="flex:2;"><option value="">-- Select Player --</option>${allPlayers.map(p=>`<option value="${escapeHtml(p)}" ${a.player===p?'selected':''}>${escapeHtml(p)}</option>`).join('')}</select><input type="number" class="assist-count" data-idx="${idx}" placeholder="Assists" value="${a.count||1}" style="width:80px;"><button class="remove-assist" data-idx="${idx}" style="background:#dc3545;padding:8px 12px;">✖</button></div>`).join('');
-                if(assists.length === 0) {
-                    assistsDiv.innerHTML = '<div style="color:#6c757d; padding:8px;">No assists added yet. Click "+ Add Assist" to add assist providers.</div>';
+            if(assistsDiv){
+                if(currentAssists.length === 0){
+                    assistsDiv.innerHTML = '<div style="color:#6c757d; padding:10px; text-align:center;">No assists added yet. Click "+ Add Assist Provider" to add.</div>';
+                } else {
+                    assistsDiv.innerHTML = currentAssists.map((a,idx)=>`<div class="stats-row"><select class="assist-select" data-idx="${idx}" style="flex:2; margin:0;">${allPlayers.map(p=>`<option value="${escapeHtml(p)}" ${a.player===p ? 'selected' : ''}>${escapeHtml(p)}</option>`).join('')}</select><input type="number" class="assist-count" data-idx="${idx}" placeholder="Assists" value="${a.count}" style="width:80px; margin:0;"><button class="remove-assist" data-idx="${idx}" style="background:#dc3545; margin:0; padding:10px 16px;">✖</button></div>`).join('');
                 }
             }
         }
         
         const weekSelect = document.getElementById("reportWeekSelect");
-        weekSelect?.addEventListener("change",(e)=>{
-            const week = e.target.value;
+        weekSelect?.addEventListener("change", (e) => {
+            currentWeekForForm = e.target.value;
             const form = document.getElementById("matchReportForm");
-            if(week){ 
-                form.style.display="block"; 
-                goals = []; 
-                assists = []; 
-                const existing = matchResults[week]; 
-                if(existing){ 
-                    document.getElementById("reportYellowScore").value = existing.yellowScore||0; 
-                    document.getElementById("reportOrangeScore").value = existing.orangeScore||0; 
-                    if(existing.goals) goals = Object.entries(existing.goals).map(([p,c])=>({player:p,count:c})); 
-                    if(existing.assists) assists = Object.entries(existing.assists).map(([p,c])=>({player:p,count:c})); 
-                    document.getElementById("injuriesInput").value = existing.injuries?.join(', ')||''; 
-                } else {
-                    document.getElementById("reportYellowScore").value = 0;
-                    document.getElementById("reportOrangeScore").value = 0;
-                    document.getElementById("injuriesInput").value = '';
+            if(currentWeekForForm){
+                form.style.display = "block";
+                const existing = matchResults[currentWeekForForm] || {};
+                document.getElementById("reportYellowScore").value = existing.yellowScore || 0;
+                document.getElementById("reportOrangeScore").value = existing.orangeScore || 0;
+                document.getElementById("injuriesInput").value = (existing.injuries || []).join(', ');
+                
+                currentGoals = [];
+                if(existing.goals){
+                    currentGoals = Object.entries(existing.goals).map(([player, count]) => ({ player, count }));
                 }
-                updateFormFields(week); 
-                document.getElementById("generatedReport").style.display = "none"; 
-            } else { 
-                form.style.display = "none"; 
+                currentAssists = [];
+                if(existing.assists){
+                    currentAssists = Object.entries(existing.assists).map(([player, count]) => ({ player, count }));
+                }
+                rebuildPlayerDropdowns(currentWeekForForm);
+                document.getElementById("generatedReport").style.display = "none";
+            } else {
+                form.style.display = "none";
             }
         });
         
-        document.getElementById("addGoalBtn")?.addEventListener("click",()=>{ 
-            const week = weekSelect.value; 
-            if(week){ 
-                goals.push({player:'',count:1}); 
-                updateFormFields(week); 
+        document.getElementById("addGoalBtn")?.addEventListener("click", () => {
+            if(currentWeekForForm){
+                currentGoals.push({ player: "", count: 1 });
+                rebuildPlayerDropdowns(currentWeekForForm);
             } else {
                 alert("Please select a match week first");
             }
         });
         
-        document.getElementById("addAssistBtn")?.addEventListener("click",()=>{ 
-            const week = weekSelect.value; 
-            if(week){ 
-                assists.push({player:'',count:1}); 
-                updateFormFields(week); 
+        document.getElementById("addAssistBtn")?.addEventListener("click", () => {
+            if(currentWeekForForm){
+                currentAssists.push({ player: "", count: 1 });
+                rebuildPlayerDropdowns(currentWeekForForm);
             } else {
                 alert("Please select a match week first");
             }
         });
         
-        document.addEventListener("click",(e)=>{ 
-            if(e.target.classList.contains("remove-goal")){ 
-                const idx = parseInt(e.target.dataset.idx); 
-                if(!isNaN(idx)){ 
-                    goals.splice(idx,1); 
-                    const week = weekSelect.value; 
-                    if(week) updateFormFields(week); 
-                } 
-            } 
-            if(e.target.classList.contains("remove-assist")){ 
-                const idx = parseInt(e.target.dataset.idx); 
-                if(!isNaN(idx)){ 
-                    assists.splice(idx,1); 
-                    const week = weekSelect.value; 
-                    if(week) updateFormFields(week); 
-                } 
-            } 
+        document.addEventListener("click", (e) => {
+            if(e.target.classList.contains("remove-goal")){
+                const idx = parseInt(e.target.dataset.idx);
+                if(!isNaN(idx)){
+                    currentGoals.splice(idx, 1);
+                    rebuildPlayerDropdowns(currentWeekForForm);
+                }
+            }
+            if(e.target.classList.contains("remove-assist")){
+                const idx = parseInt(e.target.dataset.idx);
+                if(!isNaN(idx)){
+                    currentAssists.splice(idx, 1);
+                    rebuildPlayerDropdowns(currentWeekForForm);
+                }
+            }
         });
         
-        document.addEventListener("change",(e)=>{ 
-            if(e.target.classList.contains("goal-select")){ 
-                const idx = parseInt(e.target.dataset.idx); 
-                if(!isNaN(idx) && goals[idx]) goals[idx].player = e.target.value; 
-            } 
-            if(e.target.classList.contains("goal-count")){ 
-                const idx = parseInt(e.target.dataset.idx); 
-                if(!isNaN(idx) && goals[idx]) goals[idx].count = parseInt(e.target.value)||1; 
-            } 
-            if(e.target.classList.contains("assist-select")){ 
-                const idx = parseInt(e.target.dataset.idx); 
-                if(!isNaN(idx) && assists[idx]) assists[idx].player = e.target.value; 
-            } 
-            if(e.target.classList.contains("assist-count")){ 
-                const idx = parseInt(e.target.dataset.idx); 
-                if(!isNaN(idx) && assists[idx]) assists[idx].count = parseInt(e.target.value)||1; 
-            } 
+        document.addEventListener("change", (e) => {
+            if(e.target.classList.contains("goal-select")){
+                const idx = parseInt(e.target.dataset.idx);
+                if(!isNaN(idx) && currentGoals[idx]) currentGoals[idx].player = e.target.value;
+            }
+            if(e.target.classList.contains("goal-count")){
+                const idx = parseInt(e.target.dataset.idx);
+                if(!isNaN(idx) && currentGoals[idx]) currentGoals[idx].count = parseInt(e.target.value) || 1;
+            }
+            if(e.target.classList.contains("assist-select")){
+                const idx = parseInt(e.target.dataset.idx);
+                if(!isNaN(idx) && currentAssists[idx]) currentAssists[idx].player = e.target.value;
+            }
+            if(e.target.classList.contains("assist-count")){
+                const idx = parseInt(e.target.dataset.idx);
+                if(!isNaN(idx) && currentAssists[idx]) currentAssists[idx].count = parseInt(e.target.value) || 1;
+            }
         });
         
-        document.getElementById("submitMatchReportBtn")?.addEventListener("click", async()=>{ 
-            const week = weekSelect.value; 
-            if(!week){ alert("Select a week first"); return; } 
-            const y = parseInt(document.getElementById("reportYellowScore")?.value)||0; 
-            const o = parseInt(document.getElementById("reportOrangeScore")?.value)||0; 
-            const goalObj = {}; 
-            for(let g of goals) if(g.player && g.count>0) goalObj[g.player] = (goalObj[g.player]||0) + g.count; 
-            const assistObj = {}; 
-            for(let a of assists) if(a.player && a.count>0) assistObj[a.player] = (assistObj[a.player]||0) + a.count; 
-            const mvp = document.getElementById("mvpSelect")?.value||""; 
-            const injuries = document.getElementById("injuriesInput")?.value.split(',').map(i=>i.trim()).filter(i=>i)||[]; 
-            await saveMatchResult(week, y, o, goalObj, assistObj, mvp, injuries, []); 
-            const weekLabel = ALL_WEEKS.find(w=>w.dateStr===week)?.label || week; 
-            const report = generateAIMatchReport(weekLabel, y, o, goalObj, assistObj, mvp, injuries, []); 
-            const reportDiv = document.getElementById("generatedReport"); 
-            const reportText = document.getElementById("reportText"); 
-            if(reportDiv && reportText){ 
-                reportText.innerText = report; 
-                reportDiv.style.display = "block"; 
-                document.getElementById("whatsappShareBtn")?.addEventListener("click",()=>{ 
-                    const url = `https://wa.me/?text=${encodeURIComponent(report)}`; 
-                    window.open(url, '_blank'); 
-                }); 
-            } 
+        document.getElementById("submitMatchReportBtn")?.addEventListener("click", async () => {
+            if(!currentWeekForForm){ alert("Select a week first"); return; }
+            const yellow = parseInt(document.getElementById("reportYellowScore")?.value) || 0;
+            const orange = parseInt(document.getElementById("reportOrangeScore")?.value) || 0;
+            const goalsObj = {};
+            for(let g of currentGoals) if(g.player && g.count > 0) goalsObj[g.player] = (goalsObj[g.player] || 0) + g.count;
+            const assistsObj = {};
+            for(let a of currentAssists) if(a.player && a.count > 0) assistsObj[a.player] = (assistsObj[a.player] || 0) + a.count;
+            const mvp = document.getElementById("mvpSelect")?.value || "";
+            const injuries = document.getElementById("injuriesInput")?.value.split(',').map(i=>i.trim()).filter(i=>i) || [];
+            await saveMatchResult(currentWeekForForm, yellow, orange, goalsObj, assistsObj, mvp, injuries, []);
+            const weekLabel = ALL_WEEKS.find(w=>w.dateStr===currentWeekForForm)?.label || currentWeekForForm;
+            const report = generateAIMatchReport(weekLabel, yellow, orange, goalsObj, assistsObj, mvp, injuries, []);
+            const reportDiv = document.getElementById("generatedReport");
+            const reportText = document.getElementById("reportText");
+            if(reportDiv && reportText){
+                reportText.innerText = report;
+                reportDiv.style.display = "block";
+                document.getElementById("whatsappShareBtn")?.addEventListener("click", () => {
+                    window.open(`https://wa.me/?text=${encodeURIComponent(report)}`, '_blank');
+                });
+            }
         });
         
-        document.getElementById("manualAddBtn")?.addEventListener("click", async()=>{ 
-            const sel = document.getElementById("manualPlayerSelect"); 
-            const pn = sel?.value; 
-            if(pn && players.includes(pn)){ 
-                const exists = attendance.some(a=>a.player===pn && a.gameDate===gameDate); 
-                if(exists){ alert(`${pn} already has attendance`); return; } 
-                await saveAttendance({ player:pn, gameDate:gameDate, status:'in' }); 
-                alert(`${pn} added`); 
-                renderAdminPage(); 
-            } else alert("Select valid player"); 
+        document.getElementById("manualAddBtn")?.addEventListener("click", async () => {
+            const sel = document.getElementById("manualPlayerSelect");
+            const playerName = sel?.value;
+            if(playerName && players.includes(playerName)){
+                const exists = attendance.some(a => a.player === playerName && a.gameDate === gameDate);
+                if(exists){ alert(`${playerName} already has attendance`); return; }
+                await saveAttendance({ player: playerName, gameDate: gameDate, status: 'in' });
+                alert(`${playerName} added`);
+                renderAdminPage();
+            } else alert("Select valid player");
         });
         
-        document.getElementById("adminAddGuestBtn")?.addEventListener("click", async()=>{ 
-            const inp = document.getElementById("adminGuestName"); 
-            const name = inp?.value.trim(); 
-            if(name){ 
-                await saveGuest({ guestName:name, gameDate:gameDate, addedBy:"Admin" }); 
-                inp.value = ""; 
-                renderAdminPage(); 
-            } else alert("Enter guest name"); 
+        document.getElementById("adminAddGuestBtn")?.addEventListener("click", async () => {
+            const inp = document.getElementById("adminGuestName");
+            const name = inp?.value.trim();
+            if(name){
+                await saveGuest({ guestName: name, gameDate: gameDate, addedBy: "Admin" });
+                inp.value = "";
+                renderAdminPage();
+            } else alert("Enter guest name");
         });
         
-        document.querySelectorAll(".remove-guest-btn").forEach(btn=>btn.addEventListener("click", async()=>{ 
-            const guest = btn.dataset.guest; 
-            const date = btn.dataset.date; 
-            await removeGuest(guest, date); 
-            renderAdminPage(); 
-        }));
-        
-        document.getElementById("saveTeamsBtn")?.addEventListener("click", async()=>{ 
-            const newAssign = {}; 
-            document.querySelectorAll(".team-select").forEach(sel=>{ 
-                const name = sel.dataset.name; 
-                const val = sel.value; 
-                if(val && name) newAssign[name] = val; 
-            }); 
-            await saveTeamAssignments(gameDate, newAssign); 
-            renderAdminPage(); 
-            renderTeamsPage(); 
+        document.querySelectorAll(".remove-guest-btn").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                await removeGuest(btn.dataset.guest, btn.dataset.date);
+                renderAdminPage();
+            });
         });
         
-        document.getElementById("autoBalanceBtn")?.addEventListener("click", ()=>{ 
-            const playersList = allList.map(p=>p.name); 
-            const shuffled = [...playersList]; 
-            for(let i=shuffled.length-1;i>0;i--){ 
-                const j = Math.floor(Math.random()*(i+1)); 
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; 
-            } 
-            const half = Math.ceil(shuffled.length/2); 
-            const autoAssign = {}; 
-            shuffled.forEach((p,idx)=>{ autoAssign[p] = idx<half ? "yellow" : "orange"; }); 
-            saveTeamAssignments(gameDate, autoAssign).then(()=>{ renderAdminPage(); renderTeamsPage(); }); 
+        document.getElementById("saveTeamsBtn")?.addEventListener("click", async () => {
+            const newAssign = {};
+            document.querySelectorAll(".team-select").forEach(sel => {
+                const name = sel.dataset.name;
+                const val = sel.value;
+                if(val && name) newAssign[name] = val;
+            });
+            await saveTeamAssignments(gameDate, newAssign);
+            renderAdminPage();
+            renderTeamsPage();
+        });
+        
+        document.getElementById("autoBalanceBtn")?.addEventListener("click", () => {
+            const playerNames = allList.map(p => p.name);
+            const shuffled = [...playerNames];
+            for(let i = shuffled.length - 1; i > 0; i--){
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            const half = Math.ceil(shuffled.length / 2);
+            const autoAssign = {};
+            shuffled.forEach((p, idx) => { autoAssign[p] = idx < half ? "yellow" : "orange"; });
+            saveTeamAssignments(gameDate, autoAssign).then(() => { renderAdminPage(); renderTeamsPage(); });
         });
     }
     
     function showLoginModal(){
         const modal=document.createElement('div'); modal.className='modal'; 
         let playerOptions=players.map(p=>`<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
-        modal.innerHTML=`<div class="modal-content"><div class="login-logo" style="width:80px;height:80px;background:#1a73e8;border-radius:24px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;"><i class="fas fa-futbol fa-3x" style="color:white;"></i></div><h3 style="text-align:center;">Welcome to Monday Soccer</h3><select id="loginNameSelect"><option value="">Select your name</option>${playerOptions}</select><button id="loginBtn" style="width:100%;">Login / Join</button><div style="margin-top:12px;"><button id="adminSwitchBtn" class="btn-outline" style="width:100%;">🔐 Admin Access</button></div></div>`;
+        modal.innerHTML=`<div class="modal-content"><div style="width:80px;height:80px;background:#1a73e8;border-radius:24px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;"><i class="fas fa-futbol fa-3x" style="color:white;"></i></div><h3 style="text-align:center;">Monday Night Soccer</h3><select id="loginNameSelect"><option value="">Select your name</option>${playerOptions}</select><button id="loginBtn" style="width:100%;">Login</button><div style="margin-top:12px;"><button id="adminSwitchBtn" class="btn-outline" style="width:100%;">🔐 Admin Access</button></div></div>`;
         document.body.appendChild(modal);
         document.getElementById("loginBtn").onclick=()=>{ const sel=document.getElementById("loginNameSelect"); const name=sel?.value; if(name && players.includes(name)){ currentUser={name}; isAdminLoggedIn=false; modal.remove(); document.getElementById("userNameDisplay").innerText=name; document.getElementById("logoutBtn").style.display="inline-block"; refreshAll(); renderChatPage(); } else alert("Please select your name"); };
         document.getElementById("adminSwitchBtn").onclick=()=>{ const pw=prompt("Admin password:"); if(pw==="admin123"){ isAdminLoggedIn=true; currentUser={name:"Admin"}; document.getElementById("userNameDisplay").innerText="Admin"; document.getElementById("logoutBtn").style.display="inline-block"; modal.remove(); refreshAll(); renderAdminPage(); } else alert("Wrong password"); };
