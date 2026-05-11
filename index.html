@@ -428,13 +428,36 @@ ${injuryText}
         await saveAttendance({ player:currentUser.name, gameDate:CURRENT_GAME_STR, status:status });
     }
     
-    async function addGuest(name){
-        if(!currentUser){ alert("Login first"); return; }
-        if(guests.some(g=>g.gameDate===CURRENT_GAME_STR && g.guestName===name.trim())){ alert("Guest exists"); return; }
-        await saveGuest({ guestName:name.trim(), gameDate:CURRENT_GAME_STR, addedBy:currentUser.name });
-        const inp = document.getElementById("guestNameInput");
-        if(inp) inp.value="";
-        alert(`Guest "${name}" added!`);
+    async function addGuestToWeek(guestName, gameDate){
+        if(!isAdminLoggedIn && currentUser?.name !== "Admin"){
+            alert("Admin access required to add guests to past weeks.");
+            return false;
+        }
+        if(guests.some(g=>g.gameDate===gameDate && g.guestName===guestName.trim())){ 
+            alert("Guest already exists for this week"); 
+            return false; 
+        }
+        await saveGuest({ guestName:guestName.trim(), gameDate:gameDate, addedBy:currentUser?.name || "Admin" });
+        alert(`Guest "${guestName}" added to ${gameDate}!`);
+        refreshAll();
+        if(isAdminLoggedIn) renderAdminPage();
+        return true;
+    }
+    
+    async function addPlayerToWeek(playerName, gameDate){
+        if(!isAdminLoggedIn){
+            alert("Admin access required to add players to past weeks.");
+            return false;
+        }
+        if(attendance.some(a=>a.player===playerName && a.gameDate===gameDate)){ 
+            alert(`${playerName} already has attendance for this week`); 
+            return false; 
+        }
+        await saveAttendance({ player:playerName, gameDate:gameDate, status:'in' });
+        alert(`${playerName} added to ${gameDate}!`);
+        refreshAll();
+        if(isAdminLoggedIn) renderAdminPage();
+        return true;
     }
     
     function showEditProfile(name){
@@ -468,7 +491,7 @@ ${injuryText}
         c.innerHTML=`<div class="info-bar"><i class="fas fa-calendar-alt"></i> Next Match: ${gl} • 8:00pm Clifton Park</div><div class="attendance-card"><h2><i class="fas fa-futbol"></i> ${gl} • 8pm</h2><div>Clifton Park, Brunswick</div><div class="big-buttons"><button id="homePlayBtn" class="btn-play-big">✅ I'M PLAYING</button><button id="homeSitBtn" class="btn-sit-big">❌ CAN'T PLAY</button></div><div>${status==='in'?'✓ You are PLAYING':(status==='out'?'✗ You are NOT PLAYING':'Tap above to set attendance')}</div></div><div class="playing-list"><div>🟢 Players (${parts.players.length}) <span style="font-size:11px;color:#666;">(click ✖ to remove)</span></div><div>${parts.players.map(p=>`<span class="attendee-tag">${renderMiniAvatar(p,28)} ${escapeHtml(p)} <button class="remove-attendee-btn" data-player="${escapeHtml(p)}" data-date="${CURRENT_GAME_STR}"><i class="fas fa-trash-alt"></i></button></span>`).join('')||'None'}</div></div><div class="guest-section"><div>🎭 Guests (${parts.guests.length})</div><div>${parts.guests.map(g=>`<span class="guest-tag"><i class="fas fa-user-plus"></i> ${escapeHtml(g.name)} <small>(${escapeHtml(g.addedBy)})</small></span>`).join('')||'None'}</div><div style="margin-top:12px;"><input id="guestNameInput" placeholder="Guest name"><button id="addGuestBtnPlayer" style="width:100%;margin-top:8px;">➕ Bring a Guest</button></div></div>`; 
         document.getElementById("homePlayBtn")?.addEventListener("click",()=>setAttendance("in")); 
         document.getElementById("homeSitBtn")?.addEventListener("click",()=>setAttendance("out")); 
-        document.getElementById("addGuestBtnPlayer")?.addEventListener("click",()=>{ const gn=document.getElementById("guestNameInput")?.value.trim(); if(gn) addGuest(gn); else alert("Enter guest name"); });
+        document.getElementById("addGuestBtnPlayer")?.addEventListener("click",()=>{ const gn=document.getElementById("guestNameInput")?.value.trim(); if(gn) addGuestToWeek(gn, CURRENT_GAME_STR); else alert("Enter guest name"); });
         document.querySelectorAll(".remove-attendee-btn").forEach(btn => { btn.addEventListener("click", async (e) => { e.stopPropagation(); await removeAttendee(btn.dataset.player, btn.dataset.date); }); });
     }
     
@@ -522,7 +545,7 @@ ${injuryText}
     
     function renderProfilesPage(){ const c=document.getElementById("page-profiles"); if(!c) return; let h=`<div class="card"><h2>👤 Player Profiles</h2>`; for(let p of players){ const prof=playerProfiles[p]||{ age:'—', position:'—', yearJoined:'—', gamesPlayed:0 }; const canEdit=(currentUser?.name===p)||isAdminLoggedIn; h+=`<div class="profile-item">${renderAvatar(p,50)}<div><div>⚽ ${escapeHtml(p)} ${canEdit?`<button class="edit-profile-btn" data-player="${escapeHtml(p)}">Edit</button>`:''}</div><div><span class="profile-badge">🎂 ${escapeHtml(prof.age)}</span><span class="profile-badge">⚽ ${escapeHtml(prof.position)}</span><span class="profile-badge">📅 ${escapeHtml(prof.yearJoined)}</span><span class="profile-badge">🏆 ${prof.gamesPlayed||0} games</span></div></div></div>`; } c.innerHTML=h; document.querySelectorAll(".edit-profile-btn").forEach(btn=>btn.addEventListener("click",()=>showEditProfile(btn.dataset.player))); }
     
-    function renderScoreboardPage(){ const c=document.getElementById("page-scoreboard"); if(!c) return; let stats = new Map(); for(let p of players) stats.set(p, { goals:0, gamesPlayed:0, assists:0 }); attendance.forEach(a => { if(a.status === 'in' && stats.has(a.player)) stats.get(a.player).gamesPlayed++; }); for(let p of players){ const opening = playerProfiles[p]?.openingBalanceGames || 0; if(stats.has(p)) stats.get(p).gamesPlayed += opening; } for(let match of Object.values(matchResults)){ if(match.goals){ for(let [scorer, count] of Object.entries(match.goals)){ if(stats.has(scorer)) stats.get(scorer).goals += count; } } if(match.assists){ for(let [assister, count] of Object.entries(match.assists)){ if(stats.has(assister)) stats.get(assister).assists += count; } } } const allStats = Array.from(stats.entries()).map(([name, s]) => ({ name, goals: s.goals, gamesPlayed: s.gamesPlayed, assists: s.assists })); const topGoals = [...allStats].sort((a,b) => b.goals - a.goals).slice(0,15); const topGames = [...allStats].sort((a,b) => b.gamesPlayed - a.gamesPlayed).slice(0,15); const topAssists = [...allStats].sort((a,b) => b.assists - a.assists).slice(0,15); c.innerHTML = `<div class="card"><h2>🏆 ALL-TIME LEADERBOARD</h2><p style="font-size:11px; color:#6c757d; margin-bottom:16px;">Career totals including opening balance games</p><div style="margin-bottom:24px;"><h3>⚽ TOP GOAL SCORERS</h3><table class="data-table"><thead><tr><th>#</th><th>Player</th><th>Goals</th></tr></thead><tbody>${topGoals.map((p,i)=>`<tr><td style="width:40px;"><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td><strong>${p.goals}</strong></td></tr>`).join('')}</tbody></table></div><div style="margin-bottom:24px;"><h3>🏃 MOST GAMES PLAYED</h3><table class="data-table"><thead><tr><th>#</th><th>Player</th><th>Games</th></tr></thead><tbody>${topGames.map((p,i)=>`<tr><td><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td><strong>${p.gamesPlayed}</strong></td></tr>`).join('')}</tbody></table></div><div><h3>🎯 MOST ASSISTS</h3><table class="data-table"><thead><tr><th>#</th><th>Player</th><th>Assists</th></tr></thead><tbody>${topAssists.map((p,i)=>`<tr><td><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td><strong>${p.assists}</strong></td></tr>`).join('')}</tbody></table></div></div>`; }
+    function renderScoreboardPage(){ const c=document.getElementById("page-scoreboard"); if(!c) return; let stats = new Map(); for(let p of players) stats.set(p, { goals:0, gamesPlayed:0, assists:0 }); attendance.forEach(a => { if(a.status === 'in' && stats.has(a.player)) stats.get(a.player).gamesPlayed++; }); for(let p of players){ const opening = playerProfiles[p]?.openingBalanceGames || 0; if(stats.has(p)) stats.get(p).gamesPlayed += opening; } for(let match of Object.values(matchResults)){ if(match.goals){ for(let [scorer, count] of Object.entries(match.goals)){ if(stats.has(scorer)) stats.get(scorer).goals += count; } } if(match.assists){ for(let [assister, count] of Object.entries(match.assists)){ if(stats.has(assister)) stats.get(assister).assists += count; } } } const allStats = Array.from(stats.entries()).map(([name, s]) => ({ name, goals: s.goals, gamesPlayed: s.gamesPlayed, assists: s.assists })); const topGoals = [...allStats].sort((a,b) => b.goals - a.goals).slice(0,15); const topGames = [...allStats].sort((a,b) => b.gamesPlayed - a.gamesPlayed).slice(0,15); const topAssists = [...allStats].sort((a,b) => b.assists - a.assists).slice(0,15); c.innerHTML = `<div class="card"><h2>🏆 ALL-TIME LEADERBOARD</h2><p style="font-size:11px; color:#6c757d; margin-bottom:16px;">Career totals including opening balance games</p><div style="margin-bottom:24px;"><h3>⚽ TOP GOAL SCORERS</h3><table class="data-table"><thead><tr><th>#</th><th>Player</th><th>Goals</th></tr></thead><tbody>${topGoals.map((p,i)=>`<tr><td style="width:40px;"><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td><strong>${p.goals}</strong></td>`).join('')}</tbody></table></div><div style="margin-bottom:24px;"><h3>🏃 MOST GAMES PLAYED</h3><table class="data-table"><thead><tr><th>#</th><th>Player</th><th>Games</th></tr></thead><tbody>${topGames.map((p,i)=>`<tr><td><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td><strong>${p.gamesPlayed}</strong></td></tr>`).join('')}</tbody></table></div><div><h3>🎯 MOST ASSISTS</h3><table class="data-table"><thead><tr><th>#</th><th>Player</th><th>Assists</th></tr></thead><tbody>${topAssists.map((p,i)=>`<tr><td><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td><strong>${p.assists}</strong></td></tr>`).join('')}</tbody></table></div></div>`; }
     
     function renderTimerPage(){ const c=document.getElementById("page-timer"); if(!c) return; c.innerHTML=`<div class="timer-container"><div class="timer-display" id="timerDisplay">45:00</div><div class="flex-btns"><button class="timer-btn start" id="timerStartBtn">▶ Start</button><button class="timer-btn pause" id="timerPauseBtn">⏸ Pause</button><button class="timer-btn reset" id="timerResetBtn">⟳ Reset</button></div><div class="half-status"><span id="currentHalf">FIRST HALF</span></div></div>`; updateTimerDisplay(); document.getElementById("timerStartBtn")?.addEventListener("click",startTimer); document.getElementById("timerPauseBtn")?.addEventListener("click",pauseTimer); document.getElementById("timerResetBtn")?.addEventListener("click",resetTimer); }
     function renderChatPage(){ const c=document.getElementById("page-chat"); if(!c) return; c.innerHTML=`<div class="card"><h2>💬 Team Chat</h2><div id="chatMessagesList" style="height:400px;overflow-y:auto;background:#f8f9fa;border-radius:20px;padding:12px;margin-bottom:12px;"></div><div style="display:flex;gap:8px;"><input id="chatInput" placeholder="Type message..." style="flex:1;"><button id="chatSendBtn">Send</button></div></div>`; if(firebaseReady&&db){ if(chatUnsubscribe) chatUnsubscribe(); chatUnsubscribe = db.collection("chatMessages").orderBy("timestamp","asc").onSnapshot(snap=>{ const div=document.getElementById("chatMessagesList"); if(!div) return; let h=""; snap.forEach(doc=>{ const m=doc.data(); const t=m.timestamp?new Date(m.timestamp.toDate()).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):""; h+=`<div class="chat-message"><strong>${escapeHtml(m.name)}</strong> <span style="font-size:10px;color:#6c757d;">${t}</span><br><div style="background:#e9ecef;border-radius:12px;padding:8px;margin-top:4px;">${escapeHtml(m.message)}</div></div>`; }); div.innerHTML=h||"<div style='text-align:center;padding:20px;'>No messages</div>"; div.scrollTop=div.scrollHeight; }); } document.getElementById("chatSendBtn")?.addEventListener("click",async()=>{ const inp=document.getElementById("chatInput"); if(inp?.value.trim()){ await saveChatMessage(inp.value.trim()); inp.value=""; } }); }
@@ -537,13 +560,26 @@ ${injuryText}
         const currAssign=teamAssignments[gameDate]||{};
         const pastWeeks=getPastWeeks();
         
-        // Create the full player dropdown options once
         const playerDropdownOptions = FIXED_PLAYERS_LIST.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
         
         let html = `<div class="info-bar">🔐 Admin Mode - Managing: ${gameLabel}</div>
-        <div class="card"><h2>✍️ Manual Attendance</h2><select id="manualPlayerSelect"><option value="">-- Select Player --</option>${playerDropdownOptions}</select><button id="manualAddBtn" style="background:#28a745;">➕ Add to Playing List</button></div>
-        <div class="card"><h2>🎭 Manage Guests</h2>${parts.guests.map(g=>`<div class="admin-team-item"><span><strong>${escapeHtml(g.name)}</strong> (by ${escapeHtml(g.addedBy)})</span><button class="remove-guest-btn" data-guest="${escapeHtml(g.name)}" data-date="${gameDate}" style="background:#dc3545;">Remove</button></div>`).join('')}<div><input id="adminGuestName" placeholder="New guest"><button id="adminAddGuestBtn">+ Add Guest</button></div></div>
-        <div class="card"><h2>⚽ Assign Teams</h2>${allList.map(p=>{ const ct=currAssign[p.name] || currAssign[`guest_${p.name}`] || ""; return `<div class="admin-team-item"><div>${renderMiniAvatar(p.name,28)} ${escapeHtml(p.name)} ${p.isGuest?'<span style="background:#28a745;color:white;padding:2px 8px;border-radius:20px;">GUEST</span>':''}</div><select class="team-select" data-name="${escapeHtml(p.name)}"><option value="">— Team —</option><option value="yellow" ${ct==="yellow"?"selected":""}>🟡 Yellow</option><option value="orange" ${ct==="orange"?"selected":""}>🟠 Orange</option></select></div>`; }).join('')}<div class="flex-btns"><button id="autoBalanceBtn">🎲 Auto-Balance</button><button id="saveTeamsBtn">💾 Save Teams</button></div></div>
+        
+        <div class="card"><h2>📅 ADD PLAYERS TO ANY PAST WEEK</h2>
+        <div class="info-bar" style="background:#fff3cd;color:#856404;"><i class="fas fa-history"></i> Select any past week below to add players who played but weren't recorded</div>
+        <select id="pastWeekSelect"><option value="">-- Select Past Week --</option>${pastWeeks.map(w=>`<option value="${w.dateStr}">${w.label}</option>`).join('')}</select>
+        <select id="playerToAddSelect"><option value="">-- Select Player --</option>${playerDropdownOptions}</select>
+        <button id="addPlayerToPastWeekBtn" style="background:#28a745;">➕ Add Player to Selected Week</button>
+        </div>
+        
+        <div class="card"><h2>🎭 ADD GUESTS TO ANY PAST WEEK</h2>
+        <select id="guestPastWeekSelect"><option value="">-- Select Past Week --</option>${pastWeeks.map(w=>`<option value="${w.dateStr}">${w.label}</option>`).join('')}</select>
+        <input id="guestNameToAdd" placeholder="Guest Name">
+        <button id="addGuestToPastWeekBtn" style="background:#28a745;">➕ Add Guest to Selected Week</button>
+        </div>
+        
+        <div class="card"><h2>✍️ Manual Attendance (Current Week)</h2><select id="manualPlayerSelect"><option value="">-- Select Player --</option>${playerDropdownOptions}</select><button id="manualAddBtn" style="background:#28a745;">➕ Add to Current Week Playing List</button></div>
+        <div class="card"><h2>🎭 Manage Guests (Current Week)</h2>${parts.guests.map(g=>`<div class="admin-team-item"><span><strong>${escapeHtml(g.name)}</strong> (by ${escapeHtml(g.addedBy)})</span><button class="remove-guest-btn" data-guest="${escapeHtml(g.name)}" data-date="${gameDate}" style="background:#dc3545;">Remove</button></div>`).join('')}<div><input id="adminGuestName" placeholder="New guest"><button id="adminAddGuestBtn">+ Add Guest to Current Week</button></div></div>
+        <div class="card"><h2>⚽ Assign Teams (Current Week)</h2>${allList.map(p=>{ const ct=currAssign[p.name] || currAssign[`guest_${p.name}`] || ""; return `<div class="admin-team-item"><div>${renderMiniAvatar(p.name,28)} ${escapeHtml(p.name)} ${p.isGuest?'<span style="background:#28a745;color:white;padding:2px 8px;border-radius:20px;">GUEST</span>':''}</div><select class="team-select" data-name="${escapeHtml(p.name)}"><option value="">— Team —</option><option value="yellow" ${ct==="yellow"?"selected":""}>🟡 Yellow</option><option value="orange" ${ct==="orange"?"selected":""}>🟠 Orange</option></select></div>`; }).join('')}<div class="flex-btns"><button id="autoBalanceBtn">🎲 Auto-Balance</button><button id="saveTeamsBtn">💾 Save Teams</button></div></div>
         <div class="card"><h2>📝 Match Report & AI Generation</h2>
         <div class="info-bar" style="margin-bottom:12px;"><i class="fas fa-info-circle"></i> Select a week below. All ${FIXED_PLAYERS_LIST.length} players are available in the dropdowns.</div>
         <select id="reportWeekSelect"><option value="">-- Select Match Week --</option>${pastWeeks.map(w=>`<option value="${w.dateStr}">${w.label}</option>`).join('')}<option value="${CURRENT_GAME_STR}">${gameLabel} (Current Week)</option></select>
@@ -553,7 +589,7 @@ ${injuryText}
                 <input type="number" id="reportOrangeScore" placeholder="Orange Score" style="flex:1;">
             </div>
             <div style="margin-bottom:12px;">
-                <label><strong>⚽ Goal Scorers</strong> <span style="font-size:11px;color:#6c757d;">(full player list)</span></label>
+                <label><strong>⚽ Goal Scorers</strong></label>
                 <div id="goalsList" style="margin-top:8px;"></div>
                 <button id="addGoalBtn" type="button" style="margin-top:8px;">+ Add Goal Scorer</button>
             </div>
@@ -579,11 +615,39 @@ ${injuryText}
         
         const container=document.getElementById("page-admin"); if(container) container.innerHTML=html;
         
+        // Add player to past week
+        document.getElementById("addPlayerToPastWeekBtn")?.addEventListener("click", async () => {
+            const weekSelect = document.getElementById("pastWeekSelect");
+            const playerSelect = document.getElementById("playerToAddSelect");
+            const week = weekSelect?.value;
+            const playerName = playerSelect?.value;
+            
+            if(!week){ alert("Please select a past week"); return; }
+            if(!playerName){ alert("Please select a player"); return; }
+            
+            await addPlayerToWeek(playerName, week);
+            refreshAll();
+            renderAdminPage();
+        });
+        
+        // Add guest to past week
+        document.getElementById("addGuestToPastWeekBtn")?.addEventListener("click", async () => {
+            const weekSelect = document.getElementById("guestPastWeekSelect");
+            const guestName = document.getElementById("guestNameToAdd")?.value.trim();
+            const week = weekSelect?.value;
+            
+            if(!week){ alert("Please select a past week"); return; }
+            if(!guestName){ alert("Please enter a guest name"); return; }
+            
+            await addGuestToWeek(guestName, week);
+            refreshAll();
+            renderAdminPage();
+        });
+        
         let currentGoals = [], currentAssists = [];
         let currentWeekForForm = null;
         
         function rebuildPlayerDropdowns(){
-            // Always use the full fixed player list for dropdowns
             const fullPlayerOptions = FIXED_PLAYERS_LIST.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
             
             const goalsDiv = document.getElementById("goalsList");
@@ -592,7 +656,6 @@ ${injuryText}
                     goalsDiv.innerHTML = '<div style="color:#6c757d; padding:10px; text-align:center;">No goal scorers added yet. Click "+ Add Goal Scorer" to add.</div>';
                 } else {
                     goalsDiv.innerHTML = currentGoals.map((g,idx)=>`<div class="stats-row"><select class="goal-select" data-idx="${idx}" style="flex:2; margin:0;">${fullPlayerOptions}</select><input type="number" class="goal-count" data-idx="${idx}" placeholder="Goals" value="${g.count}" style="width:80px; margin:0;"><button class="remove-goal" data-idx="${idx}" style="background:#dc3545; margin:0; padding:10px 16px;">✖</button></div>`).join('');
-                    // Set selected values
                     currentGoals.forEach((g, idx) => {
                         const sel = document.querySelector(`.goal-select[data-idx="${idx}"]`);
                         if(sel && g.player) sel.value = g.player;
@@ -726,9 +789,9 @@ ${injuryText}
             const playerName = sel?.value;
             if(playerName && FIXED_PLAYERS_LIST.includes(playerName)){
                 const exists = attendance.some(a => a.player === playerName && a.gameDate === gameDate);
-                if(exists){ alert(`${playerName} already has attendance`); return; }
+                if(exists){ alert(`${playerName} already has attendance for current week`); return; }
                 await saveAttendance({ player: playerName, gameDate: gameDate, status: 'in' });
-                alert(`${playerName} added`);
+                alert(`${playerName} added to current week`);
                 renderAdminPage();
             } else alert("Select valid player");
         });
@@ -737,7 +800,7 @@ ${injuryText}
             const inp = document.getElementById("adminGuestName");
             const name = inp?.value.trim();
             if(name){
-                await saveGuest({ guestName: name, gameDate: gameDate, addedBy: "Admin" });
+                await addGuestToWeek(name, gameDate);
                 inp.value = "";
                 renderAdminPage();
             } else alert("Enter guest name");
