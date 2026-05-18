@@ -807,31 +807,67 @@ ${injuryText}
             }
         }
         
-        // REPAIRED: Load team assignments - ONLY SHOW PLAYERS WHO CONFIRMED
-        async function loadTeamAssignments(week){
+        // async function loadTeamAssignments(week){
             const area = document.getElementById("teamAssignArea");
-            if(!week){
-                area.style.display = "none";
-                return;
-            }
+            if(!week){ area.style.display = "none"; return; }
             area.style.display = "block";
             
-            // CRITICAL FIX: Only get players who confirmed 'in' for this week
+            // FIX: Only get players who said 'in' for this week
             const playersInWeek = attendance.filter(a => a.gameDate === week && a.status === 'in').map(a => a.player);
             const guestsInWeek = guests.filter(g => g.gameDate === week).map(g => g.name);
             const allPeople = [...playersInWeek, ...guestsInWeek];
             const currentAssign = teamAssignments[week] || {};
             
-            const yellow = [];
-            const orange = [];
-            const unassigned = [];
-            
+            const yellow = [], orange = [], unassigned = [];
             for(let person of allPeople){
                 const assigned = currentAssign[person] || currentAssign[`guest_${person}`];
                 if(assigned === "yellow") yellow.push(person);
                 else if(assigned === "orange") orange.push(person);
                 else unassigned.push(person);
             }
+            
+            const unassignedDiv = document.getElementById("unassignedList");
+            const yellowDiv = document.getElementById("yellowList");
+            const orangeDiv = document.getElementById("orangeList");
+            
+            unassignedDiv.innerHTML = `<strong>⚡ Players who said YES (${unassigned.length} unassigned):</strong><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">${unassigned.map(p => `<div style="display:flex; gap:4px; align-items:center; background:#e9ecef; border-radius:40px; padding:4px 8px;"><span>${renderMiniAvatar(p,24)} ${escapeHtml(p)}</span><button class="assign-yellow-btn" data-player="${escapeHtml(p)}" data-week="${week}">🟡 Yellow</button><button class="assign-orange-btn" data-player="${escapeHtml(p)}" data-week="${week}">🟠 Orange</button></div>`).join('')}${unassigned.length === 0 ? '<span style="color:#28a745;">✅ All players assigned!</span>' : ''}</div>`;
+            
+            yellowDiv.innerHTML = yellow.map(p => `<div class="player-tag" style="background:#ffc107; color:#2c2c2c; margin:4px;">${renderMiniAvatar(p,24)} ${escapeHtml(p)} <button class="remove-assign-btn" data-player="${escapeHtml(p)}" data-week="${week}" style="margin-left:6px; background:#dc3545; border:none; color:white; border-radius:40px; padding:2px 8px;">✖</button></div>`).join('');
+            if(yellow.length === 0) yellowDiv.innerHTML = '<span style="color:#ccc;">— Empty —</span>';
+            
+            orangeDiv.innerHTML = orange.map(p => `<div class="player-tag" style="background:#fd7e14; margin:4px;">${renderMiniAvatar(p,24)} ${escapeHtml(p)} <button class="remove-assign-btn" data-player="${escapeHtml(p)}" data-week="${week}" style="margin-left:6px; background:#dc3545; border:none; color:white; border-radius:40px; padding:2px 8px;">✖</button></div>`).join('');
+            if(orange.length === 0) orangeDiv.innerHTML = '<span style="color:#ccc;">— Empty —</span>';
+            
+            document.querySelectorAll(".assign-yellow-btn").forEach(btn => {
+                btn.addEventListener("click", async () => {
+                    const assign = teamAssignments[week] || {};
+                    assign[btn.dataset.player] = "yellow";
+                    await saveTeamAssignments(week, assign);
+                    await loadTeamAssignments(week);
+                    refreshAll();
+                });
+            });
+            
+            document.querySelectorAll(".assign-orange-btn").forEach(btn => {
+                btn.addEventListener("click", async () => {
+                    const assign = teamAssignments[week] || {};
+                    assign[btn.dataset.player] = "orange";
+                    await saveTeamAssignments(week, assign);
+                    await loadTeamAssignments(week);
+                    refreshAll();
+                });
+            });
+            
+            document.querySelectorAll(".remove-assign-btn").forEach(btn => {
+                btn.addEventListener("click", async () => {
+                    const assign = teamAssignments[week] || {};
+                    delete assign[btn.dataset.player];
+                    await saveTeamAssignments(week, assign);
+                    await loadTeamAssignments(week);
+                    refreshAll();
+                });
+            });
+        }
             
             const unassignedDiv = document.getElementById("unassignedList");
             const yellowDiv = document.getElementById("yellowList");
