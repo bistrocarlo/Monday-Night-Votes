@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>Monday Night Soccer | Team Hub - FULLY REPAIRED</title>
+    <title>Monday Night Soccer | Team Hub - WITH GUEST MANAGEMENT</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
@@ -73,6 +73,8 @@
         @media (max-width:450px){.team-row{flex-direction:column;}}
         .guest-tag{display:inline-block;background:#d4edda;border-radius:40px;padding:4px 12px;margin:4px;font-size:12px;}
         .btn-outline{background:white;color:#1a73e8;border:2px solid #1a73e8;}
+        .remove-guest-btn{background:#dc3545;border:none;color:white;border-radius:40px;padding:2px 8px;font-size:10px;margin-left:6px;cursor:pointer;}
+        .guest-badge{background:#28a745;color:white;border-radius:40px;padding:2px 8px;font-size:9px;margin-left:6px;}
     </style>
 </head>
 <body>
@@ -97,7 +99,7 @@
         console.log("✅ Firebase connected");
     } catch(e) { console.warn("⚠️ Offline mode", e); }
     
-    // ==================== MASTER PLAYER LIST (FIXED) ====================
+    // ==================== MASTER PLAYER LIST ====================
     const FIXED_PLAYERS_LIST = [
         "Alex Rowe", "Ali Mekawy", "Carlo Pavia", "Charlie Pavia", "Chris Del Monaco", 
         "Chris Margelis", "Chris Sophocli", "Danny Sammartino", "Dante Sammartino", 
@@ -173,7 +175,7 @@
     
     function getAllParticipants(gameDate){ 
         const playersIn = attendance.filter(a => a.gameDate === gameDate && a.status === 'in').map(a => a.player); 
-        const guestsIn = guests.filter(g => g.gameDate === gameDate).map(g => ({ name: g.guestName, isGuest: true, addedBy: g.addedBy })); 
+        const guestsIn = guests.filter(g => g.gameDate === gameDate).map(g => ({ name: g.guestName, isGuest: true, addedBy: g.addedBy, timestamp: g.timestamp })); 
         return { players: playersIn, guests: guestsIn }; 
     }
     
@@ -261,7 +263,75 @@
         updateTimerDisplay(); 
     }
     
-    // ==================== FIREBASE OPERATIONS ====================
+    // ==================== GUEST MANAGEMENT (UPDATED - Allows both Admin AND Players) ====================
+    async function saveGuest(g){ 
+        if(firebaseReady && db) await db.collection("guests").doc(`${g.guestName}_${g.gameDate}`).set(g); 
+        guests.push(g); 
+        refreshAll(); 
+    }
+    
+    // NEW: Allow any logged-in player OR admin to add a guest
+    async function addGuestToWeek(guestName, gameDate){ 
+        // Allow if admin OR logged-in player
+        if(!isAdminLoggedIn && !currentUser){ 
+            alert("Please login to add a guest"); 
+            return false; 
+        }
+        
+        const trimmedName = guestName.trim();
+        if(!trimmedName){ 
+            alert("Please enter a guest name"); 
+            return false; 
+        }
+        
+        // Check if guest already exists for this week
+        if(guests.some(g=>g.gameDate===gameDate && g.guestName.toLowerCase() === trimmedName.toLowerCase())){ 
+            alert(`⚠️ "${trimmedName}" is already added as a guest for this week`); 
+            return false; 
+        }
+        
+        await saveGuest({ 
+            guestName: trimmedName, 
+            gameDate: gameDate, 
+            addedBy: currentUser?.name || "Admin",
+            timestamp: Date.now()
+        }); 
+        
+        alert(`✅ Guest "${trimmedName}" added to ${gameDate}! They can now be assigned to a team.`); 
+        refreshAll(); 
+        return true; 
+    }
+    
+    // Allow players to remove their own guests? Admin can remove any, players can only remove guests they added
+    async function removeGuestFromWeek(guestName, gameDate, addedBy){
+        // Admin can remove any guest
+        if(isAdminLoggedIn){
+            if(!confirm(`Remove guest "${guestName}"?`)) return false;
+        } 
+        // Player can only remove guests they added themselves
+        else if(currentUser && addedBy === currentUser.name){
+            if(!confirm(`Remove guest "${guestName}" (added by you)?`)) return false;
+        }
+        else {
+            alert("You can only remove guests that you added");
+            return false;
+        }
+        
+        if(firebaseReady && db) await db.collection("guests").doc(`${guestName}_${gameDate}`).delete();
+        guests = guests.filter(g => !(g.guestName === guestName && g.gameDate === gameDate));
+        
+        // Also remove from team assignments if exists
+        if(teamAssignments[gameDate]){
+            delete teamAssignments[gameDate][guestName];
+            if(firebaseReady && db) await db.collection("config").doc("teamAssignments").set(teamAssignments);
+        }
+        
+        alert(`✅ Guest "${guestName}" removed`);
+        refreshAll();
+        return true;
+    }
+    
+    // ==================== OTHER FIREBASE OPERATIONS ====================
     async function saveAttendance(a){ 
         if(firebaseReady && db) await db.collection("attendance").doc(`${a.player}_${a.gameDate}`).set(a); 
         const idx = attendance.findIndex(x=>x.player===a.player && x.gameDate===a.gameDate); 
@@ -272,12 +342,6 @@
         if(playerProfiles[a.player]) playerProfiles[a.player].gamesPlayed = games + opening; 
         else playerProfiles[a.player] = {age:'—', position:'—', yearJoined:'—', gamesPlayed:games+opening, openingBalanceGames:0}; 
         if(firebaseReady && db) await db.collection("config").doc("playerProfiles").set(playerProfiles); 
-        refreshAll(); 
-    }
-    
-    async function saveGuest(g){ 
-        if(firebaseReady && db) await db.collection("guests").doc(`${g.guestName}_${g.gameDate}`).set(g); 
-        guests.push(g); 
         refreshAll(); 
     }
     
@@ -313,14 +377,6 @@
     async function setAttendance(status){ 
         if(!currentUser){ alert("Login required"); return; } 
         await saveAttendance({ player:currentUser.name, gameDate:CURRENT_GAME_STR, status }); 
-    }
-    
-    async function addGuestToWeek(guestName, gameDate){ 
-        if(!isAdminLoggedIn){ alert("Admin only"); return false; } 
-        if(guests.some(g=>g.gameDate===gameDate && g.guestName===guestName.trim())){ alert("Guest exists"); return false; } 
-        await saveGuest({ guestName:guestName.trim(), gameDate, addedBy:currentUser?.name||"Admin" }); 
-        refreshAll(); 
-        return true; 
     }
     
     async function addPlayerToWeek(playerName, gameDate){ 
@@ -399,11 +455,12 @@
                 <div>${parts.players.map(p=>`<span class="attendee-tag">${renderMiniAvatar(p)} ${escapeHtml(p)} <button class="remove-attendee-btn" data-player="${escapeHtml(p)}" data-date="${CURRENT_GAME_STR}"><i class="fas fa-trash-alt"></i></button></span>`).join('') || 'None'}</div>
             </div>
             <div class="guest-section">
-                <div>🎭 Guests (${parts.guests.length})</div>
-                <div>${parts.guests.map(g=>`<span class="guest-tag"><i class="fas fa-user-plus"></i> ${escapeHtml(g.name)} (by ${escapeHtml(g.addedBy)})</span>`).join('') || 'None'}</div>
+                <div><i class="fas fa-user-friends"></i> 🎭 Guests (${parts.guests.length})</div>
+                <div>${parts.guests.map(g=>`<span class="guest-tag">${renderMiniAvatar(g.name,24)} ${escapeHtml(g.name)} <span class="guest-badge">added by ${escapeHtml(g.addedBy)}</span> ${(isAdminLoggedIn || (currentUser && g.addedBy === currentUser.name)) ? `<button class="remove-guest-btn" data-guest="${escapeHtml(g.name)}" data-date="${CURRENT_GAME_STR}" data-addedby="${escapeHtml(g.addedBy)}"><i class="fas fa-trash"></i></button>` : ''}</span>`).join('') || 'No guests added yet'}</div>
                 <div style="margin-top:12px;">
-                    <input id="guestNameHome" placeholder="Guest name">
-                    <button id="addGuestHomeBtn">➕ Bring a Guest</button>
+                    <input id="guestNameHome" placeholder="Guest name (e.g., John Smith)">
+                    <button id="addGuestHomeBtn">➕ Add a Guest</button>
+                    <small style="display:block; margin-top:6px; color:#6c757d;">Any player can add a guest. Guests can be assigned to teams by admin.</small>
                 </div>
             </div>
         `; 
@@ -416,7 +473,10 @@
         });
         document.querySelectorAll(".remove-attendee-btn").forEach(btn=>btn.addEventListener("click",async(e)=>{ 
             await removePlayerFromWeek(btn.dataset.player, btn.dataset.date); 
-        })); 
+        }));
+        document.querySelectorAll(".remove-guest-btn").forEach(btn=>btn.addEventListener("click",async()=>{
+            await removeGuestFromWeek(btn.dataset.guest, btn.dataset.date, btn.dataset.addedby);
+        }));
     }
     
     function renderTeamsPage(){ 
@@ -424,7 +484,7 @@
         if(!c) return; 
         const gl = getCurrentGameLabel(); 
         const parts = getAllParticipants(CURRENT_GAME_STR); 
-        const allList = [...parts.players.map(p=>({name:p, isG:false})), ...parts.guests.map(g=>({name:g.name, isG:true}))]; 
+        const allList = [...parts.players.map(p=>({name:p, isG:false})), ...parts.guests.map(g=>({name:g.name, isG:true, addedBy:g.addedBy}))]; 
         const assign = teamAssignments[CURRENT_GAME_STR] || {}; 
         const yellow = [], orange = []; 
         for(let p of allList){ 
@@ -438,11 +498,11 @@
                 <div class="team-row">
                     <div class="team-box">
                         <div class="team-yellow">🟡 YELLOW TEAM (${yellow.length})</div>
-                        <div class="player-list">${yellow.map(p=>`<div class="player-tag">${renderMiniAvatar(p.name)} ${escapeHtml(p.name)}${p.isG?' <span style="font-size:9px;">(Guest)</span>':''}</div>`).join('') || '—'}</div>
+                        <div class="player-list">${yellow.map(p=>`<div class="player-tag">${renderMiniAvatar(p.name)} ${escapeHtml(p.name)}${p.isG?` <span class="guest-badge">Guest (${escapeHtml(p.addedBy)})</span>`:''}</div>`).join('') || '—'}</div>
                     </div>
                     <div class="team-box">
                         <div class="team-orange">🟠 ORANGE TEAM (${orange.length})</div>
-                        <div class="player-list">${orange.map(p=>`<div class="player-tag">${renderMiniAvatar(p.name)} ${escapeHtml(p.name)}${p.isG?' <span style="font-size:9px;">(Guest)</span>':''}</div>`).join('') || '—'}</div>
+                        <div class="player-list">${orange.map(p=>`<div class="player-tag">${renderMiniAvatar(p.name)} ${escapeHtml(p.name)}${p.isG?` <span class="guest-badge">Guest (${escapeHtml(p.addedBy)})</span>`:''}</div>`).join('') || '—'}</div>
                     </div>
                 </div>
             </div>
@@ -626,7 +686,7 @@
         }); 
     }
     
-    // ==================== REPAIRED ADMIN PAGE - INCLUDES CURRENT WEEK ====================
+    // ==================== ADMIN PAGE ====================
     function renderAdminPage(){ 
         const cont = document.getElementById("page-admin"); 
         if(!isAdminLoggedIn){ 
@@ -641,7 +701,6 @@
             return; 
         } 
         
-        // Include CURRENT week at the top of the selector
         const pastWeeks = getPastWeeks();
         const currentWeekObj = { dateStr: CURRENT_GAME_STR, label: `${getCurrentGameLabel()} (CURRENT WEEK)` };
         const allWeeksForSelect = [currentWeekObj, ...pastWeeks];
