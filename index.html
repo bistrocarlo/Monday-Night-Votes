@@ -106,6 +106,10 @@
         
         @media (max-width:450px){.team-row{flex-direction:column;}
         .stats-row select{flex:1;}}
+        
+        .financial-row{display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid #e9ecef;}
+        .balance-positive{color:#28a745;font-weight:700;}
+        .balance-negative{color:#dc3545;font-weight:700;}
     </style>
 </head>
 <body>
@@ -150,6 +154,7 @@
     let attendance = [];
     let guests = [];
     let matchComments = {};
+    let financials = {};
     let isAdminLoggedIn = false, currentUser = null;
     let weeklyCaptain = "Football Freedom";
     let weatherData = { temp: "18°C", condition: "Clear", icon: "fa-sun", rainChance: 10 };
@@ -197,7 +202,6 @@
     function pauseTimer(){ if(timerInterval){ clearInterval(timerInterval); timerInterval = null; } }
     function resetTimer(){ pauseTimer(); currentHalf = 1; timeLeft = 45 * 60; updateTimerDisplay(); }
     
-    // FIXED: Consistent date functions
     function getMondayDate(date) {
         const d = new Date(date);
         const day = d.getDay();
@@ -340,6 +344,12 @@ ${injuryText}
 #MondayNightSoccer #CliftonPark #MatchReport`;
     }
     
+    // FINANCIAL FUNCTIONS
+    async function saveFinancials(){ if(firebaseReady&&db) await db.collection("config").doc("financials").set(financials); }
+    function getPlayerBalance(name){ return financials[name]?.balance || 0; }
+    async function recordPayment(name, amount, week){ if(!isAdminLoggedIn){ alert("Admin only"); return; } if(!financials[name]) financials[name] = { balance: 0, payments: [] }; financials[name].balance += amount; financials[name].payments.push({ amount, date: new Date().toISOString(), week: week || getCurrentGameLabel(), type: amount > 0 ? 'payment' : 'fee' }); await saveFinancials(); refreshAll(); }
+    async function addWeeklyFee(name, feeAmount=15){ if(!isAdminLoggedIn) return; if(!financials[name]) financials[name] = { balance: 0, payments: [] }; financials[name].balance -= feeAmount; financials[name].payments.push({ amount: -feeAmount, date: new Date().toISOString(), week: getCurrentGameLabel(), type: 'weekly_fee' }); await saveFinancials(); refreshAll(); }
+    
     async function removeAttendee(playerName, gameDate){
         if(!isAdminLoggedIn && currentUser?.name !== playerName){
             alert("Only admin or the player can remove attendance.");
@@ -372,24 +382,27 @@ ${injuryText}
     async function loadData(){
         if(!firebaseReady || !db) return;
         try{
-            const [pDoc,profDoc,tDoc,rDoc,attSnap,guestSnap,commentsSnap] = await Promise.all([
+            const [pDoc,profDoc,tDoc,rDoc,attSnap,guestSnap,commentsSnap,finDoc] = await Promise.all([
                 db.collection("config").doc("players").get(),
                 db.collection("config").doc("playerProfiles").get(),
                 db.collection("config").doc("teamAssignments").get(),
                 db.collection("config").doc("matchResults").get(),
                 db.collection("attendance").get(),
                 db.collection("guests").get(),
-                db.collection("matchComments").get()
+                db.collection("matchComments").get(),
+                db.collection("config").doc("financials").get()
             ]);
             if(pDoc.exists) players = pDoc.data().list.sort();
             if(profDoc.exists) playerProfiles = profDoc.data();
             if(tDoc.exists) teamAssignments = tDoc.data();
             if(rDoc.exists) matchResults = rDoc.data();
+            if(finDoc.exists) financials = finDoc.data();
             attendance = attSnap.docs.map(d=>d.data());
             guests = guestSnap.docs.map(d=>d.data());
             matchComments = {};
             commentsSnap.docs.forEach(doc=>{ const d=doc.data(); if(!matchComments[d.gameDate]) matchComments[d.gameDate]=[]; matchComments[d.gameDate].push(d); });
             for(let p of players) if(!playerProfiles[p]) playerProfiles[p] = { age:'—', position:'—', yearJoined:'—', gamesPlayed:0, openingBalanceGames:0 };
+            if(!financials) financials = {};
             console.log("Data loaded - Team assignments:", teamAssignments);
         } catch(e){ console.warn(e); }
         refreshAll();
@@ -540,6 +553,7 @@ ${injuryText}
         renderChatPage(); 
         renderWeatherPage(); 
         renderRulesPage(); 
+        renderFinancialPage();
         if(isAdminLoggedIn) renderAdminPage(); 
     }
     
@@ -693,11 +707,14 @@ ${injuryText}
     
     function renderScoreboardPage(){ const c=document.getElementById("page-scoreboard"); if(!c) return; let stats = new Map(); for(let p of players) stats.set(p, { goals:0, gamesPlayed:0, assists:0 }); attendance.forEach(a => { if(a.status === 'in' && stats.has(a.player)) stats.get(a.player).gamesPlayed++; }); for(let p of players){ const opening = playerProfiles[p]?.openingBalanceGames || 0; if(stats.has(p)) stats.get(p).gamesPlayed += opening; } for(let match of Object.values(matchResults)){ if(match.goals){ for(let [scorer, count] of Object.entries(match.goals)){ if(stats.has(scorer)) stats.get(scorer).goals += count; } } if(match.assists){ for(let [assister, count] of Object.entries(match.assists)){ if(stats.has(assister)) stats.get(assister).assists += count; } } } const allStats = Array.from(stats.entries()).map(([name, s]) => ({ name, goals: s.goals, gamesPlayed: s.gamesPlayed, assists: s.assists })); const topGoals = [...allStats].sort((a,b) => b.goals - a.goals).slice(0,15); const topGames = [...allStats].sort((a,b) => b.gamesPlayed - a.gamesPlayed).slice(0,15); const topAssists = [...allStats].sort((a,b) => b.assists - a.assists).slice(0,15); c.innerHTML = `<div class="card"><h2>🏆 ALL-TIME LEADERBOARD</h2><p style="font-size:11px; color:#6c757d; margin-bottom:16px;">Career totals including opening balance games</p><div style="margin-bottom:24px;"><h3>⚽ TOP GOAL SCORERS</h3><table class="data-table"><thead><tr><th>#</th><th>Player</th><th>Goals</th></tr></thead><tbody>${topGoals.map((p,i)=>`<tr><td style="width:40px;"><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td><strong>${p.goals}</strong></td></tr>`).join('')}</tbody></table></div><div style="margin-bottom:24px;"><h3>🏃 MOST GAMES PLAYED</h3><table class="data-table"><thead><tr><th>#</th><th>Player</th><th>Games</th></tr></thead><tbody>${topGames.map((p,i)=>`<tr><td style="width:40px;"><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td><strong>${p.gamesPlayed}</strong></td></tr>`).join('')}</tbody></table></div><div><h3>🎯 MOST ASSISTS</h3><table class="data-table"><thead><tr><th>#</th><th>Player</th><th>Assists</th></tr></thead><tbody>${topAssists.map((p,i)=>`<tr><td style="width:40px;"><strong>${i+1}</strong></td><td>${renderMiniAvatar(p.name,24)} ${escapeHtml(p.name)}</td><td><strong>${p.assists}</strong></td></tr>`).join('')}</tbody></table></div></div>`; }
     
+    function renderFinancialPage(){ const c=document.getElementById("page-financial"); if(!c) return; let h=`<div class="card"><h2>💰 FINANCIAL SUMMARY</h2><p style="font-size:12px; color:#6c757d;">Weekly fee: $15 per player</p>`; const balances = []; for(let p of players){ const bal = getPlayerBalance(p); balances.push({ name: p, balance: bal }); } balances.sort((a,b)=>a.balance - b.balance); h+=`<div style="max-height:400px; overflow-y:auto;">`; for(let b of balances){ h+=`<div class="financial-row"><div><strong>${renderMiniAvatar(b.name,24)} ${escapeHtml(b.name)}</strong></div><div class="${b.balance >= 0 ? 'balance-positive' : 'balance-negative'}">$${b.balance.toFixed(2)}</div></div>`; } h+=`</div></div>`; if(isAdminLoggedIn){ h+=`<div class="card"><h2>💰 Admin: Record Payment</h2><select id="paymentPlayerSelect"><option value="">Select Player</option>${players.map(p=>`<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('')}</select><input type="number" id="paymentAmount" placeholder="Amount (positive = payment received)"><input id="paymentWeek" placeholder="Week (e.g., Mon Oct 14)"><button id="recordPaymentBtn">Record Payment</button><button id="applyWeeklyFeesBtn" style="background:#fd7e14; margin-top:8px;">Apply $15 Fee to ALL Players</button></div><div class="card"><h2>📜 Payment History</h2><select id="historyPlayerSelect"><option value="">Select Player</option>${players.map(p=>`<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('')}</select><div id="paymentHistoryList"></div></div>`; document.getElementById("recordPaymentBtn")?.addEventListener("click",async()=>{ const player = document.getElementById("paymentPlayerSelect")?.value; const amount = parseFloat(document.getElementById("paymentAmount")?.value); const week = document.getElementById("paymentWeek")?.value; if(player && !isNaN(amount)){ await recordPayment(player, amount, week); document.getElementById("paymentAmount").value = ""; renderFinancialPage(); } else alert("Select player and enter amount"); }); document.getElementById("applyWeeklyFeesBtn")?.addEventListener("click",async()=>{ if(confirm("Apply $15 fee to ALL players? This will deduct from their balance.")){ for(let p of players){ await addWeeklyFee(p, 15); } renderFinancialPage(); } }); document.getElementById("historyPlayerSelect")?.addEventListener("change",(e)=>{ const player = e.target.value; if(player && financials[player]){ const listDiv = document.getElementById("paymentHistoryList"); listDiv.innerHTML = financials[player].payments.slice().reverse().map(p=>`<div style="padding:8px; border-bottom:1px solid #e9ecef;"><span style="color:${p.amount>0?'#28a745':'#dc3545'}">${p.amount>0?'+':' '}$${Math.abs(p.amount)}</span> - ${p.week || 'N/A'} - ${new Date(p.date).toLocaleDateString()}</div>`).join('') || '<div>No history</div>'; } else { document.getElementById("paymentHistoryList").innerHTML = '<div>Select a player</div>'; } }); } c.innerHTML = h; }
+    
     function renderTimerPage(){ const c=document.getElementById("page-timer"); if(!c) return; c.innerHTML=`<div class="timer-container"><div class="timer-display" id="timerDisplay">45:00</div><div class="flex-btns"><button class="timer-btn start" id="timerStartBtn">▶ Start</button><button class="timer-btn pause" id="timerPauseBtn">⏸ Pause</button><button class="timer-btn reset" id="timerResetBtn">⟳ Reset</button></div><div class="half-status"><span id="currentHalf">FIRST HALF</span></div></div>`; updateTimerDisplay(); document.getElementById("timerStartBtn")?.addEventListener("click",startTimer); document.getElementById("timerPauseBtn")?.addEventListener("click",pauseTimer); document.getElementById("timerResetBtn")?.addEventListener("click",resetTimer); }
     function renderChatPage(){ const c=document.getElementById("page-chat"); if(!c) return; c.innerHTML=`<div class="card"><h2>💬 Team Chat</h2><div id="chatMessagesList" style="height:400px;overflow-y:auto;background:#f8f9fa;border-radius:20px;padding:12px;margin-bottom:12px;"></div><div style="display:flex;gap:8px;"><input id="chatInput" placeholder="Type message..." style="flex:1;"><button id="chatSendBtn">Send</button></div></div>`; if(firebaseReady&&db){ if(chatUnsubscribe) chatUnsubscribe(); chatUnsubscribe = db.collection("chatMessages").orderBy("timestamp","asc").onSnapshot(snap=>{ const div=document.getElementById("chatMessagesList"); if(!div) return; let h=""; snap.forEach(doc=>{ const m=doc.data(); const t=m.timestamp?new Date(m.timestamp.toDate()).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):""; h+=`<div class="chat-message"><strong>${escapeHtml(m.name)}</strong> <span style="font-size:10px;color:#6c757d;">${t}</span><br><div style="background:#e9ecef;border-radius:12px;padding:8px;margin-top:4px;">${escapeHtml(m.message)}</div></div>`; }); div.innerHTML=h||"<div style='text-align:center;padding:20px;'>No messages</div>"; div.scrollTop=div.scrollHeight; }); } document.getElementById("chatSendBtn")?.addEventListener("click",async()=>{ const inp=document.getElementById("chatInput"); if(inp?.value.trim()){ await saveChatMessage(inp.value.trim()); inp.value=""; } }); }
     function renderWeatherPage(){ const c=document.getElementById("page-weather"); if(c) c.innerHTML=`<div class="card"><h2>🌤️ Forecast ${getCurrentGameLabel()}</h2><div style="background:#e8f0fe;border-radius:20px;padding:20px;text-align:center;"><i class="fas ${weatherData.icon}" style="font-size:48px;color:#1a73e8;"></i><h3>${weatherData.condition}</h3><h1 style="font-size:48px;">${weatherData.temp}</h1><p>Rain: ${weatherData.rainChance}%</p></div></div>`; }
-    function renderRulesPage(){ const c=document.getElementById("page-rules"); if(c) c.innerHTML=`<div class="card"><h2>📜 League Rules</h2><div style="line-height:1.7;">• ⏰ 8:00pm SHARP kickoff at Clifton Park<br>• 👑 Captain rotates weekly<br>• ✅ RSVP is mandatory<br>• 🎭 Guests welcome!<br>• 📝 Match reports generated after each game<br>• 📱 Share team sheets & reports via WhatsApp</div></div>`; }
+    function renderRulesPage(){ const c=document.getElementById("page-rules"); if(c) c.innerHTML=`<div class="card"><h2>📜 League Rules</h2><div style="line-height:1.7;">• ⏰ 8:00pm SHARP kickoff at Clifton Park<br>• 👑 Captain rotates weekly<br>• ✅ RSVP is mandatory<br>• 🎭 Guests welcome!<br>• 💰 Weekly fee: $15<br>• 📝 Match reports generated after each game<br>• 📱 Share team sheets & reports via WhatsApp</div></div>`; }
     
+    // REPAIRED ADMIN PAGE - ONLY SHOWS PLAYERS WHO RSVP'd FOR THE SELECTED WEEK
     function renderAdminPage(){
         if(!isAdminLoggedIn){ const c=document.getElementById("page-admin"); if(c) c.innerHTML=`<div class="card"><h2>🔒 Admin</h2><button id="adminLoginBtn">Admin Login</button></div>`; document.getElementById("adminLoginBtn")?.addEventListener("click",()=>{ const pw=prompt("Enter admin password:"); if(pw==="admin123"){ isAdminLoggedIn=true; renderAdminPage(); refreshAll(); } else alert("Wrong password"); }); return; }
         const gameDate=CURRENT_GAME_STR, gameLabel=getCurrentGameLabel();
@@ -712,7 +729,7 @@ ${injuryText}
         
         <div class="card"><h2>📅 STEP 1: ADD PLAYERS</h2>
         <div class="info-bar"><i class="fas fa-info-circle"></i> Select a week and add players who played</div>
-        <select id="addPlayerWeekSelect"><option value="">-- Select Week --</option>${pastWeeks.map(w=>`<option value="${w.dateStr}">${w.label}</option>`).join('')}</select>
+        <select id="addPlayerWeekSelect"><option value="">-- Select Week --</option>${pastWeeks.map(w=>`<option value="${w.dateStr}">${w.label}</option>`).join('')}<option value="${CURRENT_GAME_STR}">${gameLabel} (Current Week)</option></select>
         <select id="playerToAddSelect"><option value="">-- Select Player --</option>${playerDropdownOptions}</select>
         <button id="addPlayerBtn" style="background:#28a745; margin-bottom:10px;">➕ Add Player</button>
         <div id="playersInWeekList" style="margin-top:10px; padding:10px; background:#f8f9fa; border-radius:12px; display:none;">
@@ -721,9 +738,9 @@ ${injuryText}
         </div>
         </div>
         
-        <div class="card"><h2>⚽ STEP 2: ASSIGN TEAMS</h2>
-        <div class="info-bar"><i class="fas fa-users"></i> Select the SAME week and assign players to teams</div>
-        <select id="assignTeamWeekSelect"><option value="">-- Select Week --</option>${pastWeeks.map(w=>`<option value="${w.dateStr}">${w.label}</option>`).join('')}</select>
+        <div class="card"><h2>⚽ STEP 2: ASSIGN TEAMS (ONLY players who said YES)</h2>
+        <div class="info-bar"><i class="fas fa-users"></i> Select the SAME week - only confirmed players appear below</div>
+        <select id="assignTeamWeekSelect"><option value="">-- Select Week --</option>${pastWeeks.map(w=>`<option value="${w.dateStr}">${w.label}</option>`).join('')}<option value="${CURRENT_GAME_STR}">${gameLabel} (Current Week)</option></select>
         <div id="teamAssignArea" style="margin-top:12px; display:none;">
             <div id="unassignedList"></div>
             <div style="display:flex; gap:12px; margin-top:12px;">
@@ -740,7 +757,7 @@ ${injuryText}
         </div>
         
         <div class="card"><h2>🎭 STEP 3: ADD GUESTS</h2>
-        <select id="guestWeekSelect"><option value="">-- Select Week --</option>${pastWeeks.map(w=>`<option value="${w.dateStr}">${w.label}</option>`).join('')}</select>
+        <select id="guestWeekSelect"><option value="">-- Select Week --</option>${pastWeeks.map(w=>`<option value="${w.dateStr}">${w.label}</option>`).join('')}<option value="${CURRENT_GAME_STR}">${gameLabel} (Current Week)</option></select>
         <input id="guestNameInput" placeholder="Guest Name">
         <button id="addGuestBtn" style="background:#28a745;">➕ Add Guest</button>
         </div>
@@ -779,7 +796,6 @@ ${injuryText}
                     btn.addEventListener("click", async () => {
                         await removePlayerFromWeek(btn.dataset.player, btn.dataset.week);
                         await loadPlayersForWeek(btn.dataset.week);
-                        // Refresh assign team view if same week
                         const assignSelect = document.getElementById("assignTeamWeekSelect");
                         if(assignSelect && assignSelect.value === btn.dataset.week){
                             loadTeamAssignments(btn.dataset.week);
@@ -791,7 +807,7 @@ ${injuryText}
             }
         }
         
-        // Load team assignments for a week
+        // REPAIRED: Load team assignments - ONLY SHOW PLAYERS WHO CONFIRMED
         async function loadTeamAssignments(week){
             const area = document.getElementById("teamAssignArea");
             if(!week){
@@ -800,6 +816,7 @@ ${injuryText}
             }
             area.style.display = "block";
             
+            // CRITICAL FIX: Only get players who confirmed 'in' for this week
             const playersInWeek = attendance.filter(a => a.gameDate === week && a.status === 'in').map(a => a.player);
             const guestsInWeek = guests.filter(g => g.gameDate === week).map(g => g.name);
             const allPeople = [...playersInWeek, ...guestsInWeek];
@@ -820,7 +837,7 @@ ${injuryText}
             const yellowDiv = document.getElementById("yellowList");
             const orangeDiv = document.getElementById("orangeList");
             
-            unassignedDiv.innerHTML = `<strong>⚡ Unassigned Players:</strong><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">${unassigned.map(p => `<div style="display:flex; gap:4px; align-items:center; background:#e9ecef; border-radius:40px; padding:4px 8px;"><span>${renderMiniAvatar(p,24)} ${escapeHtml(p)}</span><button class="assign-yellow-btn" data-player="${escapeHtml(p)}" data-week="${week}">🟡 Yellow</button><button class="assign-orange-btn" data-player="${escapeHtml(p)}" data-week="${week}">🟠 Orange</button></div>`).join('')}${unassigned.length === 0 ? '<span style="color:#28a745;">✅ All players assigned!</span>' : ''}</div>`;
+            unassignedDiv.innerHTML = `<strong>⚡ Players who said YES (${unassigned.length} unassigned):</strong><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">${unassigned.map(p => `<div style="display:flex; gap:4px; align-items:center; background:#e9ecef; border-radius:40px; padding:4px 8px;"><span>${renderMiniAvatar(p,24)} ${escapeHtml(p)}</span><button class="assign-yellow-btn" data-player="${escapeHtml(p)}" data-week="${week}">🟡 Yellow</button><button class="assign-orange-btn" data-player="${escapeHtml(p)}" data-week="${week}">🟠 Orange</button></div>`).join('')}${unassigned.length === 0 ? '<span style="color:#28a745;">✅ All players assigned!</span>' : ''}</div>`;
             
             yellowDiv.innerHTML = yellow.map(p => `<div class="player-tag" style="background:#ffc107; color:#2c2c2c; margin:4px;">${renderMiniAvatar(p,24)} ${escapeHtml(p)} <button class="remove-assign-btn" data-player="${escapeHtml(p)}" data-week="${week}" style="margin-left:6px; background:#dc3545; border:none; color:white; border-radius:40px; padding:2px 8px;">✖</button></div>`).join('');
             if(yellow.length === 0) yellowDiv.innerHTML = '<span style="color:#ccc;">— Empty —</span>';
@@ -828,7 +845,6 @@ ${injuryText}
             orangeDiv.innerHTML = orange.map(p => `<div class="player-tag" style="background:#fd7e14; margin:4px;">${renderMiniAvatar(p,24)} ${escapeHtml(p)} <button class="remove-assign-btn" data-player="${escapeHtml(p)}" data-week="${week}" style="margin-left:6px; background:#dc3545; border:none; color:white; border-radius:40px; padding:2px 8px;">✖</button></div>`).join('');
             if(orange.length === 0) orangeDiv.innerHTML = '<span style="color:#ccc;">— Empty —</span>';
             
-            // Add event listeners
             document.querySelectorAll(".assign-yellow-btn").forEach(btn => {
                 btn.addEventListener("click", async () => {
                     const assign = teamAssignments[week] || {};
@@ -860,7 +876,6 @@ ${injuryText}
             });
         }
         
-        // Add player
         document.getElementById("addPlayerBtn")?.addEventListener("click", async () => {
             const weekSelect = document.getElementById("addPlayerWeekSelect");
             const playerSelect = document.getElementById("playerToAddSelect");
@@ -870,14 +885,12 @@ ${injuryText}
             if(!player){ alert("Select a player"); return; }
             await addPlayerToWeek(player, week);
             await loadPlayersForWeek(week);
-            // Refresh assign view if same week
             const assignSelect = document.getElementById("assignTeamWeekSelect");
             if(assignSelect && assignSelect.value === week){
                 await loadTeamAssignments(week);
             }
         });
         
-        // Add guest
         document.getElementById("addGuestBtn")?.addEventListener("click", async () => {
             const weekSelect = document.getElementById("guestWeekSelect");
             const guestName = document.getElementById("guestNameInput")?.value.trim();
@@ -893,13 +906,11 @@ ${injuryText}
             document.getElementById("guestNameInput").value = "";
         });
         
-        // Week selection for adding players
         document.getElementById("addPlayerWeekSelect")?.addEventListener("change", async (e) => {
             if(e.target.value) await loadPlayersForWeek(e.target.value);
             else document.getElementById("playersInWeekList").style.display = "none";
         });
         
-        // Week selection for team assignment
         document.getElementById("assignTeamWeekSelect")?.addEventListener("change", async (e) => {
             if(e.target.value) await loadTeamAssignments(e.target.value);
             else document.getElementById("teamAssignArea").style.display = "none";
@@ -1029,61 +1040,6 @@ ${injuryText}
                 });
             }
         });
-        
-        // Current week manual add
-        document.getElementById("manualAddBtn")?.addEventListener("click", async () => {
-            const sel = document.getElementById("manualPlayerSelect");
-            const playerName = sel?.value;
-            if(playerName && FIXED_PLAYERS_LIST.includes(playerName)){
-                const exists = attendance.some(a => a.player === playerName && a.gameDate === gameDate);
-                if(exists){ alert(`${playerName} already has attendance`); return; }
-                await saveAttendance({ player: playerName, gameDate: gameDate, status: 'in' });
-                alert(`${playerName} added to current week`);
-                renderAdminPage();
-            } else alert("Select valid player");
-        });
-        
-        document.getElementById("adminAddGuestBtn")?.addEventListener("click", async () => {
-            const inp = document.getElementById("adminGuestName");
-            const name = inp?.value.trim();
-            if(name){
-                await addGuestToWeek(name, gameDate);
-                inp.value = "";
-                renderAdminPage();
-            } else alert("Enter guest name");
-        });
-        
-        document.querySelectorAll(".remove-guest-btn").forEach(btn => {
-            btn.addEventListener("click", async () => {
-                await removeGuest(btn.dataset.guest, btn.dataset.date);
-                renderAdminPage();
-            });
-        });
-        
-        document.getElementById("saveTeamsBtn")?.addEventListener("click", async () => {
-            const newAssign = {};
-            document.querySelectorAll(".team-select").forEach(sel => {
-                const name = sel.dataset.name;
-                const val = sel.value;
-                if(val && name) newAssign[name] = val;
-            });
-            await saveTeamAssignments(gameDate, newAssign);
-            renderAdminPage();
-            renderTeamsPage();
-        });
-        
-        document.getElementById("autoBalanceBtn")?.addEventListener("click", () => {
-            const playerNames = allList.map(p => p.name);
-            const shuffled = [...playerNames];
-            for(let i = shuffled.length - 1; i > 0; i--){
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-            }
-            const half = Math.ceil(shuffled.length / 2);
-            const autoAssign = {};
-            shuffled.forEach((p, idx) => { autoAssign[p] = idx < half ? "yellow" : "orange"; });
-            saveTeamAssignments(gameDate, autoAssign).then(() => { renderAdminPage(); renderTeamsPage(); });
-        });
     }
     
     function showLoginModal(){
@@ -1099,8 +1055,8 @@ ${injuryText}
     
     function initApp(){
         const appDiv=document.getElementById("app");
-        appDiv.innerHTML=`<div class="header"><div class="logo-icon"><i class="fas fa-futbol"></i></div><h1>MONDAY NIGHT SOCCER</h1><div class="user-row"><span id="userNameDisplay">Not logged in</span><button id="logoutBtn" style="display:none;">Logout</button></div></div><div class="top-nav"><button class="nav-module active" data-module="home">🏠 Home</button><button class="nav-module" data-module="teamswk">⚽ Teams</button><button class="nav-module" data-module="history">📖 History</button><button class="nav-module" data-module="scoreboard">🏆 Stats</button><button class="nav-module" data-module="profiles">👤 Profiles</button><button class="nav-module" data-module="timer">⏱️ Timer</button><button class="nav-module" data-module="chat">💬 Chat</button><button class="nav-module" data-module="weather">🌤️ Weather</button><button class="nav-module" data-module="rules">📜 Rules</button><button class="nav-module" data-module="admin">🔧 Admin</button></div><div id="homeContainer" class="module-container active-module"></div><div id="page-teamswk" class="module-container"></div><div id="page-history" class="module-container"></div><div id="page-scoreboard" class="module-container"></div><div id="page-profiles" class="module-container"></div><div id="page-timer" class="module-container"></div><div id="page-chat" class="module-container"></div><div id="page-weather" class="module-container"></div><div id="page-rules" class="module-container"></div><div id="page-admin" class="module-container"></div>`;
-        document.querySelectorAll(".nav-module").forEach(btn=>{ btn.addEventListener("click",()=>{ document.querySelectorAll(".nav-module").forEach(b=>b.classList.remove("active")); btn.classList.add("active"); const mod=btn.dataset.module; document.querySelectorAll(".module-container").forEach(c=>c.classList.remove("active-module")); if(mod==="home") document.getElementById("homeContainer").classList.add("active-module"); else document.getElementById(`page-${mod}`).classList.add("active-module"); if(mod==="chat") renderChatPage(); if(mod==="timer") renderTimerPage(); if(mod==="weather") renderWeatherPage(); if(mod==="rules") renderRulesPage(); }); });
+        appDiv.innerHTML=`<div class="header"><div class="logo-icon"><i class="fas fa-futbol"></i></div><h1>MONDAY NIGHT SOCCER</h1><div class="user-row"><span id="userNameDisplay">Not logged in</span><button id="logoutBtn" style="display:none;">Logout</button></div></div><div class="top-nav"><button class="nav-module active" data-module="home">🏠 Home</button><button class="nav-module" data-module="teamswk">⚽ Teams</button><button class="nav-module" data-module="history">📖 History</button><button class="nav-module" data-module="scoreboard">🏆 Stats</button><button class="nav-module" data-module="profiles">👤 Profiles</button><button class="nav-module" data-module="financial">💰 Financials</button><button class="nav-module" data-module="timer">⏱️ Timer</button><button class="nav-module" data-module="chat">💬 Chat</button><button class="nav-module" data-module="weather">🌤️ Weather</button><button class="nav-module" data-module="rules">📜 Rules</button><button class="nav-module" data-module="admin">🔧 Admin</button></div><div id="homeContainer" class="module-container active-module"></div><div id="page-teamswk" class="module-container"></div><div id="page-history" class="module-container"></div><div id="page-scoreboard" class="module-container"></div><div id="page-profiles" class="module-container"></div><div id="page-financial" class="module-container"></div><div id="page-timer" class="module-container"></div><div id="page-chat" class="module-container"></div><div id="page-weather" class="module-container"></div><div id="page-rules" class="module-container"></div><div id="page-admin" class="module-container"></div>`;
+        document.querySelectorAll(".nav-module").forEach(btn=>{ btn.addEventListener("click",()=>{ document.querySelectorAll(".nav-module").forEach(b=>b.classList.remove("active")); btn.classList.add("active"); const mod=btn.dataset.module; document.querySelectorAll(".module-container").forEach(c=>c.classList.remove("active-module")); if(mod==="home") document.getElementById("homeContainer").classList.add("active-module"); else document.getElementById(`page-${mod}`).classList.add("active-module"); if(mod==="chat") renderChatPage(); if(mod==="timer") renderTimerPage(); if(mod==="weather") renderWeatherPage(); if(mod==="rules") renderRulesPage(); if(mod==="financial") renderFinancialPage(); }); });
         document.getElementById("logoutBtn").onclick=logout;
         if(firebaseReady) loadData().then(()=>{ showLoginModal(); fetchWeather(); }); else { showLoginModal(); fetchWeather(); refreshAll(); }
     }
