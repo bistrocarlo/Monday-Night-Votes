@@ -29,7 +29,6 @@
             padding-bottom: 30px;
         }
         
-        /* Aussie Header */
         .header {
             background: white;
             padding: 16px 20px;
@@ -95,10 +94,8 @@
         
         .user-row button:hover {
             background: #c82333;
-            transform: scale(1.02);
         }
         
-        /* Navigation */
         .top-nav {
             background: white;
             padding: 12px 12px;
@@ -140,7 +137,6 @@
             transform: translateY(-1px);
         }
         
-        /* Module Containers */
         .module-container {
             padding: 16px;
             display: none;
@@ -162,7 +158,6 @@
             }
         }
         
-        /* Cards */
         .card {
             background: white;
             border-radius: 24px;
@@ -190,7 +185,6 @@
             justify-content: space-between;
         }
         
-        /* Attendance Card */
         .attendance-card {
             background: linear-gradient(135deg, #1a73e8, #0d5bbf);
             color: white;
@@ -241,7 +235,6 @@
             transform: scale(0.97);
         }
         
-        /* Player Items */
         .profile-item {
             background: #f8f9fa;
             border-radius: 20px;
@@ -314,7 +307,6 @@
             background: #5a6268;
         }
         
-        /* Match Cards */
         .match-card {
             background: white;
             border-radius: 20px;
@@ -691,10 +683,6 @@
             gap: 4px;
         }
         
-        .rank-medal {
-            font-size: 18px;
-        }
-        
         .power-rank-card {
             background: linear-gradient(135deg, #f8f9fa, #e9ecef);
             border-radius: 20px;
@@ -739,16 +727,6 @@
             border-left: 4px solid #e94560;
         }
         
-        .admin-player-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 60px;
-            margin: 8px 0;
-        }
-        
         .loading-spinner {
             text-align: center;
             padding: 60px;
@@ -772,6 +750,24 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+        
+        .rules-edit-btn {
+            background: #28a745;
+            font-size: 12px;
+            padding: 5px 12px;
+        }
+        
+        .win-pct-high {
+            color: #28a745;
+            font-weight: 800;
+        }
+        
+        .comment-item {
+            background: #f1f5f9;
+            padding: 8px 12px;
+            border-radius: 16px;
+            margin-bottom: 8px;
         }
     </style>
 </head>
@@ -800,9 +796,9 @@
         firebase.initializeApp(firebaseConfig);
         db = firebase.firestore();
         firebaseReady = true;
-        console.log("🔥 Firebase connected successfully");
+        console.log("🔥 Firebase connected");
     } catch (e) {
-        console.warn("⚠️ Firebase connection issue, using offline mode", e);
+        console.warn("⚠️ Offline mode", e);
     }
     
     // ==================== MASTER PLAYER DATABASE ====================
@@ -817,19 +813,16 @@
         "Paul Salustro", "Stevan Brankovic", "Theo", "Tony El Hajj", "Vasilis"
     ].sort();
     
-    // Achievement definitions
     const ACHIEVEMENTS = [
         { id: "debut", name: "First Game", desc: "Play your first match", icon: "🌟" },
-        { id: "hattrick", name: "Hat Trick Hero", desc: "Score 3+ goals in a match", icon: "⚽⚽⚽" },
-        { id: "playmaker", name: "Playmaker", desc: "3+ assists in a match", icon: "🎯" },
+        { id: "hattrick", name: "Hat Trick Hero", desc: "Score 3+ goals", icon: "⚽⚽⚽" },
+        { id: "playmaker", name: "Playmaker", desc: "3+ assists", icon: "🎯" },
         { id: "ironman", name: "Iron Man", desc: "Play 10 consecutive games", icon: "💪" },
         { id: "loyalty", name: "Loyalty", desc: "Play 20 total games", icon: "❤️" },
         { id: "mvp", name: "Match MVP", desc: "Named Man of the Match", icon: "🏆" },
-        { id: "golden_boot", name: "Golden Boot", desc: "Be top scorer for a season", icon: "👟" },
         { id: "century", name: "Century Club", desc: "Score 100 career goals", icon: "💯" }
     ];
     
-    // Trash talk templates (Aussie style)
     const TRASH_TALK = [
         "🏏 Caught ya sleeping mate!",
         "🍺 That defending was worse than my local pub team!",
@@ -856,8 +849,9 @@
     let currentHalf = 1;
     let timeLeft = 45 * 60;
     let chatUnsubscribe = null;
+    let leagueRules = "⚽ Kickoff: 8:00pm SHARP at Clifton Park\n👑 Captain rotates weekly\n✅ RSVP by Sunday 6pm\n🎭 Guests welcome!\n👕 Bring white and dark shirts\n📝 Match reports auto-generated";
+    let playerTeamRecords = {};
     
-    // Weather data
     let weatherData = {
         temp: "18°C",
         condition: "Clear",
@@ -1025,27 +1019,22 @@
                 assists: 0,
                 gamesPlayed: 0,
                 mvps: 0,
-                yellowCards: 0,
-                motmWins: 0,
                 streak: 0,
                 bestStreak: 0
             });
         }
         
-        // Count games played from attendance
         attendance.forEach(a => {
             if (a.status === 'in' && stats.has(a.player)) {
                 stats.get(a.player).gamesPlayed++;
             }
         });
         
-        // Add opening balance games from profiles
         for (let p of players) {
             const opening = playerProfiles[p]?.openingBalanceGames || 0;
             if (stats.has(p)) stats.get(p).gamesPlayed += opening;
         }
         
-        // Count goals, assists, MVPs from match results
         for (let match of Object.values(matchResults)) {
             if (match.goals) {
                 for (let [scorer, count] of Object.entries(match.goals)) {
@@ -1059,11 +1048,9 @@
             }
             if (match.mvp && stats.has(match.mvp)) {
                 stats.get(match.mvp).mvps++;
-                stats.get(match.mvp).motmWins++;
             }
         }
         
-        // Calculate streaks
         for (let p of players) {
             const playerGames = attendance.filter(a => a.player === p && a.status === 'in')
                 .sort((a, b) => a.gameDate.localeCompare(b.gameDate));
@@ -1091,11 +1078,54 @@
         return stats;
     }
     
+    function getWinPercentageRankings() {
+        const rankings = [];
+        for (let p of players) {
+            const record = playerTeamRecords[p] || { yellowWins: 0, yellowLosses: 0, orangeWins: 0, orangeLosses: 0 };
+            const totalYellow = record.yellowWins + record.yellowLosses;
+            const totalOrange = record.orangeWins + record.orangeLosses;
+            const totalGames = totalYellow + totalOrange;
+            const totalWins = record.yellowWins + record.orangeWins;
+            const winPct = totalGames > 0 ? (totalWins / totalGames) * 100 : 0;
+            rankings.push({
+                name: p,
+                winPct: winPct,
+                wins: totalWins,
+                games: totalGames,
+                yellowWins: record.yellowWins,
+                yellowLosses: record.yellowLosses,
+                orangeWins: record.orangeWins,
+                orangeLosses: record.orangeLosses
+            });
+        }
+        return rankings.sort((a, b) => b.winPct - a.winPct);
+    }
+    
+    async function updatePlayerTeamRecords(gameDate, yellowScore, orangeScore, assignments) {
+        if (yellowScore === orangeScore) return;
+        const winner = yellowScore > orangeScore ? "yellow" : "orange";
+        
+        for (let [player, team] of Object.entries(assignments)) {
+            if (!playerTeamRecords[player]) {
+                playerTeamRecords[player] = { yellowWins: 0, yellowLosses: 0, orangeWins: 0, orangeLosses: 0 };
+            }
+            if (team === winner) {
+                if (team === "yellow") playerTeamRecords[player].yellowWins++;
+                else playerTeamRecords[player].orangeWins++;
+            } else {
+                if (team === "yellow") playerTeamRecords[player].yellowLosses++;
+                else if (team === "orange") playerTeamRecords[player].orangeLosses++;
+            }
+        }
+        if (firebaseReady && db) {
+            await db.collection("config").doc("playerTeamRecords").set(playerTeamRecords);
+        }
+    }
+    
     function getPowerRankings() {
         const stats = calculatePlayerStats();
         const rankings = [];
         for (let [name, s] of stats) {
-            // Power score formula: goals*3 + assists*2 + games*1 + mvps*5
             const score = (s.goals * 3) + (s.assists * 2) + (s.gamesPlayed * 1) + (s.mvps * 5);
             rankings.push({
                 name,
@@ -1116,8 +1146,6 @@
         if (!playerStats) return [];
         
         const earned = [];
-        
-        // Check each achievement
         for (let match of Object.values(matchResults)) {
             if (match.goals && match.goals[playerName] >= 3 && !earned.find(a => a.id === "hattrick")) {
                 earned.push({ ...ACHIEVEMENTS.find(a => a.id === "hattrick"), earned: true });
@@ -1158,7 +1186,6 @@
             attendance.push(attendanceRecord);
         }
         
-        // Update player profile games count
         const gamesCount = attendance.filter(a => a.player === attendanceRecord.player && a.status === 'in').length;
         const opening = playerProfiles[attendanceRecord.player]?.openingBalanceGames || 0;
         if (playerProfiles[attendanceRecord.player]) {
@@ -1192,7 +1219,6 @@
         if (firebaseReady && db) {
             await db.collection("config").doc("teamAssignments").set(teamAssignments);
         }
-        console.log(`✅ Team assignments saved for ${date}`);
         refreshAll();
     }
     
@@ -1209,6 +1235,10 @@
         if (firebaseReady && db) {
             await db.collection("config").doc("matchResults").set(matchResults);
         }
+        
+        const assignments = teamAssignments[date] || {};
+        await updatePlayerTeamRecords(date, yellowScore, orangeScore, assignments);
+        
         refreshAll();
         alert("✅ Match result saved! Rankings updated.");
     }
@@ -1288,7 +1318,6 @@
         }
         guests = guests.filter(g => !(g.guestName === guestName && g.gameDate === gameDate));
         
-        // Also remove from team assignments
         if (teamAssignments[gameDate]) {
             delete teamAssignments[gameDate][guestName];
             if (firebaseReady && db) {
@@ -1333,34 +1362,45 @@
         return true;
     }
     
+    async function updateRules(newRules) {
+        leagueRules = newRules;
+        if (firebaseReady && db) {
+            await db.collection("config").doc("leagueRules").set({ rules: leagueRules });
+        }
+        renderRulesPage();
+        alert("Rules updated successfully!");
+    }
+    
     async function loadData() {
         if (!firebaseReady || !db) {
-            console.log("Offline mode - using default data");
             refreshAll();
             return;
         }
         
         try {
-            const [profDoc, tDoc, rDoc, attSnap, guestSnap, commentsSnap, trashSnap] = await Promise.all([
+            const [profDoc, tDoc, rDoc, attSnap, guestSnap, commentsSnap, trashSnap, rulesDoc, recordsDoc] = await Promise.all([
                 db.collection("config").doc("playerProfiles").get(),
                 db.collection("config").doc("teamAssignments").get(),
                 db.collection("config").doc("matchResults").get(),
                 db.collection("attendance").get(),
                 db.collection("guests").get(),
                 db.collection("matchComments").get(),
-                db.collection("trashTalk").orderBy("timestamp", "desc").limit(50).get()
+                db.collection("trashTalk").orderBy("timestamp", "desc").limit(50).get(),
+                db.collection("config").doc("leagueRules").get(),
+                db.collection("config").doc("playerTeamRecords").get()
             ]);
             
             if (profDoc.exists) playerProfiles = profDoc.data();
             if (tDoc.exists) teamAssignments = tDoc.data();
             if (rDoc.exists) matchResults = rDoc.data();
+            if (rulesDoc.exists) leagueRules = rulesDoc.data().rules || leagueRules;
+            if (recordsDoc.exists) playerTeamRecords = recordsDoc.data();
             
             attendance = attSnap.docs.map(d => d.data());
             guests = guestSnap.docs.map(d => d.data());
             matchComments = commentsSnap.docs.map(d => d.data());
             trashTalkPosts = trashSnap.docs.map(d => ({ id: d.id, ...d.data() }));
             
-            // Initialize profiles for all players
             for (let p of players) {
                 if (!playerProfiles[p]) {
                     playerProfiles[p] = {
@@ -1373,7 +1413,6 @@
                 }
             }
             
-            console.log("✅ Data loaded from Firebase");
             refreshAll();
             fetchWeather();
         } catch (e) {
@@ -1447,7 +1486,6 @@
         container.innerHTML = `
             <div class="info-bar">
                 <i class="fas fa-calendar-alt"></i> Next Match: ${gameLabel} • 8:00pm • Clifton Park
-                <i class="fas fa-map-marker-alt"></i>
             </div>
             
             <div class="attendance-card">
@@ -1587,15 +1625,11 @@
         `;
         
         document.getElementById("shareTeamsWhatsApp")?.addEventListener("click", () => {
-            const teamSheet = generateTeamSheet(yellowTeam, orangeTeam, gameLabel);
+            const yellowList = yellowTeam.map(p => `${p.name}${p.isGuest ? ' (Guest)' : ''}`).join('\n');
+            const orangeList = orangeTeam.map(p => `${p.name}${p.isGuest ? ' (Guest)' : ''}`).join('\n');
+            const teamSheet = `⚽ *MONDAY NIGHT SOCCER - TEAM SHEET* ⚽\n📅 ${gameLabel} | 8:00pm Clifton Park\n\n🟡 *YELLOW TEAM* (${yellowTeam.length} players)\n${yellowList || '—'}\n\n🟠 *ORANGE TEAM* (${orangeTeam.length} players)\n${orangeList || '—'}\n\n👑 Captain: ${weeklyCaptain}`;
             window.open(`https://wa.me/?text=${encodeURIComponent(teamSheet)}`, '_blank');
         });
-    }
-    
-    function generateTeamSheet(yellowTeam, orangeTeam, gameLabel) {
-        const yellowList = yellowTeam.map(p => `${p.name}${p.isGuest ? ' (Guest)' : ''}`).join('\n');
-        const orangeList = orangeTeam.map(p => `${p.name}${p.isGuest ? ' (Guest)' : ''}`).join('\n');
-        return `⚽ *MONDAY NIGHT SOCCER - TEAM SHEET* ⚽\n📅 ${gameLabel} | 8:00pm Clifton Park\n\n🟡 *YELLOW TEAM* (${yellowTeam.length} players)\n${yellowList || '—'}\n\n🟠 *ORANGE TEAM* (${orangeTeam.length} players)\n${orangeList || '—'}\n\n👑 Captain: ${weeklyCaptain}\n📍 Clifton Park, Brunswick\n#MondayNightSoccer`;
     }
     
     function renderHistoryPage() {
@@ -1665,7 +1699,7 @@
                         ${match.mvp ? `<div style="margin-top: 8px;"><span class="goal-badge" style="border-left-color: #f59e0b;">🏆 MVP: ${escapeHtml(match.mvp)}</span></div>` : ''}
                     </div>
                     
-                    <div class="comments-section">
+                    <div class="comments-section" style="padding: 14px 18px;">
                         <div><i class="fas fa-comments"></i> <strong>MATCH COMMENTS</strong></div>
                         <div id="comments-${commentId}">
                             ${comments.map(c => `<div class="comment-item"><strong>${escapeHtml(c.author)}</strong><br>${escapeHtml(c.text)}</div>`).join('') || '<span class="text-muted">No comments yet</span>'}
@@ -1703,17 +1737,10 @@
     window.shareMatchReport = function(date) {
         const match = matchResults[date] || { yellowScore: 0, orangeScore: 0, goals: {}, assists: {}, mvp: '', injuries: [] };
         const weekLabel = ALL_WEEKS.find(w => w.dateStr === date)?.label || date;
-        const report = generateAIMatchReport(weekLabel, match.yellowScore, match.orangeScore, match.goals, match.assists, match.mvp, match.injuries);
+        const goalText = Object.entries(match.goals).map(([p, c]) => `• ${p}: ${c} goal${c > 1 ? 's' : ''}`).join('\n') || "• No goals scored";
+        const report = `📰 *MONDAY NIGHT SOCCER - MATCH REPORT* 📰\n*${weekLabel.toUpperCase()}*\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n*FINAL SCORE*\n🟡 YELLOW ${match.yellowScore} - ${match.orangeScore} 🟠\n\n*GOAL SCORERS*\n${goalText}\n\n*MAN OF THE MATCH*\n🏆 ${match.mvp || "Not awarded"}\n\n#MondayNightSoccer`;
         window.open(`https://wa.me/?text=${encodeURIComponent(report)}`, '_blank');
     };
-    
-    function generateAIMatchReport(weekLabel, yellowScore, orangeScore, goals, assists, mvp, injuries) {
-        const winner = yellowScore > orangeScore ? "Yellow" : (orangeScore > yellowScore ? "Orange" : "Draw");
-        const goalText = Object.entries(goals).map(([p, c]) => `• ${p}: ${c} goal${c > 1 ? 's' : ''}`).join('\n') || "• No goals scored";
-        const assistText = Object.entries(assists || {}).map(([a, c]) => `• ${a}: ${c} assist${c > 1 ? 's' : ''}`).join('\n') || "• No assists recorded";
-        
-        return `📰 *MONDAY NIGHT SOCCER - MATCH REPORT* 📰\n*${weekLabel.toUpperCase()} | Clifton Park, Brunswick*\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n*FINAL SCORE*\n🟡 YELLOW ${yellowScore} - ${orangeScore} 🟠\n\n*GOAL SCORERS*\n${goalText}\n\n*ASSISTS*\n${assistText}\n\n*MAN OF THE MATCH*\n🏆 ${mvp || "Not awarded"}\n\n*INJURY REPORT*\n${injuries?.length ? injuries.map(i => `• ${i}`).join('\n') : "• None reported"}\n\n#MondayNightSoccer #MatchReport`;
-    }
     
     function renderProfilesPage() {
         const container = document.getElementById("page-profiles");
@@ -1819,24 +1846,39 @@
         const topGoals = [...allStats].sort((a, b) => b.goals - a.goals).slice(0, 15);
         const topAssists = [...allStats].sort((a, b) => b.assists - a.assists).slice(0, 15);
         const topGames = [...allStats].sort((a, b) => b.gamesPlayed - a.gamesPlayed).slice(0, 15);
+        const winRankings = getWinPercentageRankings().filter(r => r.games >= 3).slice(0, 15);
         
         container.innerHTML = `
             <div class="card">
                 <h2><i class="fas fa-trophy"></i> ALL-TIME LEADERBOARD</h2>
-                <p class="text-muted" style="margin-bottom: 16px;">Career totals including historical records</p>
+                
+                <div style="margin-bottom: 24px;">
+                    <h3><i class="fas fa-chart-line"></i> 🏆 WIN PERCENTAGE RANKINGS (Min 3 games)</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>#</th><th>Player</th><th>Win %</th><th>W-L</th><th>🟡</th><th>🟠</th></tr>
+                        </thead>
+                        <tbody>
+                            ${winRankings.map((p, i) => `
+                                <tr>
+                                    <td><strong>${i + 1}</strong> ${i === 0 ? '👑' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : ''))}</td>
+                                    <td>${renderMiniAvatar(p.name)} ${escapeHtml(p.name)}</td>
+                                    <td class="win-pct-high">${p.winPct.toFixed(1)}%</td>
+                                    <td>${p.wins}-${p.games - p.wins}</td>
+                                    <td>${p.yellowWins}-${p.yellowLosses}</td>
+                                    <td>${p.orangeWins}-${p.orangeLosses}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
                 
                 <div style="margin-bottom: 24px;">
                     <h3><i class="fas fa-futbol"></i> TOP GOAL SCORERS</h3>
                     <table class="data-table">
                         <thead><tr><th>#</th><th>Player</th><th>Goals</th></tr></thead>
                         <tbody>
-                            ${topGoals.map((p, i) => `
-                                <tr>
-                                    <td style="width: 40px;"><strong>${i + 1}</strong></td>
-                                    <td>${renderMiniAvatar(p.name)} ${escapeHtml(p.name)}</td>
-                                    <td><strong>${p.goals}</strong></td>
-                                </tr>
-                            `).join('')}
+                            ${topGoals.map((p, i) => `<tr><td><strong>${i + 1}</strong></td><td>${renderMiniAvatar(p.name)} ${escapeHtml(p.name)}</td><td><strong>${p.goals}</strong></td></tr>`).join('')}
                         </tbody>
                     </table>
                 </div>
@@ -1846,13 +1888,7 @@
                     <table class="data-table">
                         <thead><tr><th>#</th><th>Player</th><th>Assists</th></tr></thead>
                         <tbody>
-                            ${topAssists.map((p, i) => `
-                                <tr>
-                                    <td style="width: 40px;"><strong>${i + 1}</strong></td>
-                                    <td>${renderMiniAvatar(p.name)} ${escapeHtml(p.name)}</td>
-                                    <td><strong>${p.assists}</strong></td>
-                                </tr>
-                            `).join('')}
+                            ${topAssists.map((p, i) => `<tr><td><strong>${i + 1}</strong></td><td>${renderMiniAvatar(p.name)} ${escapeHtml(p.name)}</td><td><strong>${p.assists}</strong></td></tr>`).join('')}
                         </tbody>
                     </table>
                 </div>
@@ -1862,13 +1898,7 @@
                     <table class="data-table">
                         <thead><tr><th>#</th><th>Player</th><th>Games</th></tr></thead>
                         <tbody>
-                            ${topGames.map((p, i) => `
-                                <tr>
-                                    <td style="width: 40px;"><strong>${i + 1}</strong></td>
-                                    <td>${renderMiniAvatar(p.name)} ${escapeHtml(p.name)}</td>
-                                    <td><strong>${p.gamesPlayed}</strong></td>
-                                </tr>
-                            `).join('')}
+                            ${topGames.map((p, i) => `<tr><td><strong>${i + 1}</strong></td><td>${renderMiniAvatar(p.name)} ${escapeHtml(p.name)}</td><td><strong>${p.gamesPlayed}</strong></td></tr>`).join('')}
                         </tbody>
                     </table>
                 </div>
@@ -1891,7 +1921,7 @@
                     <tbody>
                         ${powerRankings.slice(0, 20).map((p, i) => `
                             <tr>
-                                <td style="width: 45px;"><strong>${i + 1}</strong> ${i === 0 ? '👑' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : ''))}</td>
+                                <td><strong>${i + 1}</strong> ${i === 0 ? '👑' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : ''))}</td>
                                 <td>${renderMiniAvatar(p.name)} ${escapeHtml(p.name)}</td>
                                 <td><strong>${p.score}</strong></td>
                                 <td>${p.goals}</td>
@@ -2079,19 +2109,17 @@
         
         container.innerHTML = `
             <div class="card">
-                <h2><i class="fas fa-file-alt"></i> League Rules & Guidelines</h2>
-                <div style="line-height: 1.8;">
-                    <p><i class="fas fa-clock"></i> <strong>⏰ Kickoff:</strong> 8:00pm SHARP at Clifton Park</p>
-                    <p><i class="fas fa-crown"></i> <strong>👑 Captain:</strong> Rotates weekly - responsible for team selection</p>
-                    <p><i class="fas fa-check-circle"></i> <strong>✅ RSVP:</strong> Mandatory by Sunday 6pm</p>
-                    <p><i class="fas fa-user-plus"></i> <strong>🎭 Guests:</strong> Welcome! Must be added by a player</p>
-                    <p><i class="fas fa-tshirt"></i> <strong>👕 Kit:</strong> Bring white and dark shirts</p>
-                    <p><i class="fas fa-futbol"></i> <strong>⚽ Format:</strong> 7-a-side, 45 min halves</p>
-                    <p><i class="fas fa-file-signature"></i> <strong>📝 Match Reports:</strong> Generated automatically after each game</p>
-                    <p><i class="fab fa-whatsapp"></i> <strong>📱 Communication:</strong> Share team sheets and reports via WhatsApp</p>
-                </div>
+                <h2><i class="fas fa-file-alt"></i> League Rules & Guidelines ${isAdminLoggedIn ? `<button id="editRulesBtn" class="rules-edit-btn"><i class="fas fa-edit"></i> Edit Rules</button>` : ''}</h2>
+                <div style="line-height: 1.8; white-space: pre-wrap;">${escapeHtml(leagueRules)}</div>
             </div>
         `;
+        
+        if (isAdminLoggedIn) {
+            document.getElementById("editRulesBtn")?.addEventListener("click", () => {
+                const newRules = prompt("Edit league rules:", leagueRules);
+                if (newRules !== null) updateRules(newRules);
+            });
+        }
     }
     
     function renderAdminPage() {
@@ -2123,6 +2151,7 @@
         container.innerHTML = `
             <div class="card">
                 <h2><i class="fas fa-sliders-h"></i> Admin Control Panel</h2>
+                <button id="adminLogoutBtn" class="btn-outline" style="margin-bottom: 16px;"><i class="fas fa-sign-out-alt"></i> Logout Admin</button>
                 
                 <div class="info-bar">
                     <i class="fas fa-info-circle"></i> Select a week to assign teams or add results
@@ -2160,7 +2189,11 @@
             </div>
         `;
         
-        // Load week data for team assignment
+        document.getElementById("adminLogoutBtn")?.addEventListener("click", () => {
+            isAdminLoggedIn = false;
+            refreshAll();
+        });
+        
         document.getElementById("loadWeekAdminBtn")?.addEventListener("click", async () => {
             const week = document.getElementById("adminWeekSelect").value;
             if (!week) {
@@ -2170,7 +2203,6 @@
             await loadWeekForEditing(week);
         });
         
-        // Add player to week
         document.getElementById("adminAddPlayerBtn")?.addEventListener("click", async () => {
             const player = document.getElementById("adminPlayerSelect").value;
             const week = document.getElementById("adminWeekAddSelect").value;
@@ -2179,10 +2211,8 @@
                 return;
             }
             await addPlayerToWeek(player, week);
-            alert(`✅ ${player} added to ${week}`);
         });
         
-        // Match result form
         document.getElementById("resultWeekSelect")?.addEventListener("change", async (e) => {
             const week = e.target.value;
             const formPanel = document.getElementById("resultFormPanel");
